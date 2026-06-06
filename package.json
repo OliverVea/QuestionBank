@@ -1,0 +1,29 @@
+{
+  "name": "question-bank",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A question bank for books.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm-run-all --parallel dev:server dev:client",
+    "dev:server": "npm --workspace @qb/server run dev",
+    "dev:client": "npm --workspace @qb/client run dev",
+    "build": "npm-run-all --serial build:server build:client",
+    "build:server": "npm --workspace @qb/server run build",
+    "build:client": "npm --workspace @qb/client run build",
+    "test": "vitest run",
+    "typecheck": "tsc -b"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "npm-run-all": "^4.1.5",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}

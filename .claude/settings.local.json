@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s http://localhost:3001/api/health)",
+      "Bash(curl -s http://localhost:5173)",
+      "Bash(curl -s http://localhost:5173/api/health)",
+      "Bash(gh api *)",
+      "Bash(curl *)",
+      "Bash(chmod +x C:/Users/olive/QuestionBank/.claude/skills/brainstorming/scripts/*.sh)",
+      "Bash(ls -la \"C:\\\\Users\\\\olive\\\\QuestionBank\")",
+      "Bash(git log *)",
+      "Bash(git init *)",
+      "Bash(git add *)"
+    ]
+  }
+}

@@ -1,4 +1,5 @@
 import express, { type Express } from 'express';
+import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { argv } from 'node:process';
 import { fileURLToPath } from 'node:url';
@@ -8,7 +9,10 @@ import { chapterQuestionsRouter, questionsRouter } from './routes/questions.js';
 import { Store } from './storage/store.js';
 
 const PORT = Number(process.env.PORT ?? 3001);
-const DATA_DIR = process.env.QB_DATA_DIR ?? join(process.cwd(), 'data');
+// Data lives in the user's home dir, not the repo, so it survives `git clean`,
+// is never at risk of being committed, and is independent of the launch cwd
+// (the server is a long-running service that owns its storage). Override with QB_DATA_DIR.
+const DATA_DIR = process.env.QB_DATA_DIR ?? join(homedir(), '.question-bank');
 
 /** Build the Express app over a given store. Exported so tests can mount it without a port. */
 export function createApp(store: Store): Express {
@@ -33,6 +37,7 @@ async function main(): Promise<void> {
   const app = createApp(store);
   app.listen(PORT, () => {
     console.log(`[server] listening on http://localhost:${PORT}`);
+    console.log(`[server] data dir: ${DATA_DIR}`);
   });
 }
 

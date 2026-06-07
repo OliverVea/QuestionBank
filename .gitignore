@@ -8,14 +8,8 @@ dist/
 build/
 *.tsbuildinfo
 
-# Local data (JSON storage)
-data/*.json
-!data/.gitkeep
-!data/example.json
-
-# Backups & uploaded images (local storage artifacts)
-data/.backups/
-data/images/
+# Local data, backups, and uploaded images live outside the repo
+# (default ~/.question-bank, override with QB_DATA_DIR), so nothing to ignore here.
 
 # Env / secrets
 .env

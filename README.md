@@ -20,7 +20,7 @@ A self-study question bank for working through physics and math textbooks. It so
 
 - **Server:** Node + Express (TypeScript, ESM)
 - **Client:** Vanilla TypeScript + Vite
-- **Storage:** JSON files on disk (under `./data/`)
+- **Storage:** JSON files on disk (under `~/.question-bank/`, override with `QB_DATA_DIR`)
 - **Tests:** Vitest
 - **Layout:** npm workspaces — `packages/server`, `packages/client`
 
@@ -60,5 +60,8 @@ Open http://localhost:5173 — you'll see the three-tab shell (Learn / Practice 
 packages/
   server/   Express API
   client/   Vite + vanilla TS frontend
-data/       JSON storage (gitignored)
 ```
+
+Data lives outside the repo at `~/.question-bank/` (JSON files, plus `images/` and
+`.backups/` later). Override the location with the `QB_DATA_DIR` environment variable.
+The directory is created on first write.

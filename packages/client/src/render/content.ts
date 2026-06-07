@@ -14,9 +14,72 @@ export type Segment =
   | { kind: 'text'; value: string }
   | { kind: 'math'; value: string; display: boolean };
 
-/** Split source into ordered text/math segments. Pure. */
 export function splitMath(source: string): Segment[] {
-  return [{ kind: 'text', value: source }]; // stub — replaced in Task 2
+  const segments: Segment[] = [];
+  let text = ''; // accumulates literal text (with \$ already unescaped) until the next math run
+
+  const pushText = (): void => {
+    if (text.length > 0) segments.push({ kind: 'text', value: text });
+    text = '';
+  };
+
+  let i = 0;
+  while (i < source.length) {
+    const ch = source[i];
+
+    // Escaped dollar: emit a literal '$' and skip both characters.
+    if (ch === '\\' && source[i + 1] === '$') {
+      text += '$';
+      i += 2;
+      continue;
+    }
+
+    if (ch === '$') {
+      const display = source[i + 1] === '$';
+      const open = display ? i + 2 : i + 1;
+      const close = findClosingDollar(source, open, display);
+      if (close === -1) {
+        // Unbalanced: treat the rest as literal text. Consume one char and continue
+        // so the '$' itself is preserved in the output.
+        text += ch;
+        i += 1;
+        continue;
+      }
+      pushText();
+      segments.push({ kind: 'math', value: source.slice(open, close), display });
+      i = display ? close + 2 : close + 1;
+      continue;
+    }
+
+    text += ch;
+    i += 1;
+  }
+
+  pushText();
+  return segments;
+}
+
+/**
+ * Find the index of the closing delimiter starting the search at `from`.
+ * For display math the closer is `$$`; for inline it is a single `$`.
+ * An escaped `\$` inside is not a closer. Returns -1 if none found.
+ */
+function findClosingDollar(source: string, from: number, display: boolean): number {
+  for (let j = from; j < source.length; j++) {
+    if (source[j] === '\\') {
+      j++; // skip the escaped character
+      continue;
+    }
+    if (source[j] === '$') {
+      if (display) {
+        if (source[j + 1] === '$') return j;
+        // a lone '$' inside a display run is not a closer; keep scanning
+        continue;
+      }
+      return j;
+    }
+  }
+  return -1;
 }
 
 /** Render the small known markdown subset of a text segment to an HTML string. Pure. */

@@ -10,7 +10,9 @@ A dependency-aware task list for the Question Bank. Syntax follows the
 - Trailing brackets are **dependencies** (blockers) by qualified name: `[1a]`, `[3][4b]`.
   A task is implicitly blocked while any dependency is unfinished.
 
-Paste any branch of this list into the Olve.Diagrams flowchart tool to render it as a Mermaid graph.
+Paste the numbered task block below (only the `N.` / `a.` lines — not this prose header) into
+the Olve.Diagrams flowchart tool to render it as a Mermaid graph. Each task is a single line;
+the parser rejects wrapped/continuation lines.
 
 ---
 
@@ -40,10 +42,8 @@ Paste any branch of this list into the Olve.Diagrams flowchart tool to render it
   e. Orphan-image GC — sweep unreferenced images, deleting any older than ~15m [1d]
     a. Switch image filenames to time-ordered UUIDv7 so creation time is self-describing [1d]
     b. Background timer (~every 15m) runs a mark-and-sweep over <dataDir>/images [3ea]
-    c. Mark = union of all references (Question.source.imagePath + Attempt.imagePaths);
-       sweep deletes files unreferenced AND older than the 15m grace window [3eb]
-    d. Grace window covers the gap between transcribe-time save and attempt-commit;
-       deleted-entity leftovers (question/attempt) become unreferenced and are reclaimed too [3ec]
+    c. Mark = union of all references (Question.source.imagePath + Attempt.imagePaths); sweep deletes files unreferenced AND older than the 15m grace window [3eb]
+    d. Grace window covers the transcribe-save → attempt-commit gap; deleted-entity leftovers become unreferenced and are reclaimed too [3ec]
   f. Markdown beyond the observed subset (lists, headings, links, tables) when data needs it [1e]
 
 4. Past-attempt visibility (on the question card)
@@ -67,8 +67,7 @@ Paste any branch of this list into the Olve.Diagrams flowchart tool to render it
   c. relevance editing UI in Manage [7b]
 
 8. Single-screen layout
-  a. Page outline is always a single screen — no whole-page scroll on desktop or mobile;
-     anything scrollable is a sub-element (inner scroll regions, fixed shell) [1a]
+  a. Page outline is always a single screen — no whole-page scroll on desktop or mobile, anything scrollable is a sub-element (inner scroll regions, fixed shell) [1a]
   b. Reduce to a single screen — top banner toggles LEARN (next on list) / PRACTICE (due, by relevance) [2h][6c][8a]
 
 9. Book metadata ingestion
@@ -88,4 +87,4 @@ Paste any branch of this list into the Olve.Diagrams flowchart tool to render it
   b. Drag-and-drop chapter reordering [12a]
 
 13. Deployment (future)
-  a. Docker image for the server (CLI-in-container auth is the open catch) [2]
+  a. Docker image for the server (CLI-in-container auth is the open catch) [1b]

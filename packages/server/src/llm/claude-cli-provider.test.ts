@@ -54,4 +54,42 @@ describe('parseCliEnvelope', () => {
     expect(q).toEqual({ canonicalText: 'q' });
     expect('label' in q!).toBe(false);
   });
+
+  it('throws LlmError when result is a JSON array containing a non-object item', () => {
+    const bad = JSON.stringify({
+      type: 'result',
+      is_error: false,
+      result: JSON.stringify([42]),
+    });
+    expect(() => parseCliEnvelope(bad)).toThrow(LlmError);
+  });
+
+  it('throws LlmError when canonicalText is present but blank', () => {
+    const bad = JSON.stringify({
+      type: 'result',
+      is_error: false,
+      result: JSON.stringify([{ canonicalText: '   ' }]),
+    });
+    expect(() => parseCliEnvelope(bad)).toThrow(LlmError);
+  });
+
+  it('omits a present-but-empty label', () => {
+    const env = JSON.stringify({
+      type: 'result',
+      is_error: false,
+      result: JSON.stringify([{ canonicalText: 'q', label: '' }]),
+    });
+    const [q] = parseCliEnvelope(env);
+    expect(q).toEqual({ canonicalText: 'q' });
+    expect('label' in q!).toBe(false);
+  });
+
+  it('throws LlmError when envelope.result is not a string (already-parsed array)', () => {
+    const bad = JSON.stringify({
+      type: 'result',
+      is_error: false,
+      result: [{ canonicalText: 'q' }],
+    });
+    expect(() => parseCliEnvelope(bad)).toThrow(LlmError);
+  });
 });

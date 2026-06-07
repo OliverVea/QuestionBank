@@ -3,7 +3,6 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
-import { extractionSchema } from './extraction-contract.js';
 import {
   type ExtractedQuestion,
   type ExtractionRequest,
@@ -12,6 +11,11 @@ import {
 } from './provider.js';
 
 const execFileAsync = promisify(execFile);
+
+/** Hard cap on a single CLI extraction. A hung `claude` (auth prompt, wedged
+ *  subprocess, network stall) must reject so the route returns 502 rather than
+ *  hanging the request indefinitely. */
+const CLI_TIMEOUT_MS = 120_000;
 
 /** Validate one raw item from the CLI result into an ExtractedQuestion (label omitted when absent). */
 function toExtractedQuestion(raw: unknown): ExtractedQuestion {
@@ -71,10 +75,15 @@ export class ClaudeCliProvider implements LlmProvider {
     const schemaDir = await mkdtemp(join(tmpdir(), 'qb-schema-'));
     const schemaPath = join(schemaDir, 'schema.json');
     try {
-      await writeFile(schemaPath, JSON.stringify(req.schema ?? extractionSchema), 'utf8');
+      await writeFile(schemaPath, JSON.stringify(req.schema), 'utf8');
       const prompt = `${req.prompt}\n\nThe page image is at: ${req.imagePath}\nRead it and extract the questions.`;
       let stdout: string;
       try {
+        // NOTE (Windows): execFile (no shell) resolves `claude.exe` via PATHEXT but not a
+        // `claude.cmd`/`.ps1` npm shim — a shim-based install throws ENOENT here, which the
+        // catch below turns into a clean LlmError→502. The server machine must expose
+        // `claude` as a real executable on PATH. We deliberately avoid `shell: true` so the
+        // arbitrary-text prompt/path args cannot be misinterpreted by a shell.
         ({ stdout } = await execFileAsync(
           'claude',
           [
@@ -87,7 +96,7 @@ export class ClaudeCliProvider implements LlmProvider {
             this.imagesDir,
             prompt,
           ],
-          { maxBuffer: 16 * 1024 * 1024 },
+          { maxBuffer: 16 * 1024 * 1024, timeout: CLI_TIMEOUT_MS },
         ));
       } catch (err) {
         throw new LlmError('claude CLI invocation failed', { cause: err });

@@ -1,3 +1,6 @@
+import katex from 'katex';
+import 'katex/dist/katex.min.css';
+
 /**
  * Render a question's canonicalText into `host`: prose with **bold** / *italic* and
  * paragraph breaks, with $…$ inline math and $$…$$ display math rendered by KaTeX.
@@ -105,4 +108,30 @@ export function renderMarkup(text: string): string {
   html = html.replace(/\n\n+/g, '</p><p>');
   html = html.replace(/\n/g, '<br>');
   return html;
+}
+
+/**
+ * Render `source` into `host`. Owns the host's contents: clears it, then appends
+ * rendered prose (with the small markdown subset) and KaTeX-rendered math. Display
+ * math is wrapped in a `.qbody-display` element that scrolls horizontally on narrow
+ * screens. Malformed math renders as KaTeX's visible error token (throwOnError:false)
+ * and never throws.
+ */
+export function renderContent(host: HTMLElement, source: string): void {
+  host.innerHTML = '';
+  for (const segment of splitMath(source)) {
+    if (segment.kind === 'text') {
+      const span = document.createElement('span');
+      span.innerHTML = renderMarkup(segment.value);
+      host.appendChild(span);
+      continue;
+    }
+    const mathHost = segment.display ? document.createElement('div') : document.createElement('span');
+    if (segment.display) mathHost.className = 'qbody-display';
+    katex.render(segment.value, mathHost, {
+      displayMode: segment.display,
+      throwOnError: false,
+    });
+    host.appendChild(mathHost);
+  }
 }

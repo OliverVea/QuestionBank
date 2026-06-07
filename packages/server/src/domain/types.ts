@@ -41,5 +41,31 @@ export interface Question {
   relevance?: Relevance;
   /** SRS live state — unset by the foundation sub-project. */
   nextReviewDate?: string;
+  /** "Skip" — never suggest this question again. */
+  skipped?: boolean;
+  /** "Not now" — suggest again only after this time. */
+  snoozedUntil?: string;
+  createdAt: string;
+}
+
+/** Grade vocabulary. `partial` ⇒ the answer is ≥70% of the way there. */
+export type Grade = 'correct' | 'partial' | 'incorrect';
+
+/** A committed grading attempt — final state only; the in-flight chat is not stored. */
+export interface Attempt {
+  id: string;
+  questionId: string;
+  /** Saved answer-photo paths, relative under data/images (like extraction); may be empty. */
+  imagePaths: string[];
+  /** User's typed answer (plain text); may be "". */
+  answerText: string;
+  /** Final confirmed/edited LaTeX transcription of the photos; may be "". */
+  transcription: string;
+  /** Last grade the LLM recommended. */
+  recommendedGrade: Grade;
+  /** User's final decision (accept or override). */
+  rating: Grade;
+  /** The LLM's final critique message. */
+  critiqueText: string;
   createdAt: string;
 }

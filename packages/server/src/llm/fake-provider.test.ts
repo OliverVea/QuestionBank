@@ -1,33 +1,32 @@
 import { describe, expect, it } from 'vitest';
-import { extractionPrompt, extractionSchema } from './extraction-contract.js';
 import { FakeProvider } from './fake-provider.js';
 import { LlmError } from './provider.js';
 
-const req = { imagePath: '/tmp/x.png', prompt: extractionPrompt, schema: extractionSchema };
-
 describe('FakeProvider', () => {
-  it('returns its configured questions', async () => {
-    const provider = new FakeProvider([
-      { canonicalText: '\\int x\\,dx', label: '2.4' },
-      { canonicalText: 'Prove that 1 = 1.' },
-    ]);
-    const result = await provider.extractQuestionsFromImage(req);
-    expect(result).toEqual([
-      { canonicalText: '\\int x\\,dx', label: '2.4' },
-      { canonicalText: 'Prove that 1 = 1.' },
-    ]);
+  it('complete returns the configured text', async () => {
+    const p = new FakeProvider({ completeText: 'hello' });
+    expect(await p.complete([{ role: 'user', text: 'hi' }])).toEqual('hello');
   });
 
-  it('defaults to a single deterministic question', async () => {
-    const provider = new FakeProvider();
-    const result = await provider.extractQuestionsFromImage(req);
-    expect(result).toHaveLength(1);
-    expect(result[0]?.canonicalText).toBeTruthy();
+  it('completeStructured returns the configured object', async () => {
+    const obj = { critiqueText: 'good', recommendedGrade: 'partial' };
+    const p = new FakeProvider({ structured: obj });
+    expect(await p.completeStructured([{ role: 'user', text: 'hi' }], {})).toEqual(obj);
   });
 
-  it('throws when configured to fail', async () => {
-    const provider = new FakeProvider();
-    provider.failWith(new LlmError('boom'));
-    await expect(provider.extractQuestionsFromImage(req)).rejects.toBeInstanceOf(LlmError);
+  it('records the last conversation it was given', async () => {
+    const p = new FakeProvider();
+    await p.complete([
+      { role: 'user', text: 'q1' },
+      { role: 'assistant', text: 'a1' },
+    ]);
+    expect(p.lastConversation).toHaveLength(2);
+    expect(p.lastConversation[1]).toMatchObject({ role: 'assistant', text: 'a1' });
+  });
+
+  it('failWith makes the next call reject', async () => {
+    const p = new FakeProvider();
+    p.failWith(new LlmError('boom'));
+    await expect(p.complete([{ role: 'user', text: 'x' }])).rejects.toThrow('boom');
   });
 });

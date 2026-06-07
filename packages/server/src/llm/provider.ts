@@ -1,3 +1,5 @@
+import type { ImageRef } from './image-ref.js';
+
 /** One question extracted from a source, in the canonical LaTeX/markdown form. */
 export interface ExtractedQuestion {
   /** LaTeX/markdown — source of truth. */
@@ -6,22 +8,30 @@ export interface ExtractedQuestion {
   label?: string;
 }
 
-/** Everything a provider needs to extract questions from one image. */
-export interface ExtractionRequest {
-  /** Absolute path to the stored image on the server machine. */
-  imagePath: string;
-  /** Prompt authored centrally (see extraction-contract.ts) and passed in. */
-  prompt: string;
-  /** JSON Schema describing an ExtractedQuestion[], passed in. */
-  schema: object;
+export type Role = 'user' | 'assistant';
+
+export interface Message {
+  role: Role;
+  text: string;
+  /** Images carried with this turn (extraction, answer transcription). */
+  images?: ImageRef[];
 }
 
-/** The LLM layer's single operation for this build. Generalized later (grading). */
+/** Provider-specific knobs (model, timeout, …). All optional. */
+export interface CompleteOpts {
+  model?: string;
+  timeoutMs?: number;
+}
+
+/** The LLM layer's conversational operations. Stateless: caller replays the transcript. */
 export interface LlmProvider {
-  extractQuestionsFromImage(req: ExtractionRequest): Promise<ExtractedQuestion[]>;
+  /** Free-text completion of a conversation. */
+  complete(conversation: Message[], opts?: CompleteOpts): Promise<string>;
+  /** Schema-constrained completion; the provider validates/parses against `schema`. */
+  completeStructured<T>(conversation: Message[], schema: object, opts?: CompleteOpts): Promise<T>;
 }
 
-/** Raised by a provider on backend failure (non-zero exit, bad/invalid output). */
+/** Raised by a provider on backend failure (request failed, bad/invalid output). */
 export class LlmError extends Error {
   constructor(message: string, options?: { cause?: unknown }) {
     super(message, options);

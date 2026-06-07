@@ -2,7 +2,8 @@ import { Router } from 'express';
 import multer from 'multer';
 import { newId, nowIso } from '../domain/ids.js';
 import type { Question } from '../domain/types.js';
-import { extractionPrompt, extractionSchema } from '../llm/extraction-contract.js';
+import { extractQuestions } from '../llm/extract.js';
+import { bufferImage, type ImageMimeType } from '../llm/image-ref.js';
 import { LlmError, type LlmProvider } from '../llm/provider.js';
 import type { ImageStore } from '../storage/images.js';
 import type { Store } from '../storage/store.js';
@@ -74,15 +75,14 @@ export function chapterQuestionsRouter(
     }
 
     // Store the image first; it is retained even if extraction fails (lets the user retry).
-    const { imagePath, absolutePath } = await imageStore.save(file.buffer, ext);
+    const { imagePath } = await imageStore.save(file.buffer, ext);
 
     let extracted;
     try {
-      extracted = await provider.extractQuestionsFromImage({
-        imagePath: absolutePath,
-        prompt: extractionPrompt,
-        schema: extractionSchema,
-      });
+      extracted = await extractQuestions(
+        provider,
+        bufferImage(file.buffer, file.mimetype as ImageMimeType),
+      );
     } catch (err) {
       if (err instanceof LlmError) {
         res.status(502).json({ error: 'extraction failed' });

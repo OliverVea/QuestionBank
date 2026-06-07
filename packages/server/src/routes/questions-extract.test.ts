@@ -33,10 +33,11 @@ afterEach(async () => {
 describe('POST /api/chapters/:chapterId/questions/extract', () => {
   it('stores the image and creates image-sourced questions, returning 201', async () => {
     await setup(
-      new FakeProvider([
-        { canonicalText: '\\int x\\,dx', label: '2.4' },
-        { canonicalText: 'Prove it.' },
-      ]),
+      new FakeProvider({
+        structured: {
+          questions: [{ canonicalText: '\\int x\\,dx', label: '2.4' }, { canonicalText: 'Prove it.' }],
+        },
+      }),
     );
 
     const res = await request(app)
@@ -61,7 +62,7 @@ describe('POST /api/chapters/:chapterId/questions/extract', () => {
   });
 
   it('returns 201 with an empty array when the LLM finds no questions', async () => {
-    await setup(new FakeProvider([]));
+    await setup(new FakeProvider({ structured: { questions: [] } }));
     const res = await request(app)
       .post(`/api/chapters/${chapterId}/questions/extract`)
       .attach('image', Buffer.from('fake-png'), { filename: 'page.png', contentType: 'image/png' });

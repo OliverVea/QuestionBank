@@ -40,8 +40,11 @@ async function main(): Promise<void> {
   const imageStore = new ImageStore(DATA_DIR);
   const provider = new AnthropicApiProvider();
   const app = createApp(store, provider, imageStore);
-  app.listen(PORT, () => {
-    console.log(`[server] listening on http://localhost:${PORT}`);
+  // Bind 0.0.0.0 so the API is reachable from other devices on the LAN (e.g. a
+  // phone), matching the Vite client's `host: true`. Override with HOST if needed.
+  const HOST = process.env.HOST ?? '0.0.0.0';
+  app.listen(PORT, HOST, () => {
+    console.log(`[server] listening on http://${HOST}:${PORT}`);
     console.log(`[server] data dir: ${DATA_DIR}`);
   });
 }

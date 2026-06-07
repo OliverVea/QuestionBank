@@ -67,39 +67,61 @@ export async function renderQuestionsPane(
     if (e.key === 'Enter') void add();
   });
 
-  // Extract-from-image: a button that triggers a hidden image file picker.
-  const extractBtn = document.createElement('button');
-  extractBtn.textContent = 'Extract from image';
+  // Extract-from-image: two ways to supply a page image. "Take photo" opens the
+  // device camera directly on mobile (capture="environment" = rear camera; on
+  // desktop it falls back to a normal file dialog). "Choose image" picks an
+  // existing file from the library. Both feed the same extraction flow.
+  const status = document.createElement('div');
+  status.className = 'status';
+
+  const takeBtn = document.createElement('button');
+  takeBtn.textContent = 'Take photo';
+  const cameraInput = document.createElement('input');
+  cameraInput.type = 'file';
+  cameraInput.accept = 'image/*';
+  cameraInput.capture = 'environment';
+  cameraInput.style.display = 'none';
+
+  const chooseBtn = document.createElement('button');
+  chooseBtn.textContent = 'Choose image';
   const fileInput = document.createElement('input');
   fileInput.type = 'file';
   fileInput.accept = 'image/*';
   fileInput.style.display = 'none';
 
-  const status = document.createElement('div');
-  status.className = 'status';
+  const extractButtons = [takeBtn, chooseBtn];
 
-  extractBtn.addEventListener('click', () => fileInput.click());
-  fileInput.addEventListener('change', async () => {
-    const file = fileInput.files?.[0];
-    if (!file) return;
+  // Shared upload flow: disable the controls, show progress, extract, refresh.
+  async function runExtract(file: File, picker: HTMLInputElement): Promise<void> {
     status.textContent = '';
-    extractBtn.disabled = true;
     addBtn.disabled = true;
-    extractBtn.textContent = 'Extracting…';
+    for (const b of extractButtons) b.disabled = true;
+    takeBtn.textContent = 'Extracting…';
     try {
       await api.extractQuestionsFromImage(chapter.id, file);
       await refresh();
     } catch {
       status.textContent = 'Extraction failed — try again.';
     } finally {
-      extractBtn.disabled = false;
       addBtn.disabled = false;
-      extractBtn.textContent = 'Extract from image';
-      fileInput.value = ''; // allow re-selecting the same file
+      for (const b of extractButtons) b.disabled = false;
+      takeBtn.textContent = 'Take photo';
+      picker.value = ''; // allow re-selecting the same file
     }
+  }
+
+  takeBtn.addEventListener('click', () => cameraInput.click());
+  chooseBtn.addEventListener('click', () => fileInput.click());
+  cameraInput.addEventListener('change', () => {
+    const file = cameraInput.files?.[0];
+    if (file) void runExtract(file, cameraInput);
+  });
+  fileInput.addEventListener('change', () => {
+    const file = fileInput.files?.[0];
+    if (file) void runExtract(file, fileInput);
   });
 
-  addRow.append(labelInput, input, addBtn, extractBtn, fileInput);
+  addRow.append(labelInput, input, addBtn, takeBtn, chooseBtn, cameraInput, fileInput);
   host.append(addRow, status);
 
   await refresh();

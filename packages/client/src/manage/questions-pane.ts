@@ -1,7 +1,7 @@
 import { api } from '../api/client.js';
 import type { ChapterTree, Question } from '../api/types.js';
 import { createImageInput } from '../components/image-input.js';
-import { renderContent } from '../render/content.js';
+import { createLatexEditor } from '../components/latex-editor.js';
 
 /**
  * Render a chapter's questions: KaTeX-rendered read view with an edit toggle, plus inline add.
@@ -106,62 +106,64 @@ export async function renderQuestionsPane(
   await refresh();
 }
 
-/** One question row: read mode (KaTeX-rendered .qbody card) ⇄ edit mode (raw-source textarea). */
+/** One question row: rendered view (KaTeX) that can be tapped to edit inline. */
 function renderQuestionRow(q: Question, refresh: () => Promise<void>): HTMLElement {
   const row = document.createElement('div');
   row.className = 'row';
 
-  function readMode(): void {
-    row.innerHTML = '';
-    const body = document.createElement('div');
-    body.className = 'grow';
+  const body = document.createElement('div');
+  body.className = 'grow';
 
-    if (q.label) {
-      const lbl = document.createElement('strong');
-      lbl.textContent = `${q.label} `;
-      body.appendChild(lbl);
-    }
-    const content = document.createElement('div');
-    content.className = 'qbody';
-    renderContent(content, q.canonicalText);
-    body.appendChild(content);
-
-    const edit = document.createElement('button');
-    edit.className = 'link';
-    edit.textContent = 'edit';
-    edit.addEventListener('click', editMode);
-
-    const del = document.createElement('button');
-    del.className = 'link';
-    del.textContent = 'delete';
-    del.addEventListener('click', async () => {
-      await api.deleteQuestion(q.id);
-      await refresh();
-    });
-
-    row.append(body, edit, del);
+  if (q.label) {
+    const lbl = document.createElement('strong');
+    lbl.textContent = `${q.label} `;
+    body.appendChild(lbl);
   }
 
-  function editMode(): void {
-    row.innerHTML = '';
-    const wrap = document.createElement('div');
-    wrap.className = 'grow';
+  let editControls: HTMLElement | null = null;
+
+  const editor = createLatexEditor({
+    value: q.canonicalText,
+    editable: false,
+    onCommit: () => {
+      // onCommit just collapses back to rendered — save is triggered via the save button.
+    },
+  });
+  body.appendChild(editor.element);
+
+  const edit = document.createElement('button');
+  edit.className = 'link';
+  edit.textContent = 'edit';
+
+  const del = document.createElement('button');
+  del.className = 'link';
+  del.textContent = 'delete';
+  del.addEventListener('click', async () => {
+    await api.deleteQuestion(q.id);
+    await refresh();
+  });
+
+  row.append(body, edit, del);
+
+  edit.addEventListener('click', () => {
+    if (editControls) return; // already in edit mode
+    edit.style.display = 'none';
 
     const labelInput = document.createElement('input');
     labelInput.placeholder = 'label';
     labelInput.value = q.label ?? '';
     labelInput.style.maxWidth = '8rem';
+    body.insertBefore(labelInput, editor.element);
 
-    const textarea = document.createElement('textarea');
-    textarea.value = q.canonicalText;
-    textarea.rows = 3;
-    textarea.style.width = '100%';
+    // Switch the editor to always-editable mode by rebuilding it.
+    const editableEditor = createLatexEditor({ value: editor.getValue(), editable: true });
+    editor.element.replaceWith(editableEditor.element);
 
     const save = document.createElement('button');
     save.className = 'link';
     save.textContent = 'save';
     save.addEventListener('click', async () => {
-      const canonicalText = textarea.value.trim();
+      const canonicalText = editableEditor.getValue().trim();
       if (!canonicalText) return;
       const label = labelInput.value.trim();
       await api.updateQuestion(q.id, { canonicalText, label });
@@ -171,13 +173,18 @@ function renderQuestionRow(q: Question, refresh: () => Promise<void>): HTMLEleme
     const cancel = document.createElement('button');
     cancel.className = 'link';
     cancel.textContent = 'cancel';
-    cancel.addEventListener('click', readMode);
+    cancel.addEventListener('click', () => {
+      labelInput.remove();
+      editableEditor.element.replaceWith(editor.element);
+      editControls?.remove();
+      editControls = null;
+      edit.style.display = '';
+    });
 
-    wrap.append(labelInput, textarea);
-    row.append(wrap, save, cancel);
-    textarea.focus();
-  }
+    editControls = document.createElement('span');
+    editControls.append(save, cancel);
+    row.insertBefore(editControls, edit);
+  });
 
-  readMode();
   return row;
 }

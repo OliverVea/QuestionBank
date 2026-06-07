@@ -1,6 +1,7 @@
 import { api } from '../api/client.js';
 import type { Book, Grade, Message, Question } from '../api/types.js';
 import { createImageInput } from '../components/image-input.js';
+import { createLatexEditor } from '../components/latex-editor.js';
 import { renderContent } from '../render/content.js';
 
 const GRADES: Grade[] = ['correct', 'partial', 'incorrect'];
@@ -125,20 +126,8 @@ function renderConfirmStep(wrap: HTMLElement, question: Question, state: Confirm
   tLabel.textContent = 'Transcription:';
   confirm.appendChild(tLabel);
 
-  const transcription = document.createElement('textarea');
-  transcription.className = 'learn-transcription';
-  transcription.value = state.transcription;
-  confirm.appendChild(transcription);
-
-  const preview = document.createElement('div');
-  preview.className = 'learn-transcription-preview qbody';
-  confirm.appendChild(preview);
-
-  function updatePreview(): void {
-    renderContent(preview, transcription.value);
-  }
-  transcription.addEventListener('input', updatePreview);
-  updatePreview();
+  const transcriptionEditor = createLatexEditor({ value: state.transcription, editable: true });
+  confirm.appendChild(transcriptionEditor.element);
 
   // --- Retranscribe section (only if we have photos) ---
   if (state.imagePaths.length > 0) {
@@ -175,12 +164,11 @@ function renderConfirmStep(wrap: HTMLElement, question: Question, state: Confirm
         try {
           const out = await api.retranscribeAnswer(question.id, {
             imagePaths: state.imagePaths,
-            currentTranscription: transcription.value,
+            currentTranscription: transcriptionEditor.getValue(),
             correctionNote: note,
           });
-          transcription.value = out.transcription;
+          transcriptionEditor.setValue(out.transcription);
           noteInput.value = '';
-          updatePreview();
         } catch {
           retranscribeError.textContent = 'Retranscription failed — try again.';
         } finally {
@@ -210,14 +198,13 @@ function renderConfirmStep(wrap: HTMLElement, question: Question, state: Confirm
 
   gradeBtn.addEventListener('click', () => {
     const typedVal = confirm.querySelector<HTMLTextAreaElement>('.learn-typed-confirm')?.value.trim() ?? '';
-    const combined = [typedVal, transcription.value.trim()]
-      .filter((s) => s !== '')
-      .join('\n\n');
+    const transcriptionVal = transcriptionEditor.getValue().trim();
+    const combined = [typedVal, transcriptionVal].filter((s) => s !== '').join('\n\n');
     confirm.remove();
     renderGradingView(wrap, question, {
       combinedAnswer: combined,
       answerText: typedVal,
-      transcription: transcription.value.trim(),
+      transcription: transcriptionVal,
       imagePaths: state.imagePaths,
       onDone: state.onDone,
     });
@@ -262,12 +249,32 @@ export function renderGradingView(wrap: HTMLElement, question: Question, state: 
   ratingHost.className = 'row learn-rating-row';
   wrap.appendChild(ratingHost);
 
-  function appendTurn(role: 'user' | 'assistant', text: string, grade?: Grade): void {
+  function appendTurn(role: 'user' | 'assistant', text: string, grade?: Grade, turnIndex?: number): void {
     const msg = document.createElement('div');
     msg.className = `msg msg-${role}`;
-    const span = document.createElement('span');
-    span.textContent = text;
-    msg.appendChild(span);
+
+    if (role === 'user') {
+      const editor = createLatexEditor({
+        value: text,
+        editable: false,
+        onCommit: (newText) => {
+          if (!newText.trim()) return;
+          if (turnIndex !== undefined) conversation.splice(turnIndex);
+          while (msg.nextSibling) chat.removeChild(msg.nextSibling);
+          msg.remove();
+          const hidden = document.createElement('button');
+          hidden.style.display = 'none';
+          wrap.appendChild(hidden);
+          void doGrade(newText, hidden);
+        },
+      });
+      msg.appendChild(editor.element);
+    } else {
+      const span = document.createElement('span');
+      span.textContent = text;
+      msg.appendChild(span);
+    }
+
     if (grade) appendBadge(msg, grade);
     chat.appendChild(msg);
   }
@@ -323,8 +330,9 @@ export function renderGradingView(wrap: HTMLElement, question: Question, state: 
   async function doGrade(userText: string, control: HTMLButtonElement): Promise<void> {
     error.textContent = '';
     control.disabled = true;
+    const turnIndex = conversation.length;
     conversation.push({ role: 'user', text: userText });
-    appendTurn('user', userText);
+    appendTurn('user', userText, undefined, turnIndex);
     try {
       const turn = await api.gradeTurn(question.id, { conversation });
       conversation.push({ role: 'assistant', text: turn.critiqueText });

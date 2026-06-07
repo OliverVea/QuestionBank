@@ -227,16 +227,36 @@ button.link {
   font-size: 0.85rem;
 }
 
-.learn-cancel-row {
-  margin-bottom: 0.5rem;
+.latex-editor-rendered {
+  cursor: pointer;
 }
 
-.learn-transcription-preview {
+.latex-editor-rendered:hover {
+  opacity: 0.8;
+}
+
+.latex-editor-textarea {
+  width: 100%;
+  min-height: 3rem;
+  padding: 0.4rem;
+  font: inherit;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  margin-bottom: 0.4rem;
+  resize: vertical;
+}
+
+.latex-editor-preview {
   margin-top: 0.25rem;
   margin-bottom: 0.5rem;
   min-height: 2rem;
   background: #fafafa;
 }
+
+.learn-cancel-row {
+  margin-bottom: 0.5rem;
+}
+
 
 .learn-retranscribe {
   margin: 0.75rem 0;

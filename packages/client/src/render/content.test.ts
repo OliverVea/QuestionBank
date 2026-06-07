@@ -60,3 +60,35 @@ describe('splitMath', () => {
     expect(out).toEqual([{ kind: 'math', value: 'a', display: true }]);
   });
 });
+
+describe('renderMarkup', () => {
+  it('renders **bold** as <strong>', () => {
+    expect(renderMarkup('a **b** c')).toBe('a <strong>b</strong> c');
+  });
+
+  it('renders *italic* as <em>', () => {
+    expect(renderMarkup('a *b* c')).toBe('a <em>b</em> c');
+  });
+
+  it('renders a bold run that contains italic', () => {
+    expect(renderMarkup('**a *b* c**')).toBe('<strong>a <em>b</em> c</strong>');
+  });
+
+  it('HTML-escapes content so questions cannot inject markup', () => {
+    expect(renderMarkup('1 < 2 & <script>x</script>')).toBe(
+      '1 &lt; 2 &amp; &lt;script&gt;x&lt;/script&gt;',
+    );
+  });
+
+  it('leaves non-markdown punctuation like (a), _ and ^ literal', () => {
+    expect(renderMarkup('(a) x_1 ^2')).toBe('(a) x_1 ^2');
+  });
+
+  it('turns a blank line into a paragraph break', () => {
+    expect(renderMarkup('one\n\ntwo')).toBe('one</p><p>two');
+  });
+
+  it('turns a single newline into a line break', () => {
+    expect(renderMarkup('one\ntwo')).toBe('one<br>two');
+  });
+});

@@ -82,7 +82,27 @@ function findClosingDollar(source: string, from: number, display: boolean): numb
   return -1;
 }
 
+const HTML_ESCAPES: Record<string, string> = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;',
+};
+
+function escapeHtml(text: string): string {
+  return text.replace(/[&<>"']/g, (c) => HTML_ESCAPES[c]!);
+}
+
 /** Render the small known markdown subset of a text segment to an HTML string. Pure. */
 export function renderMarkup(text: string): string {
-  return text; // stub — replaced in Task 3
+  // 1. Escape first so question content can never inject HTML.
+  let html = escapeHtml(text);
+  // 2. Bold before italic so the inner * of **…** is consumed by bold, not italic.
+  html = html.replace(/\*\*([^]+?)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/\*([^*]+?)\*/g, '<em>$1</em>');
+  // 3. Paragraph breaks (blank line) before line breaks (single newline).
+  html = html.replace(/\n\n+/g, '</p><p>');
+  html = html.replace(/\n/g, '<br>');
+  return html;
 }

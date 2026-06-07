@@ -37,7 +37,13 @@ Paste any branch of this list into the Olve.Diagrams flowchart tool to render it
   b. Persist the full critique transcript on the Attempt (currently final-state only) [2c][2f]
   c. Text-input extraction modality (extractQuestionsFromText) alongside image [2a]
   d. Extraction review/staging gate before commit (if image misreads prove noisy) [1d]
-  e. Image GC / cleanup for failed, cancelled, or orphaned extractions [1d][3a]
+  e. Orphan-image GC — sweep unreferenced images, deleting any older than ~15m [1d]
+    a. Switch image filenames to time-ordered UUIDv7 so creation time is self-describing [1d]
+    b. Background timer (~every 15m) runs a mark-and-sweep over <dataDir>/images [3ea]
+    c. Mark = union of all references (Question.source.imagePath + Attempt.imagePaths);
+       sweep deletes files unreferenced AND older than the 15m grace window [3eb]
+    d. Grace window covers the gap between transcribe-time save and attempt-commit;
+       deleted-entity leftovers (question/attempt) become unreferenced and are reclaimed too [3ec]
   f. Markdown beyond the observed subset (lists, headings, links, tables) when data needs it [1e]
 
 4. Past-attempt visibility (on the question card)
@@ -60,8 +66,10 @@ Paste any branch of this list into the Olve.Diagrams flowchart tool to render it
   b. Judge each question's relevance to the book's learning goal (essential/relevant/can-skip/should-skip) [7a][2a]
   c. relevance editing UI in Manage [7b]
 
-8. Single-screen mode
-  a. Reduce to a single screen — top banner toggles LEARN (next on list) / PRACTICE (due, by relevance) [2h][6c]
+8. Single-screen layout
+  a. Page outline is always a single screen — no whole-page scroll on desktop or mobile;
+     anything scrollable is a sub-element (inner scroll regions, fixed shell) [1a]
+  b. Reduce to a single screen — top banner toggles LEARN (next on list) / PRACTICE (due, by relevance) [2h][6c][8a]
 
 9. Book metadata ingestion
   a. Scrape book title / author / year / edition (and maybe index, contents, questions) from ISBN [1c]

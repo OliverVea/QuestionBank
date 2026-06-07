@@ -1,5 +1,6 @@
 import { api } from '../api/client.js';
 import type { ChapterTree, Question } from '../api/types.js';
+import { createImageInput } from '../components/image-input.js';
 import { renderContent } from '../render/content.js';
 
 /**
@@ -68,61 +69,38 @@ export async function renderQuestionsPane(
     if (e.key === 'Enter') void add();
   });
 
-  // Extract-from-image: two ways to supply a page image. "Take photo" opens the
-  // device camera directly on mobile (capture="environment" = rear camera; on
-  // desktop it falls back to a normal file dialog). "Choose image" picks an
-  // existing file from the library. Both feed the same extraction flow.
+  // Extract-from-image via the reusable image-input control (Take photo / Choose
+  // image). Single-file here; the same component runs in multi-file mode for answer
+  // photos in the Learn tab.
   const status = document.createElement('div');
   status.className = 'status';
 
-  const takeBtn = document.createElement('button');
-  takeBtn.textContent = 'Take photo';
-  const cameraInput = document.createElement('input');
-  cameraInput.type = 'file';
-  cameraInput.accept = 'image/*';
-  cameraInput.capture = 'environment';
-  cameraInput.style.display = 'none';
-
-  const chooseBtn = document.createElement('button');
-  chooseBtn.textContent = 'Choose image';
-  const fileInput = document.createElement('input');
-  fileInput.type = 'file';
-  fileInput.accept = 'image/*';
-  fileInput.style.display = 'none';
-
-  const extractButtons = [takeBtn, chooseBtn];
+  const imageInput = createImageInput({
+    onFiles: (files) => {
+      const file = files[0];
+      if (file) void runExtract(file);
+    },
+  });
 
   // Shared upload flow: disable the controls, show progress, extract, refresh.
-  async function runExtract(file: File, picker: HTMLInputElement): Promise<void> {
-    status.textContent = '';
+  async function runExtract(file: File): Promise<void> {
     addBtn.disabled = true;
-    for (const b of extractButtons) b.disabled = true;
-    takeBtn.textContent = 'Extracting…';
+    imageInput.setDisabled(true);
+    status.textContent = 'Extracting…';
     try {
       await api.extractQuestionsFromImage(chapter.id, file);
       await refresh();
+      status.textContent = '';
     } catch {
       status.textContent = 'Extraction failed — try again.';
     } finally {
       addBtn.disabled = false;
-      for (const b of extractButtons) b.disabled = false;
-      takeBtn.textContent = 'Take photo';
-      picker.value = ''; // allow re-selecting the same file
+      imageInput.setDisabled(false);
+      imageInput.reset();
     }
   }
 
-  takeBtn.addEventListener('click', () => cameraInput.click());
-  chooseBtn.addEventListener('click', () => fileInput.click());
-  cameraInput.addEventListener('change', () => {
-    const file = cameraInput.files?.[0];
-    if (file) void runExtract(file, cameraInput);
-  });
-  fileInput.addEventListener('change', () => {
-    const file = fileInput.files?.[0];
-    if (file) void runExtract(file, fileInput);
-  });
-
-  addRow.append(labelInput, input, addBtn, takeBtn, chooseBtn, cameraInput, fileInput);
+  addRow.append(labelInput, input, addBtn, imageInput.element);
   host.append(addRow, status);
 
   await refresh();

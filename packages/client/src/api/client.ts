@@ -50,6 +50,14 @@ export const api = {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(body),
     }).then((r) => json<Question>(r)),
+  extractQuestionsFromImage: (chapterId: string, file: File) => {
+    const form = new FormData();
+    form.append('image', file);
+    return fetch(`/api/chapters/${chapterId}/questions/extract`, {
+      method: 'POST',
+      body: form,
+    }).then((r) => json<Question[]>(r));
+  },
   updateQuestion: (id: string, patch: Partial<Pick<Question, 'canonicalText' | 'label'>>) =>
     fetch(`/api/questions/${id}`, {
       method: 'PATCH',

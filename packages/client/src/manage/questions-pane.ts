@@ -66,8 +66,41 @@ export async function renderQuestionsPane(
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') void add();
   });
-  addRow.append(labelInput, input, addBtn);
-  host.appendChild(addRow);
+
+  // Extract-from-image: a button that triggers a hidden image file picker.
+  const extractBtn = document.createElement('button');
+  extractBtn.textContent = 'Extract from image';
+  const fileInput = document.createElement('input');
+  fileInput.type = 'file';
+  fileInput.accept = 'image/*';
+  fileInput.style.display = 'none';
+
+  const status = document.createElement('div');
+  status.className = 'status';
+
+  extractBtn.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', async () => {
+    const file = fileInput.files?.[0];
+    if (!file) return;
+    status.textContent = '';
+    extractBtn.disabled = true;
+    addBtn.disabled = true;
+    extractBtn.textContent = 'Extracting…';
+    try {
+      await api.extractQuestionsFromImage(chapter.id, file);
+      await refresh();
+    } catch {
+      status.textContent = 'Extraction failed — try again.';
+    } finally {
+      extractBtn.disabled = false;
+      addBtn.disabled = false;
+      extractBtn.textContent = 'Extract from image';
+      fileInput.value = ''; // allow re-selecting the same file
+    }
+  });
+
+  addRow.append(labelInput, input, addBtn, extractBtn, fileInput);
+  host.append(addRow, status);
 
   await refresh();
 }

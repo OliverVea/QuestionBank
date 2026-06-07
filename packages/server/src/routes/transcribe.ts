@@ -1,8 +1,13 @@
+import { join } from 'node:path';
 import { Router } from 'express';
 import multer from 'multer';
-import { bufferImage, type ImageMimeType } from '../llm/image-ref.js';
+import { bufferImage, fileImage, type ImageMimeType } from '../llm/image-ref.js';
 import { LlmError, type LlmProvider, type Message } from '../llm/provider.js';
-import { buildTranscriptionPrompt, transcriptionSchema } from '../llm/transcription-contract.js';
+import {
+  buildTranscriptionPrompt,
+  buildRetranscriptionPrompt,
+  transcriptionSchema,
+} from '../llm/transcription-contract.js';
 import type { ImageStore } from '../storage/images.js';
 import type { Store } from '../storage/store.js';
 
@@ -21,6 +26,7 @@ export function questionTranscribeRouter(
   store: Store,
   provider: LlmProvider,
   imageStore: ImageStore,
+  dataDir: string,
 ): Router {
   const router = Router({ mergeParams: true });
   const upload = multer({ storage: multer.memoryStorage() });
@@ -65,6 +71,60 @@ export function questionTranscribeRouter(
         transcriptionSchema,
       );
       res.json({ transcription: out.transcription, imagePaths });
+    } catch (err) {
+      if (err instanceof LlmError) {
+        res.status(502).json({ error: 'transcription failed' });
+        return;
+      }
+      throw err;
+    }
+  });
+
+  // Retranscribe using saved image paths + a plain-English correction note.
+  // Does NOT re-upload; images are already on disk from the first transcription.
+  router.post('/retry', async (req, res) => {
+    const questionId = (req.params as { id: string }).id;
+    const question = store.questions.getById(questionId);
+    if (!question) {
+      res.status(404).json({ error: 'question not found' });
+      return;
+    }
+    const { imagePaths, currentTranscription, correctionNote } = req.body ?? {};
+    if (
+      !Array.isArray(imagePaths) ||
+      imagePaths.some((p: unknown) => typeof p !== 'string') ||
+      imagePaths.length === 0
+    ) {
+      res.status(400).json({ error: 'imagePaths must be a non-empty array of strings' });
+      return;
+    }
+    if (typeof currentTranscription !== 'string' || typeof correctionNote !== 'string') {
+      res.status(400).json({ error: 'currentTranscription and correctionNote are required strings' });
+      return;
+    }
+
+    const images = (imagePaths as string[]).map((p) => {
+      const ext = p.split('.').pop() ?? 'jpg';
+      const mime = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
+      return fileImage(join(dataDir, p), mime as ImageMimeType);
+    });
+
+    const message: Message = {
+      role: 'user',
+      text: buildRetranscriptionPrompt(
+        question.canonicalText,
+        currentTranscription,
+        correctionNote,
+      ),
+      images,
+    };
+
+    try {
+      const out = await provider.completeStructured<{ transcription: string }>(
+        [message],
+        transcriptionSchema,
+      );
+      res.json({ transcription: out.transcription });
     } catch (err) {
       if (err instanceof LlmError) {
         res.status(502).json({ error: 'transcription failed' });

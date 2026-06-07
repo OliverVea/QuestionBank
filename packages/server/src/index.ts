@@ -35,7 +35,7 @@ export function createApp(store: Store, provider: LlmProvider, imageStore: Image
   app.use('/api/chapters', chaptersRouter(store));
   app.use('/api/chapters/:chapterId/questions', chapterQuestionsRouter(store, provider, imageStore));
   app.use('/api/questions/:id/attempts', questionAttemptsRouter(store));
-  app.use('/api/questions/:id/transcribe', questionTranscribeRouter(store, provider, imageStore));
+  app.use('/api/questions/:id/transcribe', questionTranscribeRouter(store, provider, imageStore, imageStore.dataDir));
   app.use('/api/questions/:id/grade', questionGradeRouter(store, provider));
   app.use('/api/learn', learnRouter(store));
   app.use('/api/questions', questionsRouter(store));

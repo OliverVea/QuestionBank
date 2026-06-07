@@ -16,13 +16,15 @@ export interface SavedImage {
  * QuestionSource.imagePath; the absolute path is what the provider reads.
  */
 export class ImageStore {
+  readonly dataDir: string;
   private readonly imagesDir: string;
 
-  constructor(private readonly dataDir: string) {
+  constructor(dataDir: string) {
+    this.dataDir = dataDir;
     this.imagesDir = join(dataDir, 'images');
   }
 
-  /** Absolute path to the images directory (used to grant the CLI read access). */
+  /** Absolute path to the images directory. */
   get directory(): string {
     return this.imagesDir;
   }

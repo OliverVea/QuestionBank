@@ -22,6 +22,16 @@ function renderQuestionHeader(parent: HTMLElement, question: Question): void {
 
 export function renderAnswerView(host: HTMLElement, question: Question, onDone: () => void): void {
   host.innerHTML = '';
+
+  const cancelRow = document.createElement('div');
+  cancelRow.className = 'learn-cancel-row';
+  const cancelBtn = document.createElement('button');
+  cancelBtn.className = 'link learn-cancel';
+  cancelBtn.textContent = '← Back';
+  cancelBtn.addEventListener('click', onDone);
+  cancelRow.appendChild(cancelBtn);
+  host.appendChild(cancelRow);
+
   const wrap = document.createElement('div');
   wrap.className = 'card learn-grade';
   host.appendChild(wrap);
@@ -110,32 +120,103 @@ function renderConfirmStep(wrap: HTMLElement, question: Question, state: Confirm
   confirm.className = 'learn-confirm';
   wrap.appendChild(confirm);
 
+  // --- Transcription section ---
   const tLabel = document.createElement('label');
-  tLabel.textContent = 'Transcription (edit if the scan is wrong):';
+  tLabel.textContent = 'Transcription:';
+  confirm.appendChild(tLabel);
+
   const transcription = document.createElement('textarea');
   transcription.className = 'learn-transcription';
   transcription.value = state.transcription;
+  confirm.appendChild(transcription);
 
-  const aLabel = document.createElement('label');
-  aLabel.textContent = 'Typed answer:';
-  const answer = document.createElement('textarea');
-  answer.className = 'learn-typed-confirm';
-  answer.value = state.answerText;
+  const preview = document.createElement('div');
+  preview.className = 'learn-transcription-preview qbody';
+  confirm.appendChild(preview);
+
+  function updatePreview(): void {
+    renderContent(preview, transcription.value);
+  }
+  transcription.addEventListener('input', updatePreview);
+  updatePreview();
+
+  // --- Retranscribe section (only if we have photos) ---
+  if (state.imagePaths.length > 0) {
+    const retranscribeSection = document.createElement('div');
+    retranscribeSection.className = 'learn-retranscribe';
+    confirm.appendChild(retranscribeSection);
+
+    const noteLabel = document.createElement('label');
+    noteLabel.textContent = 'Something wrong? Describe the correction in plain English:';
+    retranscribeSection.appendChild(noteLabel);
+
+    const noteInput = document.createElement('input');
+    noteInput.type = 'text';
+    noteInput.className = 'learn-correction-note';
+    noteInput.placeholder = 'e.g. "I wrote 2a not sa"';
+    retranscribeSection.appendChild(noteInput);
+
+    const retranscribeBtn = document.createElement('button');
+    retranscribeBtn.className = 'btn learn-retranscribe-btn';
+    retranscribeBtn.textContent = 'Re-transcribe';
+    retranscribeSection.appendChild(retranscribeBtn);
+
+    const retranscribeError = document.createElement('div');
+    retranscribeError.className = 'error';
+    retranscribeSection.appendChild(retranscribeError);
+
+    retranscribeBtn.addEventListener('click', () => {
+      const note = noteInput.value.trim();
+      if (!note) return;
+      retranscribeBtn.disabled = true;
+      retranscribeBtn.textContent = 'Retranscribing…';
+      retranscribeError.textContent = '';
+      void (async () => {
+        try {
+          const out = await api.retranscribeAnswer(question.id, {
+            imagePaths: state.imagePaths,
+            currentTranscription: transcription.value,
+            correctionNote: note,
+          });
+          transcription.value = out.transcription;
+          noteInput.value = '';
+          updatePreview();
+        } catch {
+          retranscribeError.textContent = 'Retranscription failed — try again.';
+        } finally {
+          retranscribeBtn.disabled = false;
+          retranscribeBtn.textContent = 'Re-transcribe';
+        }
+      })();
+    });
+  }
+
+  // --- Typed answer section ---
+  if (state.answerText) {
+    const aLabel = document.createElement('label');
+    aLabel.textContent = 'Typed answer:';
+    confirm.appendChild(aLabel);
+
+    const answer = document.createElement('textarea');
+    answer.className = 'learn-typed-confirm';
+    answer.value = state.answerText;
+    confirm.appendChild(answer);
+  }
 
   const gradeBtn = document.createElement('button');
   gradeBtn.className = 'btn learn-grade-go';
   gradeBtn.textContent = 'Looks good — grade it';
-
-  confirm.append(tLabel, transcription, aLabel, answer, gradeBtn);
+  confirm.appendChild(gradeBtn);
 
   gradeBtn.addEventListener('click', () => {
-    const combined = [answer.value.trim(), transcription.value.trim()]
+    const typedVal = confirm.querySelector<HTMLTextAreaElement>('.learn-typed-confirm')?.value.trim() ?? '';
+    const combined = [typedVal, transcription.value.trim()]
       .filter((s) => s !== '')
       .join('\n\n');
     confirm.remove();
     renderGradingView(wrap, question, {
       combinedAnswer: combined,
-      answerText: answer.value.trim(),
+      answerText: typedVal,
       transcription: transcription.value.trim(),
       imagePaths: state.imagePaths,
       onDone: state.onDone,

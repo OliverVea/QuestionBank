@@ -79,6 +79,15 @@ export const api = {
     fetch(`/api/questions/${id}`, { method: 'DELETE' }).then(noContent),
 
   // Grading & attempts
+  retranscribeAnswer: (
+    questionId: string,
+    body: { imagePaths: string[]; currentTranscription: string; correctionNote: string },
+  ) =>
+    fetch(`/api/questions/${questionId}/transcribe/retry`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    }).then((r) => json<{ transcription: string }>(r)),
   transcribeAnswer: (questionId: string, files: File[]) => {
     const form = new FormData();
     for (const f of files) form.append('images', f);

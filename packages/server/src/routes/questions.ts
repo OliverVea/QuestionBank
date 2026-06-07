@@ -116,10 +116,26 @@ export function questionsRouter(store: Store): Router {
       res.status(404).json({ error: 'not found' });
       return;
     }
+    const { canonicalText, label, skipped, snoozedUntil } = req.body ?? {};
+
+    // Clear-snooze: update() shallow-merges and cannot remove a key, so delete + re-create.
+    if (snoozedUntil === null) {
+      const current = store.questions.getById(req.params.id)!;
+      const { snoozedUntil: _drop, ...rest } = current;
+      const rebuilt: Question = { ...rest };
+      if (typeof canonicalText === 'string') rebuilt.canonicalText = canonicalText.trim();
+      if (typeof label === 'string') rebuilt.label = label.trim();
+      if (typeof skipped === 'boolean') rebuilt.skipped = skipped;
+      store.questions.delete(req.params.id);
+      res.json(store.questions.create(rebuilt));
+      return;
+    }
+
     const patch: Partial<Omit<Question, 'id'>> = {};
-    const { canonicalText, label } = req.body ?? {};
     if (typeof canonicalText === 'string') patch.canonicalText = canonicalText.trim();
     if (typeof label === 'string') patch.label = label.trim();
+    if (typeof skipped === 'boolean') patch.skipped = skipped;
+    if (typeof snoozedUntil === 'string') patch.snoozedUntil = snoozedUntil;
     res.json(store.questions.update(req.params.id, patch));
   });
 

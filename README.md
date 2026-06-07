@@ -43,7 +43,7 @@ This starts:
 - Server on http://localhost:3001 (health check at `/api/health`)
 - Client on http://localhost:5173 (proxies `/api/*` to the server)
 
-Open http://localhost:5173 — the page should show `Server status: ok`.
+Open http://localhost:5173 — you'll see the three-tab shell (Learn / Practice / Manage) with the Manage tab active for adding books, chapters, and questions.
 
 ## Scripts
 

@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { booksRouter } from './routes/books.js';
 import { bookChaptersRouter, chaptersRouter } from './routes/chapters.js';
 import { chapterQuestionsRouter, questionsRouter } from './routes/questions.js';
-import { ClaudeCliProvider } from './llm/claude-cli-provider.js';
+import { AnthropicApiProvider } from './llm/anthropic-api-provider.js';
 import type { LlmProvider } from './llm/provider.js';
 import { ImageStore } from './storage/images.js';
 import { Store } from './storage/store.js';
@@ -38,7 +38,7 @@ export function createApp(store: Store, provider: LlmProvider, imageStore: Image
 async function main(): Promise<void> {
   const store = await Store.open(DATA_DIR);
   const imageStore = new ImageStore(DATA_DIR);
-  const provider = new ClaudeCliProvider(imageStore.directory);
+  const provider = new AnthropicApiProvider();
   const app = createApp(store, provider, imageStore);
   app.listen(PORT, () => {
     console.log(`[server] listening on http://localhost:${PORT}`);

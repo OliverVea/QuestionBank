@@ -1,7 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { readFile } from 'node:fs/promises';
 import { extname } from 'node:path';
-import { extractionSchema } from './extraction-contract.js';
 import {
   type ExtractedQuestion,
   type ExtractionRequest,
@@ -9,17 +8,10 @@ import {
   type LlmProvider,
 } from './provider.js';
 
-/**
- * SDK structured-output schemas must be a top-level object, so we wrap the
- * contract's array schema under a `questions` property. Adapting the contract
- * to the SDK's expected shape is the provider's job, hence the import here.
- */
-const outputSchema = {
-  type: 'object',
-  properties: { questions: extractionSchema },
-  required: ['questions'],
-  additionalProperties: false,
-} as const;
+/** Hard cap on a single extraction request. Without this the SDK's 10-minute
+ *  default (retried up to 2×) could hang the HTTP request for tens of minutes;
+ *  a timeout instead rejects → the route returns 502. */
+const REQUEST_TIMEOUT_MS = 120_000;
 
 /** Validate one raw item into an ExtractedQuestion (label omitted when absent/blank). */
 function toExtractedQuestion(raw: unknown): ExtractedQuestion {
@@ -95,22 +87,36 @@ export class AnthropicApiProvider implements LlmProvider {
 
     const mediaType = mediaTypeForPath(req.imagePath);
 
+    // SDK structured-output schemas must be a top-level object, so we wrap the
+    // caller-supplied array schema under a `questions` property. Building this
+    // from `req.schema` (rather than a direct import) keeps the provider using
+    // exactly the contract the route passed, avoiding drift.
+    const outputSchema = {
+      type: 'object',
+      properties: { questions: req.schema },
+      required: ['questions'],
+      additionalProperties: false,
+    } as const;
+
     let message: Anthropic.Message;
     try {
-      message = await this.client.messages.create({
-        model: this.model,
-        max_tokens: 8000,
-        messages: [
-          {
-            role: 'user',
-            content: [
-              { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
-              { type: 'text', text: req.prompt },
-            ],
-          },
-        ],
-        output_config: { format: { type: 'json_schema', schema: outputSchema } },
-      });
+      message = await this.client.messages.create(
+        {
+          model: this.model,
+          max_tokens: 8000,
+          messages: [
+            {
+              role: 'user',
+              content: [
+                { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
+                { type: 'text', text: req.prompt },
+              ],
+            },
+          ],
+          output_config: { format: { type: 'json_schema', schema: outputSchema } },
+        },
+        { timeout: REQUEST_TIMEOUT_MS, maxRetries: 2 },
+      );
     } catch (err) {
       throw new LlmError('anthropic API request failed', { cause: err });
     }

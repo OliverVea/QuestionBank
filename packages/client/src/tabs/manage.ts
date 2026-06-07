@@ -1,6 +1,7 @@
 import type { Book, ChapterTree } from '../api/types.js';
 import { renderBooksPane } from '../manage/books-pane.js';
 import { renderChaptersPane } from '../manage/chapters-pane.js';
+import { renderQuestionsPane } from '../manage/questions-pane.js';
 
 type View =
   | { level: 'books' }
@@ -36,31 +37,13 @@ export function renderManage(host: HTMLElement): void {
         },
       );
     } else {
-      renderChapterPlaceholder(pane, view.book, view.chapter, () => {
-        view = { level: 'book', book: (view as { book: Book }).book };
+      const current = view;
+      void renderQuestionsPane(pane, current.chapter, current.book.title, () => {
+        view = { level: 'book', book: current.book };
         show();
       });
     }
   }
 
   show();
-}
-
-function renderChapterPlaceholder(
-  host: HTMLElement,
-  book: Book,
-  chapter: ChapterTree,
-  onBack: () => void,
-): void {
-  const crumb = document.createElement('div');
-  crumb.className = 'crumb';
-  const back = document.createElement('button');
-  back.textContent = `← ${book.title}`;
-  back.addEventListener('click', onBack);
-  crumb.appendChild(back);
-
-  const title = document.createElement('h2');
-  title.textContent = chapter.title;
-
-  host.append(crumb, title);
 }

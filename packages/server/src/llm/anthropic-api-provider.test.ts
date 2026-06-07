@@ -16,24 +16,28 @@ describe('AnthropicApiProvider', () => {
     expect(await provider.complete([{ role: 'user', text: 'hi' }])).toEqual('hi there');
   });
 
-  it('completeStructured parses the JSON text block', async () => {
-    const provider = new AnthropicApiProvider(
-      fakeClient({
-        stop_reason: 'end_turn',
-        content: [{ type: 'text', text: '{"recommendedGrade":"correct"}' }],
-      }),
-    );
-    const out = await provider.completeStructured<{ recommendedGrade: string }>(
-      [{ role: 'user', text: 'grade' }],
-      {},
-    );
-    expect(out).toEqual({ recommendedGrade: 'correct' });
+  // Guards the production-critical contract: structured output MUST force a single
+  // tool call matching the schema (sending unknown top-level fields 502s the request),
+  // and the result is read from the returned tool_use block — not parsed from prose.
+  it('completeStructured forces tool use and returns the tool_use input', async () => {
+    const create = vi.fn().mockResolvedValue({
+      stop_reason: 'tool_use',
+      content: [{ type: 'tool_use', name: 'result', input: { issues: [] } }],
+    });
+    const provider = new AnthropicApiProvider({ messages: { create } } as never);
+    const schema = { type: 'object', properties: { x: { type: 'string' } }, required: ['x'] };
+    const out = await provider.completeStructured([{ role: 'user', text: 'go' }], schema);
+
+    const sent = create.mock.calls[0]![0];
+    expect(sent.tools).toEqual([expect.objectContaining({ name: 'result', input_schema: schema })]);
+    expect(sent.tool_choice).toEqual({ type: 'tool', name: 'result' });
+    expect(out).toEqual({ issues: [] });
   });
 
   it('serializes an image-bearing message into a base64 image block', async () => {
     const create = vi.fn().mockResolvedValue({
-      stop_reason: 'end_turn',
-      content: [{ type: 'text', text: '{}' }],
+      stop_reason: 'tool_use',
+      content: [{ type: 'tool_use', name: 'result', input: {} }],
     });
     const provider = new AnthropicApiProvider({ messages: { create } } as never);
     await provider.completeStructured(
@@ -63,12 +67,4 @@ describe('AnthropicApiProvider', () => {
     await expect(provider.complete([{ role: 'user', text: 'x' }])).rejects.toThrow(LlmError);
   });
 
-  it('completeStructured throws LlmError when the text block is not JSON', async () => {
-    const provider = new AnthropicApiProvider(
-      fakeClient({ stop_reason: 'end_turn', content: [{ type: 'text', text: 'not json' }] }),
-    );
-    await expect(provider.completeStructured([{ role: 'user', text: 'x' }], {})).rejects.toThrow(
-      LlmError,
-    );
-  });
 });

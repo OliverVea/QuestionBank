@@ -51,6 +51,15 @@ export interface Question {
 /** Grade vocabulary. `partial` ⇒ the answer is ≥70% of the way there. */
 export type Grade = 'correct' | 'partial' | 'incorrect';
 
+/** Severity of one issue the grader found; the grade is derived from these. */
+export type IssueSeverity = 'critical' | 'medium' | 'minor';
+
+/** One problem the grader flagged with the student's answer. */
+export interface GradingIssue {
+  severity: IssueSeverity;
+  description: string;
+}
+
 /** A committed grading attempt — final state only; the in-flight chat is not stored. */
 export interface Attempt {
   id: string;
@@ -61,11 +70,11 @@ export interface Attempt {
   answerText: string;
   /** Final confirmed/edited LaTeX transcription of the photos; may be "". */
   transcription: string;
-  /** Last grade the LLM recommended. */
+  /** Grade derived from the final issue list. */
   recommendedGrade: Grade;
   /** User's final decision (accept or override). */
   rating: Grade;
-  /** The LLM's final critique message. */
-  critiqueText: string;
+  /** The issues the grader flagged on the final turn (empty ⇒ correct). */
+  issues: GradingIssue[];
   createdAt: string;
 }

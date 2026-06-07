@@ -34,7 +34,7 @@ const body = {
   transcription: 'z^3 = 1',
   recommendedGrade: 'partial',
   rating: 'correct',
-  critiqueText: 'close enough',
+  issues: [{ severity: 'medium', description: 'sign error in step 2' }],
 };
 
 describe('attempts routes', () => {

@@ -33,6 +33,12 @@ export interface Question {
 }
 
 export type Grade = 'correct' | 'partial' | 'incorrect';
+export type IssueSeverity = 'critical' | 'medium' | 'minor';
+
+export interface GradingIssue {
+  severity: IssueSeverity;
+  description: string;
+}
 
 export type Role = 'user' | 'assistant';
 export interface Message {
@@ -41,7 +47,8 @@ export interface Message {
 }
 
 export interface GradeTurn {
-  critiqueText: string;
+  reasoning: string;
+  issues: GradingIssue[];
   recommendedGrade: Grade;
 }
 
@@ -58,7 +65,7 @@ export interface Attempt {
   transcription: string;
   recommendedGrade: Grade;
   rating: Grade;
-  critiqueText: string;
+  issues: GradingIssue[];
   createdAt: string;
 }
 

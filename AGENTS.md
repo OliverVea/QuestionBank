@@ -22,6 +22,14 @@ npm workspaces tie them together. Run everything from the repo root.
 - **Storage is JSON files.** Keep the storage layer thin and swappable — we may move to SQLite later.
 - **Tests with Vitest.** Co-locate tests as `*.test.ts` next to the code they cover.
 
+## Testing strategy
+
+Favor the **highest-level, most inclusive integration / end-to-end tests** practical. This is a small app with simple logic — granular per-function unit tests add little value and waste effort.
+
+- Prefer one test that drives an Express route through `createApp` (with a `FakeProvider`) over several tests of that route's internal helpers.
+- Only unit-test pure logic when it encodes a **non-obvious rule** (e.g. deriving a grade from issue severities). Don't reflexively write a `.test.ts` per module.
+- TDD is still welcome — just write the failing test at the integration layer where you can.
+
 ## Dependencies
 
 Keep dependencies current.

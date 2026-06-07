@@ -157,3 +157,4 @@ Each step ends with something observable.
 - Generic `complete` / `completeStructured(Message[], Schema)` interface (introduced with grading).
 - Anthropic API / Bedrock / self-hosted providers behind the same `LlmProvider`.
 - Image cleanup/GC for failed or orphaned extractions.
+- Extraction modal with spinner + true full-stack cancel (client abort → server detects disconnect → aborts the Anthropic request → commits nothing), replacing the current disable-buttons + status-line UX. Designed in [2026-06-07-extraction-modal-cancel-design.md](./2026-06-07-extraction-modal-cancel-design.md) — **post-v0**.

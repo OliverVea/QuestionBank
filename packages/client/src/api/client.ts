@@ -5,6 +5,7 @@ import type {
   Chapter,
   Grade,
   GradeTurn,
+  GradingIssue,
   LearnNext,
   Message,
   Question,
@@ -109,7 +110,7 @@ export const api = {
       transcription: string;
       recommendedGrade: Grade;
       rating: Grade;
-      critiqueText: string;
+      issues: GradingIssue[];
     },
   ) =>
     fetch(`/api/questions/${questionId}/attempts`, {

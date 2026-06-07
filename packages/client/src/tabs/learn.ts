@@ -1,5 +1,5 @@
 import { api } from '../api/client.js';
-import type { Book, Grade, Message, Question } from '../api/types.js';
+import type { Book, Grade, GradingIssue, IssueSeverity, Message, Question } from '../api/types.js';
 import { createImageInput } from '../components/image-input.js';
 import { createLatexEditor } from '../components/latex-editor.js';
 import { renderContent } from '../render/content.js';
@@ -179,16 +179,17 @@ function renderConfirmStep(wrap: HTMLElement, question: Question, state: Confirm
     });
   }
 
-  // --- Typed answer section ---
-  if (state.answerText) {
+  // --- Typed answer section (rendered LaTeX, display-only) ---
+  const typedVal = state.answerText;
+  if (typedVal) {
     const aLabel = document.createElement('label');
     aLabel.textContent = 'Typed answer:';
     confirm.appendChild(aLabel);
 
-    const answer = document.createElement('textarea');
-    answer.className = 'learn-typed-confirm';
-    answer.value = state.answerText;
-    confirm.appendChild(answer);
+    const typedView = document.createElement('div');
+    typedView.className = 'qbody learn-typed-view';
+    renderContent(typedView, typedVal);
+    confirm.appendChild(typedView);
   }
 
   const gradeBtn = document.createElement('button');
@@ -197,7 +198,6 @@ function renderConfirmStep(wrap: HTMLElement, question: Question, state: Confirm
   confirm.appendChild(gradeBtn);
 
   gradeBtn.addEventListener('click', () => {
-    const typedVal = confirm.querySelector<HTMLTextAreaElement>('.learn-typed-confirm')?.value.trim() ?? '';
     const transcriptionVal = transcriptionEditor.getValue().trim();
     const combined = [typedVal, transcriptionVal].filter((s) => s !== '').join('\n\n');
     confirm.remove();
@@ -228,10 +228,56 @@ function appendBadge(host: HTMLElement, grade: Grade): void {
   host.appendChild(badge);
 }
 
+/** Severity → display order/colour class. Highest first so critical issues lead. */
+const SEVERITY_CLASS: Record<IssueSeverity, string> = {
+  critical: 'issue-critical',
+  medium: 'issue-medium',
+  minor: 'issue-minor',
+};
+
+/** Render the grader's issue list into a message body (or a "looks correct" note). */
+function appendIssues(msg: HTMLElement, issues: GradingIssue[]): void {
+  if (issues.length === 0) {
+    const ok = document.createElement('div');
+    ok.className = 'grade-ok';
+    ok.textContent = 'No issues found — looks correct.';
+    msg.appendChild(ok);
+    return;
+  }
+  const list = document.createElement('ul');
+  list.className = 'issue-list';
+  for (const issue of issues) {
+    const item = document.createElement('li');
+    item.className = `issue ${SEVERITY_CLASS[issue.severity]}`;
+    const tag = document.createElement('span');
+    tag.className = 'issue-severity';
+    tag.textContent = issue.severity;
+    const desc = document.createElement('span');
+    desc.className = 'issue-desc';
+    renderContent(desc, issue.description);
+    item.append(tag, desc);
+    list.appendChild(item);
+  }
+  msg.appendChild(list);
+}
+
+/** Render the grader's private reasoning as a collapsed <details> foldout. */
+function appendReasoning(msg: HTMLElement, reasoning: string): void {
+  const details = document.createElement('details');
+  details.className = 'grade-reasoning';
+  const summary = document.createElement('summary');
+  summary.textContent = 'Show reasoning';
+  const body = document.createElement('div');
+  body.className = 'grade-reasoning-body qbody';
+  renderContent(body, reasoning);
+  details.append(summary, body);
+  msg.appendChild(details);
+}
+
 export function renderGradingView(wrap: HTMLElement, question: Question, state: GradingState): void {
   const conversation: Message[] = [];
   let lastGrade: Grade | undefined;
-  let lastCritique = '';
+  let lastIssues: GradingIssue[] = [];
 
   const chat = document.createElement('div');
   chat.className = 'chat grade-chat';
@@ -249,33 +295,33 @@ export function renderGradingView(wrap: HTMLElement, question: Question, state: 
   ratingHost.className = 'row learn-rating-row';
   wrap.appendChild(ratingHost);
 
-  function appendTurn(role: 'user' | 'assistant', text: string, grade?: Grade, turnIndex?: number): void {
+  function appendUserTurn(text: string, turnIndex: number): void {
     const msg = document.createElement('div');
-    msg.className = `msg msg-${role}`;
+    msg.className = 'msg msg-user';
+    const editor = createLatexEditor({
+      value: text,
+      editable: false,
+      onCommit: (newText) => {
+        if (!newText.trim()) return;
+        conversation.splice(turnIndex);
+        while (msg.nextSibling) chat.removeChild(msg.nextSibling);
+        msg.remove();
+        const hidden = document.createElement('button');
+        hidden.style.display = 'none';
+        wrap.appendChild(hidden);
+        void doGrade(newText, hidden);
+      },
+    });
+    msg.appendChild(editor.element);
+    chat.appendChild(msg);
+  }
 
-    if (role === 'user') {
-      const editor = createLatexEditor({
-        value: text,
-        editable: false,
-        onCommit: (newText) => {
-          if (!newText.trim()) return;
-          if (turnIndex !== undefined) conversation.splice(turnIndex);
-          while (msg.nextSibling) chat.removeChild(msg.nextSibling);
-          msg.remove();
-          const hidden = document.createElement('button');
-          hidden.style.display = 'none';
-          wrap.appendChild(hidden);
-          void doGrade(newText, hidden);
-        },
-      });
-      msg.appendChild(editor.element);
-    } else {
-      const span = document.createElement('span');
-      span.textContent = text;
-      msg.appendChild(span);
-    }
-
-    if (grade) appendBadge(msg, grade);
+  function appendGraderTurn(reasoning: string, issues: GradingIssue[], grade: Grade): void {
+    const msg = document.createElement('div');
+    msg.className = 'msg msg-assistant';
+    appendBadge(msg, grade);
+    appendIssues(msg, issues);
+    if (reasoning.trim() !== '') appendReasoning(msg, reasoning);
     chat.appendChild(msg);
   }
 
@@ -302,7 +348,7 @@ export function renderGradingView(wrap: HTMLElement, question: Question, state: 
           transcription: state.transcription,
           recommendedGrade: lastGrade!,
           rating: select.value as Grade,
-          critiqueText: lastCritique,
+          issues: lastIssues,
         });
         state.onDone();
       })();
@@ -327,18 +373,24 @@ export function renderGradingView(wrap: HTMLElement, question: Question, state: 
     replyHost.append(reply, send);
   }
 
+  /** Flatten an issue list into a transcript line so a follow-up turn has context. */
+  function issuesToText(issues: GradingIssue[]): string {
+    if (issues.length === 0) return 'No issues found — looks correct.';
+    return issues.map((i) => `[${i.severity}] ${i.description}`).join('\n');
+  }
+
   async function doGrade(userText: string, control: HTMLButtonElement): Promise<void> {
     error.textContent = '';
     control.disabled = true;
     const turnIndex = conversation.length;
     conversation.push({ role: 'user', text: userText });
-    appendTurn('user', userText, undefined, turnIndex);
+    appendUserTurn(userText, turnIndex);
     try {
       const turn = await api.gradeTurn(question.id, { conversation });
-      conversation.push({ role: 'assistant', text: turn.critiqueText });
-      appendTurn('assistant', turn.critiqueText, turn.recommendedGrade);
+      conversation.push({ role: 'assistant', text: issuesToText(turn.issues) });
+      appendGraderTurn(turn.reasoning, turn.issues, turn.recommendedGrade);
       lastGrade = turn.recommendedGrade;
-      lastCritique = turn.critiqueText;
+      lastIssues = turn.issues;
       renderRating();
       ensureReplyBox();
     } catch {

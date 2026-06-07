@@ -33,7 +33,7 @@ describe('Store', () => {
       transcription: 'z^3 = 1',
       recommendedGrade: 'partial',
       rating: 'correct',
-      critiqueText: 'nice',
+      issues: [{ severity: 'medium', description: 'sign error' }],
       createdAt: '2026-06-07T00:00:00.000Z',
     });
     expect(created.id).toEqual('a1');

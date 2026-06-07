@@ -1,12 +1,30 @@
 import { Router } from 'express';
 import { newId, nowIso } from '../domain/ids.js';
-import type { Attempt, Grade } from '../domain/types.js';
+import type { Attempt, Grade, GradingIssue, IssueSeverity } from '../domain/types.js';
 import type { Store } from '../storage/store.js';
 
 const GRADES: readonly Grade[] = ['correct', 'partial', 'incorrect'];
+const SEVERITIES: readonly IssueSeverity[] = ['critical', 'medium', 'minor'];
 
 function isGrade(value: unknown): value is Grade {
   return typeof value === 'string' && (GRADES as readonly string[]).includes(value);
+}
+
+/** Validate the issues field into GradingIssue[] (defaults to [] when absent). */
+function parseIssues(raw: unknown): GradingIssue[] | undefined {
+  if (raw === undefined) return [];
+  if (!Array.isArray(raw)) return undefined;
+  const out: GradingIssue[] = [];
+  for (const item of raw) {
+    if (typeof item !== 'object' || item === null) return undefined;
+    const { severity, description } = item as Record<string, unknown>;
+    if (typeof severity !== 'string' || !(SEVERITIES as readonly string[]).includes(severity)) {
+      return undefined;
+    }
+    if (typeof description !== 'string') return undefined;
+    out.push({ severity: severity as IssueSeverity, description });
+  }
+  return out;
 }
 
 /** Validate the imagePaths field into a string[] (defaults to [] when absent). */
@@ -35,7 +53,7 @@ export function questionAttemptsRouter(store: Store): Router {
       res.status(404).json({ error: 'question not found' });
       return;
     }
-    const { imagePaths, answerText, transcription, recommendedGrade, rating, critiqueText } =
+    const { imagePaths, answerText, transcription, recommendedGrade, rating, issues } =
       req.body ?? {};
 
     const paths = parseImagePaths(imagePaths);
@@ -53,6 +71,11 @@ export function questionAttemptsRouter(store: Store): Router {
       res.status(400).json({ error: 'recommendedGrade and rating must be valid grades' });
       return;
     }
+    const parsedIssues = parseIssues(issues);
+    if (parsedIssues === undefined) {
+      res.status(400).json({ error: 'issues must be an array of {severity, description}' });
+      return;
+    }
     const attempt: Attempt = {
       id: newId(),
       questionId,
@@ -61,7 +84,7 @@ export function questionAttemptsRouter(store: Store): Router {
       transcription: typeof transcription === 'string' ? transcription : '',
       recommendedGrade,
       rating,
-      critiqueText: typeof critiqueText === 'string' ? critiqueText : '',
+      issues: parsedIssues,
       createdAt: nowIso(),
     };
     res.status(201).json(store.attempts.create(attempt));

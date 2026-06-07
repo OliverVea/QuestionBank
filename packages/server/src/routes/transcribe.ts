@@ -3,6 +3,7 @@ import { Router } from 'express';
 import multer from 'multer';
 import { bufferImage, fileImage, type ImageMimeType } from '../llm/image-ref.js';
 import { LlmError, type LlmProvider, type Message } from '../llm/provider.js';
+import { log } from '../logging/logger.js';
 import {
   buildTranscriptionPrompt,
   buildRetranscriptionPrompt,
@@ -59,6 +60,8 @@ export function questionTranscribeRouter(
       images.push(bufferImage(file.buffer, file.mimetype as ImageMimeType));
     }
 
+    log.info('transcribing answer', { question: questionId, label: question.label, images: files.length });
+
     const message: Message = {
       role: 'user',
       text: buildTranscriptionPrompt(question.canonicalText),
@@ -70,9 +73,11 @@ export function questionTranscribeRouter(
         [message],
         transcriptionSchema,
       );
+      log.info('transcription complete', { question: questionId, chars: out.transcription.length });
       res.json({ transcription: out.transcription, imagePaths });
     } catch (err) {
       if (err instanceof LlmError) {
+        log.warn('transcription failed', { question: questionId });
         res.status(502).json({ error: 'transcription failed' });
         return;
       }
@@ -109,6 +114,8 @@ export function questionTranscribeRouter(
       return fileImage(join(dataDir, p), mime as ImageMimeType);
     });
 
+    log.info('retranscribing answer', { question: questionId, images: imagePaths.length });
+
     const message: Message = {
       role: 'user',
       text: buildRetranscriptionPrompt(
@@ -124,9 +131,11 @@ export function questionTranscribeRouter(
         [message],
         transcriptionSchema,
       );
+      log.info('retranscription complete', { question: questionId, chars: out.transcription.length });
       res.json({ transcription: out.transcription });
     } catch (err) {
       if (err instanceof LlmError) {
+        log.warn('retranscription failed', { question: questionId });
         res.status(502).json({ error: 'transcription failed' });
         return;
       }

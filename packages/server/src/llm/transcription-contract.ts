@@ -1,3 +1,5 @@
+import { LATEX_DELIMITER_INSTRUCTION } from './latex-format.js';
+
 /**
  * The transcribe-ONLY contract for handwritten answer photos. The agent's single job
  * is to transcribe the working exactly as written — never to solve, correct, complete,
@@ -10,7 +12,7 @@ export function buildTranscriptionPrompt(questionText: string): string {
     'Your ONLY job is to transcribe what is written into LaTeX/markdown, EXACTLY as written.',
     'Do NOT solve the problem. Do NOT correct mistakes. Do NOT complete unfinished steps.',
     'Do NOT comment or grade. If the working is wrong or incomplete, transcribe it wrong/incomplete — faithfully reproduce exactly what the student actually wrote.',
-    'Preserve mathematical notation exactly using LaTeX.',
+    `Preserve mathematical notation exactly. ${LATEX_DELIMITER_INSTRUCTION}`,
     'Combine all photos into a single transcription block (they are pages of one answer).',
     '',
     'The question below is provided as REFERENCE ONLY, to help you read unclear handwriting.',
@@ -35,7 +37,7 @@ export function buildRetranscriptionPrompt(
     'Your ONLY job is to transcribe what is written into LaTeX/markdown, EXACTLY as written.',
     'Do NOT solve the problem. Do NOT correct mistakes. Do NOT complete unfinished steps.',
     'Do NOT comment or grade. If the working is wrong or incomplete, transcribe it wrong/incomplete.',
-    'Preserve mathematical notation exactly using LaTeX.',
+    `Preserve mathematical notation exactly. ${LATEX_DELIMITER_INSTRUCTION}`,
     'Combine all photos into a single transcription block.',
     '',
     'The question below is provided as REFERENCE ONLY, to help you read unclear handwriting.',

@@ -12,6 +12,8 @@ import { questionGradeRouter } from './routes/grade.js';
 import { learnRouter } from './routes/learn.js';
 import { AnthropicApiProvider } from './llm/anthropic-api-provider.js';
 import type { LlmProvider } from './llm/provider.js';
+import { errorLogger, requestLogger } from './logging/http.js';
+import { log } from './logging/logger.js';
 import { ImageStore } from './storage/images.js';
 import { Store } from './storage/store.js';
 
@@ -24,6 +26,7 @@ const DATA_DIR = process.env.QB_DATA_DIR ?? join(homedir(), '.question-bank');
 /** Build the Express app over a given store. Exported so tests can mount it without a port. */
 export function createApp(store: Store, provider: LlmProvider, imageStore: ImageStore): Express {
   const app = express();
+  app.use(requestLogger);
   app.use(express.json());
 
   app.get('/api/health', (_req, res) => {
@@ -40,6 +43,8 @@ export function createApp(store: Store, provider: LlmProvider, imageStore: Image
   app.use('/api/learn', learnRouter(store));
   app.use('/api/questions', questionsRouter(store));
 
+  app.use(errorLogger);
+
   return app;
 }
 
@@ -52,8 +57,8 @@ async function main(): Promise<void> {
   // phone), matching the Vite client's `host: true`. Override with HOST if needed.
   const HOST = process.env.HOST ?? '0.0.0.0';
   app.listen(PORT, HOST, () => {
-    console.log(`[server] listening on http://${HOST}:${PORT}`);
-    console.log(`[server] data dir: ${DATA_DIR}`);
+    log.info(`listening on http://${HOST}:${PORT}`);
+    log.info(`data dir: ${DATA_DIR}`);
   });
 }
 

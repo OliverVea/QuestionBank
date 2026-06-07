@@ -92,7 +92,7 @@ import katex from 'katex';
 import 'katex/dist/katex.min.css';
 
 /**
- * Render a question's canonicalText into `host`: prose with **bold**/*italic* and
+ * Render a question's canonicalText into `host`: prose with **bold** / *italic* and
  * paragraph breaks, with $…$ inline math and $$…$$ display math rendered by KaTeX.
  * Malformed math renders as KaTeX's visible error token (throwOnError: false) so a
  * bad expression never blanks the row — the raw source is recoverable via edit mode.

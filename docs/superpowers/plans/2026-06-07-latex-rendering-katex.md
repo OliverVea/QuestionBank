@@ -55,7 +55,7 @@ Create `packages/client/src/render/content.ts`:
 
 ```ts
 /**
- * Render a question's canonicalText into `host`: prose with **bold**/*italic* and
+ * Render a question's canonicalText into `host`: prose with **bold** / *italic* and
  * paragraph breaks, with $…$ inline math and $$…$$ display math rendered by KaTeX.
  * Malformed math renders as KaTeX's visible error token (throwOnError: false) so a
  * bad expression never blanks the row — the raw source is recoverable via edit mode.
@@ -327,7 +327,9 @@ const HTML_ESCAPES: Record<string, string> = {
 };
 
 function escapeHtml(text: string): string {
-  return text.replace(/[&<>"']/g, (c) => HTML_ESCAPES[c]);
+  // `!` because noUncheckedIndexedAccess types the lookup as string|undefined,
+  // but the regex character class guarantees `c` is always a key of HTML_ESCAPES.
+  return text.replace(/[&<>"']/g, (c) => HTML_ESCAPES[c]!);
 }
 
 export function renderMarkup(text: string): string {

@@ -1,3 +1,5 @@
+import { LATEX_DELIMITER_INSTRUCTION } from './latex-format.js';
+
 /**
  * The provider-agnostic "what to ask" for image question extraction. The prompt
  * and schema live here (the application layer), not in any provider, so a future
@@ -15,7 +17,7 @@ export const extractionPrompt = [
   'Only when no real label can be found, fall back to a position-based label: an ordinal',
   'within this batch ("#1", "#2", …), or "p.<page>-<n>" when a page number is visible.',
   'Do NOT solve, answer, hint at, or comment on any question. Transcribe only.',
-  'Preserve mathematical notation exactly using LaTeX. Do not invent questions that are not on the page.',
+  `Preserve mathematical notation exactly. ${LATEX_DELIMITER_INSTRUCTION} Do not invent questions that are not on the page.`,
   'Return the questions as a JSON array matching the provided schema.',
 ].join('\n');
 

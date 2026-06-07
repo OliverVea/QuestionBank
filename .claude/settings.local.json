@@ -1,9 +1,5 @@
 {
   "permissions": {
-    "deny": [
-      "Read(//c/Users/olive/QuestionBank/node_modules/**)",
-      "Read(./node_modules/**)"
-    ],
     "allow": [
       "Bash(curl -s http://localhost:3001/api/health)",
       "Bash(curl -s http://localhost:5173)",
@@ -70,7 +66,29 @@
       "PowerShell(npx vitest run packages/server/src/llm/anthropic-api-provider.test.ts 2>&1 | Select-Object -Last 40)",
       "Bash(taskkill //PID 3284 //F)",
       "Bash(echo \"exit=$?\")",
-      "Bash(npm view *)"
+      "Bash(npm view *)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(awk 'NR==2{print index\\($0,\"**/\"\\)\": **/ found at this col\"}' packages/client/src/render/content.ts)",
+      "Bash(git -C C:/Users/olive/QuestionBank add packages/client/package.json package-lock.json packages/client/src/render/content.ts packages/client/src/render/content.dom.test.ts)",
+      "Bash(git -C C:/Users/olive/QuestionBank commit -m \"feat: renderContent assembles prose and KaTeX math into the DOM\")",
+      "Bash(git -C C:/Users/olive/QuestionBank rev-parse HEAD)",
+      "PowerShell(git *)",
+      "PowerShell(npx vitest run packages/client 2>&1 | Select-Object -Last 40)",
+      "PowerShell(npx tsc -b packages/client --force; \"tsc exit code: $LASTEXITCODE\")",
+      "Bash(git *)",
+      "Bash(npx tsx *)",
+      "Bash(Get-Process -Name \"node\" -ErrorAction SilentlyContinue)",
+      "Bash(Select-Object Id, CPU, WorkingSet, CommandLine)",
+      "Bash(npm list *)",
+      "Bash(taskkill *)",
+      "PowerShell(Stop-Process *)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(echo \"exit $?\")",
+      "Bash(grep -iE '\\\\.\\(cs|md\\)$')"
+    ],
+    "deny": [
+      "Read(//c/Users/olive/QuestionBank/node_modules/**)",
+      "Read(./node_modules/**)"
     ]
   }
 }

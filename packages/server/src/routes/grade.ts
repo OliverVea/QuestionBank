@@ -1,6 +1,13 @@
 import { Router } from 'express';
-import { buildGradingPrompt, gradingTurnSchema, type GradingContext } from '../llm/grading-contract.js';
+import {
+  buildGradingPrompt,
+  deriveGrade,
+  gradingTurnSchema,
+  type GradingContext,
+  type GradingTurnResult,
+} from '../llm/grading-contract.js';
 import { LlmError, type LlmProvider, type Message, type Role } from '../llm/provider.js';
+import { log } from '../logging/logger.js';
 import type { Store } from '../storage/store.js';
 
 const ROLES: readonly Role[] = ['user', 'assistant'];
@@ -49,14 +56,20 @@ export function questionGradeRouter(store: Store, provider: LlmProvider): Router
 
     const messages: Message[] = [{ role: 'user', text: buildGradingPrompt(ctx) }, ...transcript];
 
+    log.info('grading turn', { question: questionId, turns: transcript.length });
+
     try {
-      const turn = await provider.completeStructured<{
-        critiqueText: string;
-        recommendedGrade: string;
-      }>(messages, gradingTurnSchema);
-      res.json({ critiqueText: turn.critiqueText, recommendedGrade: turn.recommendedGrade });
+      const turn = await provider.completeStructured<GradingTurnResult>(messages, gradingTurnSchema);
+      const recommendedGrade = deriveGrade(turn.issues);
+      log.info('grading complete', {
+        question: questionId,
+        grade: recommendedGrade,
+        issues: turn.issues.length,
+      });
+      res.json({ reasoning: turn.reasoning, issues: turn.issues, recommendedGrade });
     } catch (err) {
       if (err instanceof LlmError) {
+        log.warn('grading failed', { question: questionId });
         res.status(502).json({ error: 'grading failed' });
         return;
       }

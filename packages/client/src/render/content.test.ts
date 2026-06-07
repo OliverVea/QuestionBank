@@ -84,8 +84,8 @@ describe('renderMarkup', () => {
     expect(renderMarkup('(a) x_1 ^2')).toBe('(a) x_1 ^2');
   });
 
-  it('turns a blank line into a paragraph break', () => {
-    expect(renderMarkup('one\n\ntwo')).toBe('one</p><p>two');
+  it('turns a blank line into a paragraph gap (double <br>, no <p>)', () => {
+    expect(renderMarkup('one\n\ntwo')).toBe('one<br><br>two');
   });
 
   it('turns a single newline into a line break', () => {

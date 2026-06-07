@@ -3,7 +3,7 @@ import type { ChapterTree, Question } from '../api/types.js';
 import { renderContent } from '../render/content.js';
 
 /**
- * Render a chapter's questions: raw-LaTeX read view with an edit toggle, plus inline add.
+ * Render a chapter's questions: KaTeX-rendered read view with an edit toggle, plus inline add.
  * @param host element to render into
  * @param chapter the chapter being viewed (carries its initial questions)
  * @param bookTitle for the breadcrumb
@@ -128,7 +128,7 @@ export async function renderQuestionsPane(
   await refresh();
 }
 
-/** One question row: read mode (raw LaTeX in a <pre>) ⇄ edit mode (textarea). */
+/** One question row: read mode (KaTeX-rendered .qbody card) ⇄ edit mode (raw-source textarea). */
 function renderQuestionRow(q: Question, refresh: () => Promise<void>): HTMLElement {
   const row = document.createElement('div');
   row.className = 'row';

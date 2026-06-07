@@ -104,8 +104,11 @@ export function renderMarkup(text: string): string {
   // 2. Bold before italic so the inner * of **…** is consumed by bold, not italic.
   html = html.replace(/\*\*([^]+?)\*\*/g, '<strong>$1</strong>');
   html = html.replace(/\*([^*]+?)\*/g, '<em>$1</em>');
-  // 3. Paragraph breaks (blank line) before line breaks (single newline).
-  html = html.replace(/\n\n+/g, '</p><p>');
+  // 3. Breaks. The result is inserted as the innerHTML of an inline <span> in a flat
+  //    .qbody div, so we stay within the inline model: a blank line is a double <br>
+  //    (paragraph gap), a single newline is one <br>. No <p> tags — an unmatched
+  //    </p><p> would force invalid block-in-inline nesting via browser fixup.
+  html = html.replace(/\n\n+/g, '<br><br>');
   html = html.replace(/\n/g, '<br>');
   return html;
 }

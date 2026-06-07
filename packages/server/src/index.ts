@@ -7,6 +7,9 @@ import { booksRouter } from './routes/books.js';
 import { bookChaptersRouter, chaptersRouter } from './routes/chapters.js';
 import { chapterQuestionsRouter, questionsRouter } from './routes/questions.js';
 import { questionAttemptsRouter } from './routes/attempts.js';
+import { questionTranscribeRouter } from './routes/transcribe.js';
+import { questionGradeRouter } from './routes/grade.js';
+import { learnRouter } from './routes/learn.js';
 import { AnthropicApiProvider } from './llm/anthropic-api-provider.js';
 import type { LlmProvider } from './llm/provider.js';
 import { ImageStore } from './storage/images.js';
@@ -32,6 +35,9 @@ export function createApp(store: Store, provider: LlmProvider, imageStore: Image
   app.use('/api/chapters', chaptersRouter(store));
   app.use('/api/chapters/:chapterId/questions', chapterQuestionsRouter(store, provider, imageStore));
   app.use('/api/questions/:id/attempts', questionAttemptsRouter(store));
+  app.use('/api/questions/:id/transcribe', questionTranscribeRouter(store, provider, imageStore));
+  app.use('/api/questions/:id/grade', questionGradeRouter(store, provider));
+  app.use('/api/learn', learnRouter(store));
   app.use('/api/questions', questionsRouter(store));
 
   return app;

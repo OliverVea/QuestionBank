@@ -1,5 +1,6 @@
 import { api } from '../api/client.js';
 import type { ChapterTree, Question } from '../api/types.js';
+import { renderContent } from '../render/content.js';
 
 /**
  * Render a chapter's questions: raw-LaTeX read view with an edit toggle, plus inline add.
@@ -142,10 +143,10 @@ function renderQuestionRow(q: Question, refresh: () => Promise<void>): HTMLEleme
       lbl.textContent = `${q.label} `;
       body.appendChild(lbl);
     }
-    const pre = document.createElement('pre');
-    pre.className = 'latex';
-    pre.textContent = q.canonicalText; // raw source — rendering deferred to a later plan
-    body.appendChild(pre);
+    const content = document.createElement('div');
+    content.className = 'qbody';
+    renderContent(content, q.canonicalText);
+    body.appendChild(content);
 
     const edit = document.createElement('button');
     edit.className = 'link';

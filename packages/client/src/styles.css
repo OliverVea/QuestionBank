@@ -105,11 +105,13 @@ button.link {
   font: inherit;
 }
 
-pre.latex {
-  margin: 0;
-  white-space: pre-wrap;
-  font-family: ui-monospace, monospace;
-  background: #f6f6f6;
-  padding: 0.3rem 0.5rem;
+.qbody {
+  border: 1px solid var(--border);
   border-radius: 4px;
+  padding: 0.4rem 0.6rem;
+  line-height: 1.5;
+}
+
+.qbody-display {
+  overflow-x: auto;
 }

@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { booksRouter } from './routes/books.js';
 import { bookChaptersRouter, chaptersRouter } from './routes/chapters.js';
 import { chapterQuestionsRouter, questionsRouter } from './routes/questions.js';
+import { questionAttemptsRouter } from './routes/attempts.js';
 import { AnthropicApiProvider } from './llm/anthropic-api-provider.js';
 import type { LlmProvider } from './llm/provider.js';
 import { ImageStore } from './storage/images.js';
@@ -30,6 +31,7 @@ export function createApp(store: Store, provider: LlmProvider, imageStore: Image
   app.use('/api/books/:bookId/chapters', bookChaptersRouter(store));
   app.use('/api/chapters', chaptersRouter(store));
   app.use('/api/chapters/:chapterId/questions', chapterQuestionsRouter(store, provider, imageStore));
+  app.use('/api/questions/:id/attempts', questionAttemptsRouter(store));
   app.use('/api/questions', questionsRouter(store));
 
   return app;

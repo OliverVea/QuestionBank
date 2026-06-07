@@ -1,5 +1,9 @@
 {
   "permissions": {
+    "deny": [
+      "Read(//c/Users/olive/QuestionBank/node_modules/**)",
+      "Read(./node_modules/**)"
+    ],
     "allow": [
       "Bash(curl -s http://localhost:3001/api/health)",
       "Bash(curl -s http://localhost:5173)",
@@ -28,7 +32,45 @@
       "Bash(claude --version)",
       "Bash(gh auth *)",
       "Bash(gh repo *)",
-      "Bash(Out-String)"
+      "Bash(Out-String)",
+      "Bash(git checkout *)",
+      "Bash(git stash *)",
+      "Read(//c/Users/olive/.question-bank/**)",
+      "Read(//c/tmp/**)",
+      "Bash(mkdir -p ~/.question-bank/test-fixtures)",
+      "Bash(mv /c/Users/olive/QuestionBank/test_problems_01.jpg ~/.question-bank/test-fixtures/axler-3a.jpg)",
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(npm install *)",
+      "Bash(Select-String -Pattern '\"multer\"' -SimpleMatch)",
+      "Bash(Select-Object -First 3)",
+      "Bash(Select-String -Pattern 'export const')",
+      "Bash(npm outdated *)",
+      "Bash(echo \"=== EXIT $? ===\")",
+      "Bash(npm ls *)",
+      "Bash(echo \"=== TYPECHECK EXIT $? ===\")",
+      "Bash(echo \"=== TEST EXIT $? ===\")",
+      "Bash(npx tsc *)",
+      "Bash(echo \"=== REAL TYPECHECK EXIT $? ===\")",
+      "Bash(echo \"=== BUILD EXIT $? ===\")",
+      "Bash(git check-ignore *)",
+      "Bash(echo \"=== TC EXIT $? ===\")",
+      "Bash(timeout 15 npx vite --port 5199)",
+      "Bash(echo \"=== exit \\(124=timeout=ran ok\\) $? ===\")",
+      "Bash(mktemp -d)",
+      "Bash(QB_DATA_DIR=$\\(mktemp -d\\) PORT=3099 timeout 12 npm run dev:server)",
+      "Bash(wait)",
+      "Bash(echo \"\\(empty = all current, exit $?\\)\")",
+      "Bash(netstat -ano)",
+      "Bash(PORT=3001 timeout 14 npm run dev:server)",
+      "Bash(where claude *)",
+      "PowerShell(Get-Command *)",
+      "PowerShell(npx vitest run packages/server/src/llm/claude-cli-provider.test.ts)",
+      "PowerShell(npm run *)",
+      "PowerShell(npm test *)",
+      "PowerShell(npx vitest run packages/server/src/llm/anthropic-api-provider.test.ts 2>&1 | Select-Object -Last 40)",
+      "Bash(taskkill //PID 3284 //F)",
+      "Bash(echo \"exit=$?\")",
+      "Bash(npm view *)"
     ]
   }
 }

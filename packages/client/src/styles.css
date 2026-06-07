@@ -115,3 +115,17 @@ button.link {
 .qbody-display {
   overflow-x: auto;
 }
+
+.card { border: 1px solid #ddd; border-radius: 6px; padding: 1rem; margin: 0.5rem 0; }
+.chat { display: flex; flex-direction: column; gap: 0.5rem; margin: 0.5rem 0; }
+.msg { padding: 0.5rem 0.75rem; border-radius: 6px; }
+.msg-user { background: #eef; align-self: flex-end; }
+.msg-assistant { background: #f4f4f4; }
+.badge { display: inline-block; margin-left: 0.5rem; padding: 0 0.4rem; border-radius: 4px; font-size: 0.8rem; }
+.grade-correct { background: #cfc; }
+.grade-partial { background: #ffd; }
+.grade-incorrect { background: #fcc; }
+.learn-grade textarea { width: 100%; min-height: 4rem; }
+.learn-confirm label { display: block; margin-top: 0.5rem; font-size: 0.85rem; color: #555; }
+.image-input { display: inline-flex; gap: 0.5rem; }
+.error { color: #b00; }

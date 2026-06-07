@@ -1,4 +1,15 @@
-import type { Book, BookTree, Chapter, Question } from './types.js';
+import type {
+  Attempt,
+  Book,
+  BookTree,
+  Chapter,
+  Grade,
+  GradeTurn,
+  LearnNext,
+  Message,
+  Question,
+  TranscribeResult,
+} from './types.js';
 
 async function json<T>(res: Response): Promise<T> {
   if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
@@ -66,4 +77,47 @@ export const api = {
     }).then((r) => json<Question>(r)),
   deleteQuestion: (id: string) =>
     fetch(`/api/questions/${id}`, { method: 'DELETE' }).then(noContent),
+
+  // Grading & attempts
+  transcribeAnswer: (questionId: string, files: File[]) => {
+    const form = new FormData();
+    for (const f of files) form.append('images', f);
+    return fetch(`/api/questions/${questionId}/transcribe`, { method: 'POST', body: form }).then(
+      (r) => json<TranscribeResult>(r),
+    );
+  },
+  gradeTurn: (questionId: string, body: { conversation: Message[] }) =>
+    fetch(`/api/questions/${questionId}/grade`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    }).then((r) => json<GradeTurn>(r)),
+  createAttempt: (
+    questionId: string,
+    body: {
+      imagePaths: string[];
+      answerText: string;
+      transcription: string;
+      recommendedGrade: Grade;
+      rating: Grade;
+      critiqueText: string;
+    },
+  ) =>
+    fetch(`/api/questions/${questionId}/attempts`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    }).then((r) => json<Attempt>(r)),
+  listAttempts: (questionId: string) =>
+    fetch(`/api/questions/${questionId}/attempts`).then((r) => json<Attempt[]>(r)),
+  patchQuestionState: (id: string, patch: { skipped?: boolean; snoozedUntil?: string | null }) =>
+    fetch(`/api/questions/${id}`, {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(patch),
+    }).then((r) => json<Question>(r)),
+  getLearnNext: () =>
+    fetch('/api/learn/next').then((r) =>
+      json<{ question: Question | null } & Partial<LearnNext>>(r),
+    ),
 };

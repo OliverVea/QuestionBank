@@ -22,6 +22,14 @@ npm workspaces tie them together. Run everything from the repo root.
 - **Storage is JSON files.** Keep the storage layer thin and swappable — we may move to SQLite later.
 - **Tests with Vitest.** Co-locate tests as `*.test.ts` next to the code they cover.
 
+## Dependencies
+
+Keep dependencies current.
+
+- When **adding** a dependency, take the **newest full (stable) release** — not an older line, and never a pre-release/beta.
+- When an existing dependency is **out of date** (`npm outdated`), upgrade it. Put each upgrade in its **own separate commit** (one dependency per commit) so a bad bump is easy to bisect and revert.
+- After each bump run `npm run typecheck && npm test`. If an upgrade **fails** and can't be trivially fixed, **revert that commit and raise it to the user** — do not force it through or silently pin to an old version.
+
 ## Workflow
 
 - `npm run dev` runs server + client together.

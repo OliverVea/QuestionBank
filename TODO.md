@@ -35,7 +35,7 @@ Olve.Diagrams flowchart tool to render it as a Mermaid graph. Each task must be 
 3. Grading polish and robustness
   a. Extraction modal with spinner and true full stack cancel [2d]
   b. Persist the full critique transcript on the Attempt [2c][2f]
-  c. Text input extraction modality alongside image [2a]
+  c. (done) Text input extraction modality alongside image [2a]
   d. Extraction review gate before commit if misreads prove noisy [1d]
   e. Orphan image GC sweep unreferenced images older than 15 minutes [1d]
     a. Switch image filenames to time ordered UUIDv7 so creation time is self describing [1d]

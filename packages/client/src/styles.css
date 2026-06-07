@@ -116,16 +116,144 @@ button.link {
   overflow-x: auto;
 }
 
-.card { border: 1px solid #ddd; border-radius: 6px; padding: 1rem; margin: 0.5rem 0; }
-.chat { display: flex; flex-direction: column; gap: 0.5rem; margin: 0.5rem 0; }
-.msg { padding: 0.5rem 0.75rem; border-radius: 6px; }
-.msg-user { background: #eef; align-self: flex-end; }
-.msg-assistant { background: #f4f4f4; }
-.badge { display: inline-block; margin-left: 0.5rem; padding: 0 0.4rem; border-radius: 4px; font-size: 0.8rem; }
-.grade-correct { background: #cfc; }
-.grade-partial { background: #ffd; }
-.grade-incorrect { background: #fcc; }
-.learn-grade textarea { width: 100%; min-height: 4rem; }
-.learn-confirm label { display: block; margin-top: 0.5rem; font-size: 0.85rem; color: #555; }
-.image-input { display: inline-flex; gap: 0.5rem; }
-.error { color: #b00; }
+.card {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1rem;
+  margin: 0.5rem 0;
+}
+
+/* Inside a card, the qbody border would double up — suppress it. */
+.card .qbody {
+  border: none;
+  padding: 0.25rem 0;
+}
+
+.learn-suggestion-meta {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-bottom: 0.4rem;
+}
+
+.qlabel {
+  font-weight: 600;
+  margin-bottom: 0.2rem;
+}
+
+.chat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0.75rem 0;
+}
+
+.msg {
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  max-width: 90%;
+}
+
+.msg-user {
+  background: #eef;
+  align-self: flex-end;
+}
+
+.msg-assistant {
+  background: #f4f4f4;
+  align-self: flex-start;
+}
+
+.badge {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  vertical-align: middle;
+}
+
+.grade-correct { background: #d1fad1; color: #1a6b1a; }
+.grade-partial  { background: #fef9c3; color: #7a5f00; }
+.grade-incorrect { background: #fde8e8; color: #9b1c1c; }
+
+.learn-grade textarea,
+.learn-confirm textarea {
+  width: 100%;
+  min-height: 4rem;
+  padding: 0.4rem;
+  margin-top: 0.25rem;
+  font: inherit;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  resize: vertical;
+}
+
+.learn-confirm label {
+  display: block;
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.image-input {
+  display: inline-flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.btn {
+  padding: 0.4rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--fg);
+  cursor: pointer;
+  font: inherit;
+}
+
+.btn:hover {
+  background: #f0f0f0;
+}
+
+.error {
+  color: #b00;
+  margin-top: 0.25rem;
+  font-size: 0.9rem;
+}
+
+.status {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.learn-nav {
+  margin-top: 1.5rem;
+}
+
+.learn-nav h3 {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.learn-reply-row,
+.learn-rating-row {
+  margin-top: 0.75rem;
+  gap: 0.5rem;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.learn-reply {
+  flex: 1;
+  min-width: 0;
+  min-height: 3rem;
+  padding: 0.4rem;
+  font: inherit;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  resize: vertical;
+}

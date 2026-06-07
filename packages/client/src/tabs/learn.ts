@@ -272,12 +272,20 @@ export function renderGradingView(wrap: HTMLElement, question: Question, state: 
 function renderSuggestion(
   host: HTMLElement,
   question: Question,
+  chapter: { title: string; bookId: string },
+  book: { title: string },
   reload: () => void,
   openAnswer: (q: Question) => void,
 ): void {
   const card = document.createElement('div');
   card.className = 'card learn-suggestion';
   host.appendChild(card);
+
+  const meta = document.createElement('div');
+  meta.className = 'learn-suggestion-meta';
+  meta.textContent = `${book.title} — ${chapter.title}`;
+  card.appendChild(meta);
+
   renderQuestionHeader(card, question);
 
   const row = document.createElement('div');
@@ -380,8 +388,8 @@ export function renderLearn(host: HTMLElement): void {
         empty.className = 'learn-empty';
         empty.textContent = 'All caught up — nothing new to learn right now.';
         cardHost.appendChild(empty);
-      } else {
-        renderSuggestion(cardHost, next.question, reload, openAnswer);
+      } else if (next.chapter && next.book) {
+        renderSuggestion(cardHost, next.question, next.chapter, next.book, reload, openAnswer);
       }
     })();
   }

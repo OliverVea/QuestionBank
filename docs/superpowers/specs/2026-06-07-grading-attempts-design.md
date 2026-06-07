@@ -1,6 +1,11 @@
 # Grading — Attempts & the Learn tab (vertical slice)
 
-**Status:** Approved design.
+> **⚠️ SUPERSEDED** by [2026-06-07-grading-photo-answers-design.md](./2026-06-07-grading-photo-answers-design.md).
+> This version made typed answers primary and deferred photo transcription; the product
+> owner clarified that photo scanning of the handwritten answer is the core feature. Kept
+> for history.
+
+**Status:** Superseded.
 **Date:** 2026-06-07
 **Parent:** [Question Bank — System Architecture](./2026-06-06-question-bank-architecture.md) (the "Grading" sub-project).
 

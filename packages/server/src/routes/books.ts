@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { newId, nowIso } from '../domain/ids.js';
 import type { Book } from '../domain/types.js';
 import { deleteBookCascade } from '../services/cascade.js';
+import { buildBookTree } from '../services/tree.js';
 import type { Store } from '../storage/store.js';
 
 export function booksRouter(store: Store): Router {
@@ -27,6 +28,15 @@ export function booksRouter(store: Store): Router {
         : {}),
     };
     res.status(201).json(store.books.create(book));
+  });
+
+  router.get('/:id/tree', (req, res) => {
+    const tree = buildBookTree(store, req.params.id);
+    if (!tree) {
+      res.status(404).json({ error: 'not found' });
+      return;
+    }
+    res.json(tree);
   });
 
   router.get('/:id', (req, res) => {

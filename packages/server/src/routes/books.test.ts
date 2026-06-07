@@ -64,4 +64,17 @@ describe('books routes', () => {
     const list = await request(app).get('/api/books');
     expect(list.body).toHaveLength(0);
   });
+
+  it('GET :id/tree returns the book with nested chapters and questions', async () => {
+    const bookId = (await request(app).post('/api/books').send({ title: 'Tree' })).body.id;
+    const chapterId = (
+      await request(app).post(`/api/books/${bookId}/chapters`).send({ title: 'Ch' })
+    ).body.id;
+    await request(app).post(`/api/chapters/${chapterId}/questions`).send({ canonicalText: 'x' });
+
+    const res = await request(app).get(`/api/books/${bookId}/tree`);
+    expect(res.status).toEqual(200);
+    expect(res.body.chapters).toHaveLength(1);
+    expect(res.body.chapters[0].questions).toHaveLength(1);
+  });
 });

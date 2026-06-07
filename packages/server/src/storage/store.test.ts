@@ -15,11 +15,30 @@ afterEach(async () => {
 });
 
 describe('Store', () => {
-  it('opens three empty collections in a fresh data dir', async () => {
+  it('opens four empty collections in a fresh data dir', async () => {
     const store = await Store.open(dir);
     expect(store.books.getAll()).toEqual([]);
     expect(store.chapters.getAll()).toEqual([]);
     expect(store.questions.getAll()).toEqual([]);
+    expect(store.attempts.getAll()).toEqual([]);
+  });
+
+  it('opens an attempts collection that round-trips', async () => {
+    const store = await Store.open(dir);
+    const created = store.attempts.create({
+      id: 'a1',
+      questionId: 'q1',
+      imagePaths: ['images/x.jpg'],
+      answerText: 'x',
+      transcription: 'z^3 = 1',
+      recommendedGrade: 'partial',
+      rating: 'correct',
+      critiqueText: 'nice',
+      createdAt: '2026-06-07T00:00:00.000Z',
+    });
+    expect(created.id).toEqual('a1');
+    expect(store.attempts.getAll()).toHaveLength(1);
+    expect(store.attempts.getAll()[0]?.imagePaths).toEqual(['images/x.jpg']);
   });
 
   it('persists each entity type to its own file', async () => {

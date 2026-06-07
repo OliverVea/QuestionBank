@@ -1,0 +1,115 @@
+:root {
+  --bg: #fff;
+  --fg: #1a1a1a;
+  --muted: #666;
+  --border: #ddd;
+  --accent: #2563eb;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  color: var(--fg);
+  background: var(--bg);
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.tab-panels {
+  flex: 1;
+  padding: 1rem;
+}
+
+.tab-bar {
+  display: flex;
+  border-top: 1px solid var(--border);
+}
+
+.tab-bar button {
+  flex: 1;
+  padding: 0.75rem;
+  border: none;
+  background: none;
+  font-size: 1rem;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.tab-bar button.active {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* PC: tabs on top */
+@media (min-width: 768px) {
+  #app {
+    flex-direction: column-reverse;
+  }
+  .tab-bar {
+    border-top: none;
+    border-bottom: 1px solid var(--border);
+  }
+}
+
+.row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.row .grow {
+  flex: 1;
+}
+
+button.link {
+  background: none;
+  border: none;
+  color: var(--accent);
+  cursor: pointer;
+  padding: 0;
+  font: inherit;
+}
+
+.add-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.add-row input {
+  flex: 1;
+  padding: 0.4rem;
+}
+
+.crumb {
+  color: var(--muted);
+  margin-bottom: 0.75rem;
+}
+
+.crumb button {
+  background: none;
+  border: none;
+  color: var(--accent);
+  cursor: pointer;
+  padding: 0;
+  font: inherit;
+}
+
+pre.latex {
+  margin: 0;
+  white-space: pre-wrap;
+  font-family: ui-monospace, monospace;
+  background: #f6f6f6;
+  padding: 0.3rem 0.5rem;
+  border-radius: 4px;
+}

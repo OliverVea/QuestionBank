@@ -4,6 +4,8 @@ import { join } from 'node:path';
 import request from 'supertest';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createApp } from '../index.js';
+import { FakeProvider } from '../llm/fake-provider.js';
+import { ImageStore } from '../storage/images.js';
 import { Store } from '../storage/store.js';
 
 let dir: string;
@@ -12,7 +14,7 @@ let app: Awaited<ReturnType<typeof createApp>>;
 beforeEach(async () => {
   dir = await mkdtemp(join(tmpdir(), 'qb-books-'));
   const store = await Store.open(dir);
-  app = createApp(store);
+  app = createApp(store, new FakeProvider(), new ImageStore(dir));
 });
 
 afterEach(async () => {

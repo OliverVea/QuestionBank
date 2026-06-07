@@ -6,6 +6,9 @@ import { fileURLToPath } from 'node:url';
 import { booksRouter } from './routes/books.js';
 import { bookChaptersRouter, chaptersRouter } from './routes/chapters.js';
 import { chapterQuestionsRouter, questionsRouter } from './routes/questions.js';
+import { ClaudeCliProvider } from './llm/claude-cli-provider.js';
+import type { LlmProvider } from './llm/provider.js';
+import { ImageStore } from './storage/images.js';
 import { Store } from './storage/store.js';
 
 const PORT = Number(process.env.PORT ?? 3001);
@@ -15,7 +18,7 @@ const PORT = Number(process.env.PORT ?? 3001);
 const DATA_DIR = process.env.QB_DATA_DIR ?? join(homedir(), '.question-bank');
 
 /** Build the Express app over a given store. Exported so tests can mount it without a port. */
-export function createApp(store: Store): Express {
+export function createApp(store: Store, provider: LlmProvider, imageStore: ImageStore): Express {
   const app = express();
   app.use(express.json());
 
@@ -26,7 +29,7 @@ export function createApp(store: Store): Express {
   app.use('/api/books', booksRouter(store));
   app.use('/api/books/:bookId/chapters', bookChaptersRouter(store));
   app.use('/api/chapters', chaptersRouter(store));
-  app.use('/api/chapters/:chapterId/questions', chapterQuestionsRouter(store));
+  app.use('/api/chapters/:chapterId/questions', chapterQuestionsRouter(store, provider, imageStore));
   app.use('/api/questions', questionsRouter(store));
 
   return app;
@@ -34,7 +37,9 @@ export function createApp(store: Store): Express {
 
 async function main(): Promise<void> {
   const store = await Store.open(DATA_DIR);
-  const app = createApp(store);
+  const imageStore = new ImageStore(DATA_DIR);
+  const provider = new ClaudeCliProvider(imageStore.directory);
+  const app = createApp(store, provider, imageStore);
   app.listen(PORT, () => {
     console.log(`[server] listening on http://localhost:${PORT}`);
     console.log(`[server] data dir: ${DATA_DIR}`);

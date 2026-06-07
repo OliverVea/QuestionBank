@@ -4,6 +4,8 @@ import { join } from 'node:path';
 import request from 'supertest';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createApp } from '../index.js';
+import { FakeProvider } from '../llm/fake-provider.js';
+import { ImageStore } from '../storage/images.js';
 import { Store } from '../storage/store.js';
 
 let dir: string;
@@ -13,7 +15,7 @@ let chapterId: string;
 beforeEach(async () => {
   dir = await mkdtemp(join(tmpdir(), 'qb-questions-'));
   const store = await Store.open(dir);
-  app = createApp(store);
+  app = createApp(store, new FakeProvider(), new ImageStore(dir));
   const bookId = (await request(app).post('/api/books').send({ title: 'Book' })).body.id;
   chapterId = (await request(app).post(`/api/books/${bookId}/chapters`).send({ title: 'Ch' })).body
     .id;

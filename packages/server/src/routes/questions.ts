@@ -1,11 +1,32 @@
 import { Router } from 'express';
+import multer from 'multer';
 import { newId, nowIso } from '../domain/ids.js';
 import type { Question } from '../domain/types.js';
+import { extractionPrompt, extractionSchema } from '../llm/extraction-contract.js';
+import { LlmError, type LlmProvider } from '../llm/provider.js';
+import type { ImageStore } from '../storage/images.js';
 import type { Store } from '../storage/store.js';
 
-/** Nested under /api/chapters/:chapterId/questions — list + manual create. */
-export function chapterQuestionsRouter(store: Store): Router {
+/** Map a known image mimetype to a file extension; undefined ⇒ not an accepted image. */
+function imageExt(mimetype: string): string | undefined {
+  const map: Record<string, string> = {
+    'image/png': 'png',
+    'image/jpeg': 'jpg',
+    'image/webp': 'webp',
+    'image/gif': 'gif',
+  };
+  return map[mimetype];
+}
+
+/** Nested under /api/chapters/:chapterId/questions — list, manual create, and extract-from-image. */
+export function chapterQuestionsRouter(
+  store: Store,
+  provider: LlmProvider,
+  imageStore: ImageStore,
+): Router {
   const router = Router({ mergeParams: true });
+  // Memory storage: we read the buffer ourselves and hand it to ImageStore.
+  const upload = multer({ storage: multer.memoryStorage() });
 
   router.get('/', (req, res) => {
     const chapterId = (req.params as { chapterId: string }).chapterId;
@@ -33,6 +54,54 @@ export function chapterQuestionsRouter(store: Store): Router {
       ...(typeof label === 'string' && label.trim() !== '' ? { label: label.trim() } : {}),
     };
     res.status(201).json(store.questions.create(question));
+  });
+
+  router.post('/extract', upload.single('image'), async (req, res) => {
+    const chapterId = (req.params as { chapterId: string }).chapterId;
+    if (!store.chapters.getById(chapterId)) {
+      res.status(404).json({ error: 'chapter not found' });
+      return;
+    }
+    const file = req.file;
+    if (!file) {
+      res.status(400).json({ error: 'an image file is required' });
+      return;
+    }
+    const ext = imageExt(file.mimetype);
+    if (!ext) {
+      res.status(400).json({ error: 'upload must be an image (png, jpeg, webp, gif)' });
+      return;
+    }
+
+    // Store the image first; it is retained even if extraction fails (lets the user retry).
+    const { imagePath, absolutePath } = await imageStore.save(file.buffer, ext);
+
+    let extracted;
+    try {
+      extracted = await provider.extractQuestionsFromImage({
+        imagePath: absolutePath,
+        prompt: extractionPrompt,
+        schema: extractionSchema,
+      });
+    } catch (err) {
+      if (err instanceof LlmError) {
+        res.status(502).json({ error: 'extraction failed' });
+        return;
+      }
+      throw err;
+    }
+
+    const created = extracted.map((q) =>
+      store.questions.create({
+        id: newId(),
+        chapterId,
+        canonicalText: q.canonicalText,
+        source: { kind: 'image', imagePath },
+        createdAt: nowIso(),
+        ...(q.label && q.label.trim() !== '' ? { label: q.label.trim() } : {}),
+      }),
+    );
+    res.status(201).json(created);
   });
 
   return router;

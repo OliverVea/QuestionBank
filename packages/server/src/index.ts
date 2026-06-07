@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { argv } from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { booksRouter } from './routes/books.js';
+import { bookChaptersRouter, chaptersRouter } from './routes/chapters.js';
 import { Store } from './storage/store.js';
 
 const PORT = Number(process.env.PORT ?? 3001);
@@ -18,6 +19,8 @@ export function createApp(store: Store): Express {
   });
 
   app.use('/api/books', booksRouter(store));
+  app.use('/api/books/:bookId/chapters', bookChaptersRouter(store));
+  app.use('/api/chapters', chaptersRouter(store));
 
   return app;
 }

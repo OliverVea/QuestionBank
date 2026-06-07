@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { newId, nowIso } from '../domain/ids.js';
 import type { Book } from '../domain/types.js';
+import { deleteBookCascade } from '../services/cascade.js';
 import type { Store } from '../storage/store.js';
 
 export function booksRouter(store: Store): Router {
@@ -51,7 +52,7 @@ export function booksRouter(store: Store): Router {
   });
 
   router.delete('/:id', (req, res) => {
-    store.books.delete(req.params.id);
+    deleteBookCascade(store, req.params.id);
     res.status(204).end();
   });
 

@@ -129,10 +129,15 @@ button.link {
   padding: 0.25rem 0;
 }
 
-.learn-suggestion-meta {
+.learn-suggestion-meta,
+.practice-meta {
   font-size: 0.8rem;
   color: var(--muted);
   margin-bottom: 0.4rem;
+}
+
+.practice-empty {
+  color: var(--muted);
 }
 
 .qlabel {

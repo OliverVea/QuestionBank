@@ -53,9 +53,9 @@ Olve.Diagrams flowchart tool to render it as a Mermaid graph. Each task must be 
   b. Show more detailed per book stats [5a]
 
 6. Spaced repetition Practice tab
-  a. Pure due scheduler one week then one month and only full advances [2c]
-  b. ReviewEntry immutable history with derived nextReviewDate on Question [6a]
-  c. Due queue and Practice tab UI that surfaces what to review now [6a][6b]
+  a. (done) Pure due scheduler one week then one month and only full advances [2c]
+  b. (done) ReviewEntry immutable history with derived nextReviewDate on Question [2c]
+  c. (done) Due queue and Practice tab UI that surfaces what to review now [6a][6b]
   d. Prioritization function ordering due questions weighted by relevance [6c][7a]
   e. Tune the SRS algorithm once real data exists [6c]
 

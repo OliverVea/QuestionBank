@@ -3,6 +3,7 @@ import type {
   Book,
   BookTree,
   Chapter,
+  DueItem,
   Grade,
   GradeTurn,
   GradingIssue,
@@ -130,4 +131,5 @@ export const api = {
     fetch('/api/learn/next').then((r) =>
       json<{ question: Question | null } & Partial<LearnNext>>(r),
     ),
+  getPracticeDue: () => fetch('/api/practice/due').then((r) => json<DueItem[]>(r)),
 };

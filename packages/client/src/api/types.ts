@@ -75,6 +75,19 @@ export interface LearnNext {
   chapter: Chapter;
 }
 
+export interface ReviewSchedule {
+  step: number;
+  lastReviewedAt: string;
+  nextReviewDate: string;
+}
+
+export interface DueItem {
+  question: Question;
+  book: Book;
+  chapter: Chapter;
+  schedule: ReviewSchedule;
+}
+
 export interface ChapterTree extends Chapter {
   questions: Question[];
 }

@@ -10,6 +10,7 @@ import { questionAttemptsRouter } from './routes/attempts.js';
 import { questionTranscribeRouter } from './routes/transcribe.js';
 import { questionGradeRouter } from './routes/grade.js';
 import { learnRouter } from './routes/learn.js';
+import { practiceRouter } from './routes/practice.js';
 import { AnthropicApiProvider } from './llm/anthropic-api-provider.js';
 import type { LlmProvider } from './llm/provider.js';
 import { errorLogger, requestLogger } from './logging/http.js';
@@ -41,6 +42,7 @@ export function createApp(store: Store, provider: LlmProvider, imageStore: Image
   app.use('/api/questions/:id/transcribe', questionTranscribeRouter(store, provider, imageStore, imageStore.dataDir));
   app.use('/api/questions/:id/grade', questionGradeRouter(store, provider));
   app.use('/api/learn', learnRouter(store));
+  app.use('/api/practice', practiceRouter(store));
   app.use('/api/questions', questionsRouter(store));
 
   app.use(errorLogger);

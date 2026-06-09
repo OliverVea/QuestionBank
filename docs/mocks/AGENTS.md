@@ -25,6 +25,18 @@ for a new screen:
 The goal: a growing, consistent little component library, not N divergent
 copies of the same button.
 
+### JS: keep it inline and disposable
+
+The same "lift it up" instinct applies far less to JavaScript here. These are
+**mocks** — most of their JS is per-screen demo data and throwaway stubs
+(`alert('→ open book')`), and real interaction logic belongs in the actual
+client, not a polished mock helper. So keep mock JS **inline and disposable**;
+don't build a shared interactivity library pre-emptively. The one exception is
+genuinely cross-page chrome — like `footer.js` — which earned a shared file
+because it repeats on every page. If another truly reusable interactive
+pattern shows up across multiple mocks, lift it into a shared script the same
+way; otherwise, leave it inline.
+
 ### What currently lives in `mocks.css` (shared)
 
 - **Design tokens** — `:root` color variables (base + `--revisit`/`--learn`

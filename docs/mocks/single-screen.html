@@ -4,243 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Question Bank — Single Screen Mock</title>
-  <style>
-    :root {
-      --bg: #fff;
-      --fg: #1a1a1a;
-      --muted: #666;
-      --border: #ddd;
-
-      --revisit: #2563eb;       /* blue */
-      --revisit-dark: #1d4ed8;
-      --learn: #16a34a;         /* green */
-      --learn-dark: #15803d;
-    }
-
-    * { box-sizing: border-box; }
-    html, body { height: 100%; }
-
-    body {
-      margin: 0;
-      font-family: system-ui, sans-serif;
-      color: var(--fg);
-      background: var(--bg);
-    }
-
-    /* One-screen shell: stacked regions, only the library list scrolls */
-    .app {
-      height: 100dvh;
-      display: grid;
-      grid-template-rows: auto auto 1fr;
-      overflow: hidden;
-      max-width: 760px;
-      margin: 0 auto;
-    }
-
-    /* ---- Action banners ---- */
-    .banner {
-      position: relative;        /* anchor the watermark icon */
-      overflow: hidden;          /* clip the oversized outline glyph */
-      border: 1px solid var(--icon-stroke);
-      cursor: pointer;
-      font: inherit;
-      text-align: left;
-      color: #fff;
-      padding: 1.25rem 1.4rem;
-      margin: 0.25rem 0.3rem 0;
-      border-radius: 14px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
-      display: flex;
-      align-items: center;
-      gap: 0.85rem;
-    }
-    .banner:not(.empty) { cursor: pointer; }
-    .banner:not(.empty):hover { filter: brightness(1.05); }
-
-    /* Large line-art icon, darker tone, sitting behind the text */
-    .banner .b-icon {
-      position: absolute;
-      right: 0.9rem;
-      top: 50%;
-      transform: translateY(-50%);
-      height: 85%;                 /* ~85% of the banner's height */
-      aspect-ratio: 1;             /* keep the icon square */
-      pointer-events: none;
-      color: var(--icon-stroke);   /* SVG strokes inherit via currentColor */
-      opacity: 0.55;
-    }
-    .banner .b-icon svg { width: 100%; height: 100%; display: block; }
-    .banner .b-text {
-      flex: 1;
-      min-width: 0;               /* allow the title to truncate */
-      position: relative;
-      z-index: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 0.1rem;
-    }
-    .banner .b-eyebrow {
-      font-size: 0.78rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      opacity: 0.85;
-    }
-    .banner .b-title {
-      font-size: 1.15rem;
-      font-weight: 700;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-
-    .banner.revisit { background: var(--revisit); --icon-stroke: var(--revisit-dark); }
-    .banner.learn { background: var(--learn); --icon-stroke: var(--learn-dark); }
-
-    /* Disabled / nothing-to-do state keeps the banner but softens it */
-    .banner.empty {
-      background: #f3f4f6;
-      color: var(--muted);
-      cursor: default;
-      --icon-stroke: #cbd5e1;
-    }
-    .banner.empty:hover { filter: none; }
-
-    /* ---- Library ---- */
-    .library {
-      min-height: 0;
-      overflow-y: auto;
-      padding: 0.75rem 0 0.5rem;
-    }
-    .library-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0.9rem 1.25rem 0.4rem;
-    }
-    .library h2 {
-      margin: 0;
-      font-size: 0.78rem;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--muted);
-    }
-    .edit-btn {
-      flex: none;
-      border: none;
-      background: none;
-      padding: 0.2rem;
-      cursor: pointer;
-      color: var(--muted);
-      line-height: 0;
-      border-radius: 6px;
-    }
-    .edit-btn svg { width: 1.1rem; height: 1.1rem; display: block; }
-    .edit-btn:hover { background: #eee; color: var(--fg); }
-
-    .book {
-      display: grid;
-      grid-template-columns: 64px 1fr auto;
-      grid-template-areas:
-        "icon title  ready-num"
-        "icon author ready-lbl";
-      column-gap: 1rem;
-      padding: 0.85rem 1.25rem;
-      border-bottom: 1px solid var(--border);
-      cursor: pointer;
-      align-items: center;
-    }
-    .book:hover { background: #f7f9ff; }
-
-    .book .b-cover {
-      grid-area: icon;
-      align-self: center;
-      width: auto;                /* width follows the cover's real aspect ratio */
-      height: 68px;
-      max-width: 64px;            /* clamp very wide covers so the row stays sane */
-      justify-self: center;       /* center within the fixed cover column */
-      border-radius: 3px;
-      object-fit: contain;        /* show the whole cover, don't crop to a shape */
-      background: #e5e7eb;        /* placeholder tone while loading / on error */
-      box-shadow: 3px 4px 7px rgba(0, 0, 0, 0.3);
-      display: block;
-    }
-    /* Fallback tile shown when the cover image fails to load */
-    .book .b-cover-fallback {
-      grid-area: icon;
-      align-self: center;
-      justify-self: center;
-      width: max-content;          /* grow to fit the longest word… */
-      min-width: 40px;
-      max-width: 58px;             /* …but stay slim like a real spine */
-      height: 68px;
-      border-radius: 3px;
-      box-shadow: 3px 4px 7px rgba(0, 0, 0, 0.3);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 3px 2px;
-      overflow: hidden;
-    }
-    .book .b-cover-fallback span {
-      display: block;
-      text-align: center;
-      font-size: 0.55rem;
-      font-weight: 600;
-      line-height: 1.2;
-      color: #fff;
-      overflow: hidden;
-      overflow-wrap: anywhere;     /* wrap only if a word exceeds max-width */
-      max-height: 100%;
-    }
-
-    .book .b-title2 { grid-area: title; font-size: 1.05rem; font-weight: 600; }
-    .book .b-author { grid-area: author; font-size: 0.85rem; color: var(--muted); margin-top: 0.15rem; }
-
-    .book .ready-num {
-      grid-area: ready-num;
-      justify-self: end;
-      font-size: 1.05rem;
-      font-weight: 700;
-      color: var(--revisit);
-    }
-    .book .ready-num.none { color: var(--border); }
-    .book .ready-lbl {
-      grid-area: ready-lbl;
-      justify-self: end;
-      font-size: 0.72rem;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      color: var(--muted);
-      margin-top: 0.15rem;
-    }
-
-    /* ---- Add-book footer ---- */
-    .add-book {
-      display: flex;
-      align-items: center;
-      gap: 0.7rem;
-      width: 100%;
-      border: none;
-      border-top: 1px solid var(--border);
-      background: #fafafa;
-      color: var(--fg);
-      font: inherit;
-      font-weight: 600;
-      padding: 0.9rem 1.25rem;
-      cursor: pointer;
-    }
-    .add-book:hover { background: #f0f4ff; color: var(--revisit); }
-    .add-book .plus {
-      flex: none;
-      width: 1.9rem;
-      height: 1.9rem;
-      line-height: 0;
-      color: var(--revisit);
-    }
-    .add-book .plus svg { width: 100%; height: 100%; display: block; }
-  </style>
+  <link rel="stylesheet" href="mocks.css" />
+  <link rel="stylesheet" href="single-screen.css" />
 </head>
 <body>
   <div class="app">
@@ -256,8 +21,8 @@
         </svg>
       </span>
       <span class="b-text">
-        <span class="b-eyebrow">Revisit:</span>
-        <span class="b-title" id="revisit-title">5 problems ready for you</span>
+        <span class="b-eyebrow" id="revisit-eyebrow">Revisit: 5 problems waiting</span>
+        <span class="b-cta" id="revisit-cta">Make it stick<span class="b-arrow" aria-hidden="true">→</span></span>
       </span>
     </button>
 
@@ -273,8 +38,8 @@
         </svg>
       </span>
       <span class="b-text">
-        <span class="b-eyebrow">Next up:</span>
-        <span class="b-title" id="learn-title">Griffiths 2A — How many qua…</span>
+        <span class="b-eyebrow" id="learn-eyebrow">Next up: Griffiths 2A</span>
+        <span class="b-cta" id="learn-cta">Grow your knowledge<span class="b-arrow" aria-hidden="true">→</span></span>
       </span>
     </button>
 
@@ -311,11 +76,11 @@
       revisitCount: 5,
       learnNext: { context: 'Griffiths 2A', preview: 'How many quantized energy levels…' },
       books: [
-        { title: 'Introduction to Quantum Mechanics', author: 'David J. Griffiths', ready: 3, isbn: '9781107179868' },
-        { title: 'Calculus', author: 'Michael Spivak', ready: 2, isbn: '9780914098911' },
-        { title: 'Linear Algebra Done Right', author: 'Sheldon Axler', ready: 0, isbn: '9783319110790' },
-        { title: 'Classical Mechanics', author: 'John R. Taylor', ready: 0, isbn: '9781891389221' },
-        { title: 'Mathematical Methods for Physicists', author: 'Arfken & Weber', ready: 0, isbn: '9780123846549' },
+        { title: 'Introduction to Quantum Mechanics', author: 'David J. Griffiths', ready: 3, progress: 42, isbn: '9781107179868' },
+        { title: 'Calculus', author: 'Michael Spivak', ready: 2, progress: 68, isbn: '9780914098911' },
+        { title: 'Linear Algebra Done Right', author: 'Sheldon Axler', ready: 0, progress: 100, isbn: '9783319110790' },
+        { title: 'Classical Mechanics', author: 'John R. Taylor', ready: 0, progress: 15, isbn: '9781891389221' },
+        { title: 'Mathematical Methods for Physicists', author: 'Arfken & Weber', ready: 0, progress: 0, isbn: '9780123846549' },
       ],
     };
 
@@ -323,23 +88,25 @@
     const revisitBanner = document.getElementById('revisit-banner');
     if (data.revisitCount > 0) {
       const n = data.revisitCount;
-      document.getElementById('revisit-title').textContent =
-        `${n} problem${n === 1 ? '' : 's'} ready for you`;
+      document.getElementById('revisit-eyebrow').textContent =
+        `Revisit: ${n} problem${n === 1 ? '' : 's'} waiting`;
       revisitBanner.addEventListener('click', () => alert('→ open the Revisit queue'));
     } else {
       revisitBanner.classList.add('empty');
-      document.getElementById('revisit-title').textContent = 'All caught up';
+      document.getElementById('revisit-eyebrow').textContent = 'Revisit';
+      document.getElementById('revisit-cta').textContent = 'All caught up';
     }
 
     // ---- Learn banner ----
     const learnBanner = document.getElementById('learn-banner');
     if (data.learnNext) {
-      document.getElementById('learn-title').textContent =
-        `${data.learnNext.context} — ${data.learnNext.preview}`;
+      document.getElementById('learn-eyebrow').textContent =
+        `Next up: ${data.learnNext.context}`;
       learnBanner.addEventListener('click', () => alert('→ open the Learn flow'));
     } else {
       learnBanner.classList.add('empty');
-      document.getElementById('learn-title').textContent = 'Nothing new right now';
+      document.getElementById('learn-eyebrow').textContent = 'Learn';
+      document.getElementById('learn-cta').textContent = 'Nothing new right now';
     }
 
     // ---- Library ----
@@ -432,11 +199,11 @@
       const author = title.nextElementSibling;
 
       const num = document.createElement('div');
-      num.className = 'ready-num' + (b.ready === 0 ? ' none' : '');
-      num.textContent = b.ready;
+      num.className = 'ready-num' + (b.progress === 0 ? ' none' : '');
+      num.textContent = `${b.progress}%`;
       const lbl = document.createElement('div');
       lbl.className = 'ready-lbl';
-      lbl.textContent = b.ready === 0 ? '—' : 'ready';
+      lbl.textContent = b.ready === 0 ? '—' : `${b.ready} ready`;
 
       row.append(placeholder, title, author, num, lbl);
       row.addEventListener('click', () => alert('→ open book: ' + b.title));

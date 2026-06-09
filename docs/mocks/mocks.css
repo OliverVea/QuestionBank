@@ -1,0 +1,23 @@
+/* Shared across all Question Bank mocks: design tokens + base reset.
+   Screen-specific layout lives in its own stylesheet (e.g. single-screen.css). */
+:root {
+  --bg: #fff;
+  --fg: #1a1a1a;
+  --muted: #666;
+  --border: #ddd;
+
+  --revisit: #2563eb;       /* blue */
+  --revisit-dark: #1d4ed8;
+  --learn: #16a34a;         /* green */
+  --learn-dark: #15803d;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  color: var(--fg);
+  background: var(--bg);
+}

@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Question Bank — Mocks</title>
+  <link rel="stylesheet" href="mocks.css" />
+  <style>
+    .gallery {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 1.5rem 1rem 3rem;
+    }
+    .gallery h1 {
+      font-size: 1.4rem;
+      margin: 0.5rem 0 0.25rem;
+    }
+    .gallery p.lead {
+      color: var(--muted);
+      margin: 0 0 1.5rem;
+    }
+    .mock-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .mock-link {
+      display: block;
+      text-decoration: none;
+      color: inherit;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.1rem 1.25rem;
+      background: #fafafa;
+      -webkit-tap-highlight-color: transparent;
+      transition: background 0.12s ease, transform 0.08s ease;
+    }
+    .mock-link:active { transform: scale(0.99); background: #eef3ff; }
+    @media (hover: hover) {
+      .mock-link:hover { background: #f0f4ff; }
+    }
+    .mock-link .m-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+    .mock-link .m-desc {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-top: 0.2rem;
+    }
+  </style>
+</head>
+<body>
+  <main class="gallery">
+    <h1>Question Bank — Mocks</h1>
+    <p class="lead">Phone-first UI mocks. Open on a narrow viewport (or device toolbar) for the intended look.</p>
+    <ul class="mock-list">
+      <li>
+        <a class="mock-link" href="single-screen.html">
+          <div class="m-title">Single screen — Home</div>
+          <div class="m-desc">Revisit &amp; Learn banners, library list with cover art, add-a-book footer.</div>
+        </a>
+      </li>
+    </ul>
+  </main>
+</body>
+</html>

@@ -1,0 +1,70 @@
+# AGENTS.md — mocks
+
+Guidance for agents working on the UI mocks in `docs/mocks/`. These are
+static HTML/CSS/JS prototypes of screens, used to design before building the
+real client. See the repo-root `AGENTS.md` for project-wide rules.
+
+## Treat this as a small CSS library — don't copy-paste
+
+`mocks.css` is the **shared stylesheet** for every mock. Before adding styles
+for a new screen:
+
+1. **Read the existing CSS first** — `mocks.css` and every `*-screen.css` /
+   per-screen stylesheet already present. Know what's there before writing.
+2. **Reuse what exists.** If a component (banner, card, list row, pill, press
+   feedback) already fits, use its class — don't restyle from scratch.
+3. **Lift reusable components up.** When two or more mocks need the same
+   visual pattern, **promote it into `mocks.css`** under a documented class
+   and use it from each screen. Keep only genuinely screen-specific layout in
+   the per-screen file.
+4. **Use the design tokens.** Colors, etc. come from the `:root` variables in
+   `mocks.css` (`--fg`, `--muted`, `--border`, `--revisit`, `--learn`, …).
+   Don't hard-code hex values that duplicate a token — add a token if one is
+   missing.
+
+The goal: a growing, consistent little component library, not N divergent
+copies of the same button.
+
+### What currently lives in `mocks.css` (shared)
+
+- **Design tokens** — `:root` color variables (base + `--revisit`/`--learn`
+  accents and their `-dark` variants).
+- **Base reset** — `box-sizing`, full-height `html/body`, base typography.
+- **`.mock-footer`** — the floating "← Back to gallery" pill, injected by
+  `footer.js`.
+
+Screen-specific layout (the `.app` shell, `.banner`, `.book` rows, etc.)
+lives in `single-screen.css`. If you find yourself reaching for one of those
+on a *second* screen, that's the signal to lift it into `mocks.css`.
+
+## Phone-first
+
+These mocks are **primarily for phone use**. Design mobile-first:
+
+- Touch-sized tap targets; thumb-reachable actions; single-column layouts.
+- Provide **`:active` press feedback** — it's the real cue on touch.
+- Gate hover effects behind `@media (hover: hover)` so they don't stick after
+  a tap on touchscreens. Treat hover as desktop-only enhancement.
+- Use `100dvh` for full-height shells and `env(safe-area-inset-*)` for fixed
+  elements near screen edges.
+
+## No server — runs from `file://`
+
+Mocks are opened directly in a browser (`file://`), no dev server. So:
+
+- **HTML includes / `fetch()` of local files are blocked by CORS.** To share
+  markup across pages, inject it with a small shared script (see `footer.js`),
+  styled by a shared class in `mocks.css`. Don't reach for a build step or a
+  server.
+- External assets that *do* need the network (e.g. Open Library covers) must
+  degrade gracefully offline.
+
+## Adding a new mock
+
+1. Create `<name>.html`; link `mocks.css` first, then a `<name>.css` for
+   screen-specific layout.
+2. Reuse shared components; lift anything reusable into `mocks.css`.
+3. Add `<script src="footer.js" defer></script>` before `</body>` for the
+   back-to-gallery pill.
+4. Add a link to it in `index.html` (the gallery).
+5. Check it on a narrow viewport before calling it done.

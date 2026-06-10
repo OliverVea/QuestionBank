@@ -1,11 +1,8 @@
 /* Single-screen home layout. Shared tokens + base reset come from mocks.css. */
 
-/* The home screen is a fixed one-screen shell: the PAGE never scrolls, only the
-   library list inside it does. Lock the document so there's no page-level
-   scroll/over-scroll and it can't start nudged down. */
-html, body { overflow: hidden; height: 100%; }
-
-/* One-screen shell: stacked regions, only the library list scrolls */
+/* One-screen shell: exactly the viewport height, clips its own overflow, and
+   only the library list (the 1fr row) scrolls inside it. Page-level rubber-band
+   is handled by `overscroll-behavior: none` on the body in mocks.css. */
 .app {
   height: 100dvh;
   display: grid;

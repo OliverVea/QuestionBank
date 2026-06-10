@@ -117,7 +117,11 @@
       "Bash(rmdir scripts *)",
       "Bash(rm -rf .certs)",
       "Bash(ls scripts *)",
-      "Bash(grep -c \"html, body { overflow: hidden\")"
+      "Bash(grep -c \"html, body { overflow: hidden\")",
+      "Bash('/c/Program Files/Google/Chrome/Application/chrome.exe' --headless --disable-gpu --enable-logging=stderr --v=0 --virtual-time-budget=4000 --dump-dom http://localhost:4173/index.html)",
+      "Bash(grep -o 'id=\"books\"[^>]*>.\\\\{0,80\\\\}' /tmp/idx-dom.html)",
+      "Bash('/c/Program Files/Google/Chrome/Application/chrome.exe' --headless --disable-gpu --enable-logging=stderr --v=1 --virtual-time-budget=4000 --dump-dom http://localhost:4173/index.html)",
+      "Bash(awk '/<script>/{f=1;next} /<\\\\/script>/{if\\(f\\){f=0}} f' docs/mocks/index.html)"
     ],
     "deny": [
       "Read(//c/Users/olive/QuestionBank/node_modules/**)",

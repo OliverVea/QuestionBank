@@ -57,6 +57,7 @@ Olve.Diagrams flowchart tool to render it as a Mermaid graph. Each task must be 
 5. Stats and progress
   a. Show book stats in Manage as percent completed [2c]
   b. Show more detailed per book stats [5a]
+  c. (done) Record activity in v0 for backwards compatible history attempts and reviews carry createdAt so future stats read real history [2c]
 
 6. Spaced repetition Practice tab
   a. (done) Pure due scheduler one week then one month and only full advances [2c]

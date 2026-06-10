@@ -43,6 +43,7 @@ Olve.Diagrams flowchart tool to render it as a Mermaid graph. Each task must be 
     c. Mark is the union of all references then sweep deletes unreferenced files past the grace window [3eb]
     d. Grace window covers the transcribe save to attempt commit gap and reclaims deleted entity leftovers [3ec]
   f. Markdown beyond the observed subset such as lists headings and tables [1e]
+  g. Edit an earlier chat message and revert the conversation to that point then regrade [2h]
 
 4. Past attempt visibility on the question card
   a. Show past attempts on the question card [2c]
@@ -67,10 +68,12 @@ Olve.Diagrams flowchart tool to render it as a Mermaid graph. Each task must be 
 8. Single screen layout
   a. Page outline is always one screen and anything scrollable is a sub element [1a]
   b. Single screen with a top banner toggling Learn and Practice [2h][6c][8a]
+  c. Switch the active book for Learn and Practice with arrows that show only when alternative books exist [8b]
 
 9. Book metadata ingestion
   a. Scrape book title author year and edition from ISBN [1c]
   b. Scan book sections from index pages when ISBN lookup is insufficient [2a][9a]
+  c. Take pictures of index or contents pages and have the LLM populate chapters and sections [2a][9b]
 
 10. Backups designed and deferred
   a. JSON BackupStore snapshot and restore all data files and images [1b]
@@ -86,3 +89,9 @@ Olve.Diagrams flowchart tool to render it as a Mermaid graph. Each task must be 
 
 13. Deployment future
   a. Docker image for the server with CLI in container auth as the open catch [1b]
+
+14. Whiteboard solution input
+  a. In app whiteboard to draw a solution as an answer modality alongside photo and text [2d]
+  b. Endless scrolling canvas so the drawing surface grows as needed [14a]
+  c. Zoom in and out on the canvas [14a]
+  d. Support rotating the phone 90 degrees to landscape for more room to work [14a]

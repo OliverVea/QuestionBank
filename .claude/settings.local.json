@@ -94,7 +94,8 @@
       "Bash(echo \"started, pid $!\")",
       "Bash('/c/Program Files/Google/Chrome/Application/chrome.exe' --headless --disable-gpu --hide-scrollbars --window-size=420,860 --virtual-time-budget=4000 --screenshot=/tmp/final-learn.png http://localhost:4173/learn.html?q=1)",
       "Bash('/c/Program Files/Google/Chrome/Application/chrome.exe' --headless --disable-gpu --hide-scrollbars --window-size=420,860 --virtual-time-budget=4000 --screenshot=/tmp/final-grade.png http://localhost:4173/grade.html)",
-      "Bash(grep -iE \"\\\\.ts$\")"
+      "Bash(grep -iE \"\\\\.ts$\")",
+      "PowerShell(Get-NetFirewallRule *)"
     ],
     "deny": [
       "Read(//c/Users/olive/QuestionBank/node_modules/**)",

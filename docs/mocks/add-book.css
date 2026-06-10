@@ -311,6 +311,49 @@ textarea.field-in { resize: vertical; line-height: 1.4; }
 @media (hover: hover) { .add-chapter:hover .plus, .add-problem:hover .plus { color: var(--orange-200); } }
 .add-chapter .plus svg, .add-problem .plus svg { width: 100%; height: 100%; display: block; }
 
+/* Scan-a-page action: same dashed shape as [+ add problem] but accented in the
+   revisit/purple so it reads as the distinct "let the agent fill the list"
+   path. Sits just below the manual add button (edit-book only). */
+.scan-problems {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0 0 0.7rem;       /* leads the Problems section, above the list */
+  border: 1px dashed var(--revisit);
+  background: var(--purple-50);
+  color: var(--revisit);
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 0.6rem 0.7rem;
+  border-radius: 9px;
+  width: 100%;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s ease, filter 0.12s ease, transform 0.08s ease;
+}
+.scan-problems .cam { flex: none; width: 1.2rem; height: 1.2rem; line-height: 0; }
+.scan-problems .cam svg { width: 100%; height: 100%; display: block; }
+.scan-problems:active { transform: scale(0.99); background: color-mix(in srgb, var(--revisit) 12%, var(--bg)); }
+@media (hover: hover) {
+  .scan-problems:hover { background: color-mix(in srgb, var(--revisit) 9%, var(--bg)); }
+}
+
+/* Freshly-added (from a scan) row: a brief revisit-tinted highlight that fades.
+   Applied as .pr-new by edit-book when problems return from the scan screen. */
+.pr-row.pr-new {
+  border-color: var(--revisit);
+  animation: pr-new-flash 2.4s ease both;
+}
+@keyframes pr-new-flash {
+  0%   { background: color-mix(in srgb, var(--revisit) 16%, var(--bg)); }
+  70%  { background: color-mix(in srgb, var(--revisit) 16%, var(--bg)); }
+  100% { background: var(--bg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pr-row.pr-new { animation: none; }
+}
+
 /* ---- Sticky bottom action ---- */
 .add-actions {
   padding: 0.7rem 1.1rem max(0.7rem, env(safe-area-inset-bottom));

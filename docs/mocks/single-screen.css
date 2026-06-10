@@ -155,19 +155,10 @@
   column-gap: 1rem;
   padding: 0.85rem 1.25rem;
   border-bottom: 1px solid var(--border);
-  cursor: pointer;
   align-items: center;
   -webkit-tap-highlight-color: transparent;
-  transition: background 0.12s ease;
 }
-/* Title fades to the book-orange accent on interaction */
-.book .b-title2 { transition: color 0.2s ease; }
-.book:active { background: var(--surface); }         /* press feedback on touch */
-.book:active .b-title2 { color: var(--orange-200); }
-@media (hover: hover) {
-  .book:hover { background: var(--surface); }
-  .book:hover .b-title2 { color: var(--orange-200); }
-}
+/* v0: home-screen book rows are display-only — no press/hover feedback. */
 
 .book .b-cover {
   grid-area: icon;

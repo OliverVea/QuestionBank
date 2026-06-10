@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <!-- PWA: installable, runs in its own window (standalone). -->
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#f9ae60" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icon.svg" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="QuestionBank" />
+  <title>Question Bank — Scan Problems Mock</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css" />
+  <link rel="stylesheet" href="mocks.css" />
+  <!-- Reuses the grade chat chrome (.chat/.msg/.reply-row), plus scan-only bits. -->
+  <link rel="stylesheet" href="grade.css" />
+  <link rel="stylesheet" href="scan-problems.css" />
+  <script src="vendor/katex/katex.min.js"></script>
+</head>
+<body class="anim-cascade">
+  <div class="app gridpad">
+    <!-- Top bar: Back returns to edit-book WITHOUT applying. The book context
+         sits on the right so you know which book you're scanning into. -->
+    <header class="topbar">
+      <button class="topbar-btn" id="back-btn">
+        <span aria-hidden="true">←</span> Back
+      </button>
+      <span class="topbar-ctx" id="book-ctx"><!-- title --></span>
+    </header>
+
+    <!-- The scan conversation: photo bubble → agent thinking → agent reply with
+         a proposed delta (add / edit cards, each accept/reject). -->
+    <main class="chat" id="chat"><!-- turns injected below --></main>
+
+    <!-- Bottom: refine box + Apply. Apply writes the accepted problems back to
+         the book and returns to edit-book. -->
+    <footer class="grade-actions">
+      <div class="reply-row">
+        <textarea class="reply" id="reply" rows="1"
+          placeholder="Refine the problems…"></textarea>
+        <button class="reply-send" id="send-btn" aria-label="Send">→</button>
+      </div>
+      <button class="primary-btn apply-btn" id="apply-btn" type="button">
+        Add to book
+        <span class="sb-count" id="apply-count"></span>
+      </button>
+    </footer>
+  </div>
+
+  <script>
+    // ===================================================================
+    // Scan-problems chat (MOCK)
+    // -------------------------------------------------------------------
+    // Flow: edit-book opened the OS camera/picker and stashed the chosen
+    // photo in sessionStorage, then navigated here with ?isbn=NNN. We show
+    // the photo as a chat bubble, fake an agent "thinking" pause, then post
+    // an agent reply that proposes a DELTA to the book's problem list.
+    //
+    // The delta has two kinds of item, per the v0 scope:
+    //   - add:  a new problem the agent read off the page.
+    //   - edit: a fix to an EXISTING problem (e.g. OCR-corrected), shown as a
+    //           stacked before (struck) → after.
+    // No removes, no reorders. Each item can be accepted/rejected; "Add to
+    // book" applies the accepted set and hands it back to edit-book.
+    //
+    // Mock-only: nothing is persisted; the agent reply is canned.
+    // ===================================================================
+
+    const SCAN_PHOTO_KEY = 'qb-scan-photo';
+    const SCAN_RETURN_KEY = 'qb-scan-accepted';
+
+    // ---- LaTeX/markdown renderer (ported, identical to grade/learn) ---------
+    function splitMath(source) {
+      const segments = []; let text = '';
+      const pushText = () => { if (text) segments.push({ kind: 'text', value: text }); text = ''; };
+      let i = 0;
+      while (i < source.length) {
+        const ch = source[i];
+        if (ch === '\\' && source[i + 1] === '$') { text += '$'; i += 2; continue; }
+        if (ch === '$') {
+          const display = source[i + 1] === '$';
+          const open = display ? i + 2 : i + 1;
+          const close = findClosingDollar(source, open, display);
+          if (close === -1) { text += ch; i += 1; continue; }
+          pushText();
+          segments.push({ kind: 'math', value: source.slice(open, close), display });
+          i = display ? close + 2 : close + 1; continue;
+        }
+        text += ch; i += 1;
+      }
+      pushText(); return segments;
+    }
+    function findClosingDollar(source, from, display) {
+      for (let j = from; j < source.length; j++) {
+        if (source[j] === '\\') { j++; continue; }
+        if (source[j] === '$') {
+          if (display) { if (source[j + 1] === '$') return j; continue; }
+          return j;
+        }
+      }
+      return -1;
+    }
+    const HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+    function escapeHtml(t) { return t.replace(/[&<>"']/g, (c) => HTML_ESCAPES[c]); }
+    function renderMarkup(text) {
+      let html = escapeHtml(text);
+      html = html.replace(/\*\*([^]+?)\*\*/g, '<strong>$1</strong>');
+      html = html.replace(/\*([^*]+?)\*/g, '<em>$1</em>');
+      html = html.replace(/\n\n+/g, '<br><br>').replace(/\n/g, '<br>');
+      return html;
+    }
+    function renderContent(host, source) {
+      host.innerHTML = '';
+      for (const seg of splitMath(source)) {
+        if (seg.kind === 'text') {
+          const span = document.createElement('span');
+          span.innerHTML = renderMarkup(seg.value);
+          host.appendChild(span); continue;
+        }
+        const mathHost = seg.display ? document.createElement('div') : document.createElement('span');
+        if (seg.display) mathHost.className = 'qbody-display';
+        if (window.katex) katex.render(seg.value, mathHost, { displayMode: seg.display, throwOnError: false });
+        else mathHost.textContent = seg.display ? seg.value : '$' + seg.value + '$';
+        host.appendChild(mathHost);
+      }
+    }
+
+    // ---- Which book are we scanning into ------------------------------------
+    // The mock only needs the title for the header; the real client would load
+    // the book + its existing problems by id. A tiny table mirrors edit-book so
+    // "edit" deltas can reference real existing text for the before/after.
+    const BOOKS = {
+      '9781107179868': { title: 'Introduction to Quantum Mechanics' },
+      '9780914098911': { title: 'Calculus' },
+      '9783319110790': { title: 'Linear Algebra Done Right' },
+    };
+    const wantedIsbn = new URLSearchParams(location.search).get('isbn');
+    const isbn = BOOKS[wantedIsbn] ? wantedIsbn : Object.keys(BOOKS)[0];
+    document.getElementById('book-ctx').textContent = BOOKS[isbn].title;
+
+    // ---- The canned agent delta (what the server/LLM would return) ----------
+    // Most items are `add`; one `edit` shows the before/after path. `accepted`
+    // starts true for adds (the common case) and the user toggles per-card.
+    const DELTA = [
+      { kind: 'add', label: '2.A.1',
+        latex: 'A free particle has the initial wave function $\\Psi(x,0)=A e^{-a x^2}$, where $A$ and $a$ are real and positive constants. Normalize $\\Psi(x,0)$.' },
+      { kind: 'add', label: '2.A.2',
+        latex: 'Find $\\Psi(x,t)$ for the Gaussian wave packet of the previous problem, and sketch $|\\Psi|^2$ at $t=0$ and at large $t$.' },
+      { kind: 'add', label: '2.A.3',
+        latex: 'Show that the most probable position of the particle is $x=0$ at all times, while the width $\\langle x^2\\rangle - \\langle x\\rangle^2$ grows with $t$.' },
+      // An edit to a problem the book already has (label matches an existing
+      // entry). The agent read the page more carefully than the original entry.
+      { kind: 'edit', label: '1.B.1',
+        before: 'Solve the time-independent Schrödinger equation for the infinite square well: $$-\\frac{\\hbar^2}{2m}\\psi\'\' = E\\psi.$$',
+        after: 'Solve the time-independent Schrödinger equation for the infinite square well of width $a$, with $V=0$ for $0<x<a$ and $V=\\infty$ otherwise: $$-\\frac{\\hbar^2}{2m}\\frac{d^2\\psi}{dx^2} = E\\psi.$$ Find the allowed energies $E_n$ and normalized wavefunctions $\\psi_n$.' },
+    ];
+
+    // ---- DOM + helpers ------------------------------------------------------
+    const chat = document.getElementById('chat');
+    const applyBtn = document.getElementById('apply-btn');
+    const applyCount = document.getElementById('apply-count');
+    let turnIndex = 0;
+    function nextStagger() { return turnIndex++; }
+    function scrollChat() { chat.scrollTop = chat.scrollHeight; }
+
+    // The accept/reject state lives on each card via a backing object; we read
+    // it back at Apply time. Cards are kept here so the count + apply can scan.
+    const cards = [];   // { item, el, accepted }
+
+    function syncApply() {
+      const n = cards.filter((c) => c.accepted).length;
+      applyCount.textContent = n ? `· ${n}` : '';
+      applyBtn.disabled = n === 0;
+    }
+
+    // ---- Render: the photo bubble (user turn) -------------------------------
+    function addPhotoBubble(dataUrl) {
+      const msg = document.createElement('div');
+      msg.className = 'msg msg-user msg-photo animate-in';
+      msg.style.setProperty('--i', nextStagger());
+      if (dataUrl) {
+        const img = document.createElement('img');
+        img.className = 'scan-thumb';
+        img.alt = 'Photographed problems page';
+        img.src = dataUrl;
+        msg.appendChild(img);
+      } else {
+        // No photo in storage (e.g. opened directly) — show a placeholder tile
+        // so the screen is still walkable standalone.
+        const ph = document.createElement('div');
+        ph.className = 'scan-thumb scan-thumb-ph';
+        ph.textContent = 'page photo';
+        msg.appendChild(ph);
+      }
+      const cap = document.createElement('div');
+      cap.className = 'scan-cap';
+      cap.textContent = 'Pull the problems off this page.';
+      msg.appendChild(cap);
+      chat.appendChild(msg);
+      scrollChat();
+    }
+
+    // ---- Render: the agent "thinking" bubble (removed when the reply lands) --
+    function addThinking() {
+      const msg = document.createElement('div');
+      msg.className = 'msg msg-grader msg-thinking animate-in';
+      msg.style.setProperty('--i', nextStagger());
+      msg.innerHTML =
+        '<span class="dots" aria-label="Reading the page"><span></span><span></span><span></span></span>' +
+        '<span class="thinking-label">Reading the page…</span>';
+      chat.appendChild(msg);
+      scrollChat();
+      return msg;
+    }
+
+    // ---- Render: one delta card (add / edit) --------------------------------
+    function makeCard(item) {
+      const card = document.createElement('div');
+      card.className = 'delta-card delta-' + item.kind;
+
+      // Header: kind tag + label + the accept/reject toggle.
+      const head = document.createElement('div');
+      head.className = 'delta-head';
+
+      const tag = document.createElement('span');
+      tag.className = 'delta-tag tag-' + item.kind;
+      tag.textContent = item.kind === 'add' ? 'New' : 'Edit';
+
+      const label = document.createElement('span');
+      label.className = 'delta-label';
+      label.textContent = item.label || '—';
+
+      const toggle = document.createElement('button');
+      toggle.type = 'button';
+      toggle.className = 'delta-toggle';
+
+      head.append(tag, label, toggle);
+      card.appendChild(head);
+
+      // Body: for add, the rendered problem. For edit, stacked before → after.
+      if (item.kind === 'add') {
+        const body = document.createElement('div');
+        body.className = 'delta-body qbody';
+        renderContent(body, item.latex);
+        card.appendChild(body);
+      } else {
+        const before = document.createElement('div');
+        before.className = 'delta-before qbody';
+        renderContent(before, item.before);
+        const arrow = document.createElement('div');
+        arrow.className = 'delta-arrow';
+        arrow.setAttribute('aria-hidden', 'true');
+        arrow.textContent = '↓';
+        const after = document.createElement('div');
+        after.className = 'delta-after qbody';
+        renderContent(after, item.after);
+        card.append(before, arrow, after);
+      }
+
+      const rec = { item, el: card, accepted: true };
+      cards.push(rec);
+
+      function syncToggle() {
+        card.classList.toggle('rejected', !rec.accepted);
+        toggle.textContent = rec.accepted ? 'Added ✓' : 'Add';
+        toggle.classList.toggle('on', rec.accepted);
+        toggle.setAttribute('aria-pressed', String(rec.accepted));
+      }
+      toggle.addEventListener('click', () => {
+        rec.accepted = !rec.accepted;
+        syncToggle();
+        syncApply();
+      });
+      syncToggle();
+      return card;
+    }
+
+    // ---- Render: the agent reply (intro line + the delta cards) -------------
+    // Only the LATEST proposal is "live": its cards drive Apply. When the agent
+    // re-proposes (after a refine), the previous proposal is superseded — its
+    // cards go inert/dimmed and `cards` is reset to just the new set.
+    let liveProposalEl = null;
+    function addAgentReply(delta, introText) {
+      // Supersede the prior proposal, if any.
+      if (liveProposalEl) liveProposalEl.classList.add('superseded');
+      cards.length = 0;
+
+      const adds = delta.filter((d) => d.kind === 'add').length;
+      const edits = delta.filter((d) => d.kind === 'edit').length;
+
+      const msg = document.createElement('div');
+      msg.className = 'msg msg-grader animate-in';
+      msg.style.setProperty('--i', nextStagger());
+
+      const intro = document.createElement('div');
+      intro.className = 'delta-intro';
+      if (introText) {
+        renderContent(intro, introText);
+      } else {
+        const parts = [];
+        if (adds) parts.push(`**${adds}** new problem${adds === 1 ? '' : 's'}`);
+        if (edits) parts.push(`a fix to **${edits}** existing one`);
+        const summary = parts.join(' and ') || 'nothing to change';
+        renderContent(intro,
+          `I found ${summary} on that page. Toggle any you don’t want, then **Add to book**. ` +
+          `You can also tell me to adjust them.`);
+      }
+      msg.appendChild(intro);
+
+      const list = document.createElement('div');
+      list.className = 'delta-list';
+      delta.forEach((item) => list.appendChild(makeCard(item)));
+      msg.appendChild(list);
+
+      chat.appendChild(msg);
+      liveProposalEl = msg;
+      scrollChat();
+      syncApply();
+    }
+
+    // ---- Boot: photo → thinking → reply -------------------------------------
+    let photo = null;
+    try { photo = sessionStorage.getItem(SCAN_PHOTO_KEY); } catch { /* ignore */ }
+    // Consume it so a back-and-forth re-entry doesn't re-show a stale photo.
+    try { sessionStorage.removeItem(SCAN_PHOTO_KEY); } catch { /* ignore */ }
+
+    addPhotoBubble(photo);
+    const thinking = addThinking();
+    // Fake the extraction latency, then swap thinking → reply.
+    setTimeout(() => {
+      thinking.remove();
+      addAgentReply(DELTA);
+    }, 1400);
+
+    // ---- Refine box (stub): posts the user's note, fakes a short ack --------
+    const reply = document.getElementById('reply');
+    const sendBtn = document.getElementById('send-btn');
+    function sendRefine() {
+      const text = reply.value.trim();
+      if (!text) return;
+      const msg = document.createElement('div');
+      msg.className = 'msg msg-user animate-in';
+      msg.style.setProperty('--i', nextStagger());
+      const body = document.createElement('div');
+      body.className = 'msg-body qbody';
+      renderContent(body, text);
+      msg.appendChild(body);
+      chat.appendChild(msg);
+      reply.value = '';
+      reply.style.height = 'auto';
+      scrollChat();
+
+      const think = addThinking();
+      setTimeout(() => {
+        think.remove();
+        // Mock regen: the agent re-proposes a CHANGED delta in response. We
+        // don't parse the note (no LLM here) — we just mutate the current live
+        // proposal so the round-trip reads as real: keep the accepted adds,
+        // drop the edit, and split the last add into two finer problems.
+        const live = cards.map((c) => c.item);
+        const kept = live.filter((it) => it.kind === 'add').slice(0, 2);
+        const next = kept.map((it, i) => ({ ...it, label: `2.A.${i + 1}` }));
+        next.push(
+          { kind: 'add', label: '2.A.3',
+            latex: 'Compute $\\langle x\\rangle$ and $\\langle p\\rangle$ for the Gaussian packet, and verify $\\langle p\\rangle = m\\,\\frac{d\\langle x\\rangle}{dt}$.' },
+          { kind: 'add', label: '2.A.4',
+            latex: 'Compute $\\langle x^2\\rangle$, $\\langle p^2\\rangle$ and the product $\\sigma_x\\sigma_p$; confirm it satisfies the uncertainty principle.' },
+        );
+        addAgentReply(next,
+          'Updated — I split that last one into two and dropped the edit. ' +
+          'Here’s the revised set; toggle and **Add to book** when it looks right. ' +
+          '*(mock: the regen is canned, not generated from your note)*');
+      }, 1000);
+    }
+    sendBtn.addEventListener('click', sendRefine);
+    reply.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendRefine(); }
+    });
+    reply.addEventListener('input', () => {
+      reply.style.height = 'auto';
+      reply.style.height = Math.min(reply.scrollHeight, 120) + 'px';
+    });
+
+    // ---- Apply: hand the accepted problems back to edit-book ----------------
+    // Edits and adds both come back as { label, latex } — edit-book treats the
+    // accepted set as rows to add/merge. (Mock: it simply appends them.)
+    applyBtn.addEventListener('click', () => {
+      const accepted = cards.filter((c) => c.accepted).map((c) => ({
+        label: c.item.label || null,
+        latex: c.item.kind === 'edit' ? c.item.after : c.item.latex,
+      }));
+      try { sessionStorage.setItem(SCAN_RETURN_KEY, JSON.stringify(accepted)); } catch { /* quota */ }
+      window.location.href = 'edit-book.html?isbn=' + encodeURIComponent(isbn);
+    });
+
+    // Back returns without applying (drops the proposed delta).
+    document.getElementById('back-btn').addEventListener('click', () => {
+      window.location.href = 'edit-book.html?isbn=' + encodeURIComponent(isbn);
+    });
+  </script>
+  <script src="footer.js" defer></script>
+</body>
+</html>

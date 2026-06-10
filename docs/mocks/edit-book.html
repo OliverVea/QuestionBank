@@ -89,6 +89,23 @@
         <div class="problems-head">
           <h2>Problems</h2>
         </div>
+
+        <!-- Scan a page of problems: the primary way to populate the list, so it
+             leads. Opens the OS camera/photo picker; on a chosen photo we hand
+             off to the scan-problems chat to extract problems and propose
+             additions. The input is hidden; the button triggers it. -->
+        <button class="scan-problems" id="scan-problems" type="button">
+          <span class="cam" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 8a2 2 0 0 1 2-2h2l1.2-1.6A2 2 0 0 1 11.8 4h.4a2 2 0 0 1 1.6.8L15 6h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />
+              <circle cx="12" cy="12.5" r="3.2" />
+            </svg>
+          </span>
+          Scan a problems page
+        </button>
+        <input id="scan-input" type="file" accept="image/*" capture="environment" hidden />
+
         <ol class="problem-list" id="problem-list"><!-- rows injected --></ol>
         <button class="add-problem" id="add-problem" type="button">
           <span class="plus" aria-hidden="true">
@@ -347,9 +364,62 @@
       onChange: markDirty,
     });
 
+    // ---- Scan a problems page → hand off to the scan-problems chat ----------
+    // Mock handoff: stash the chosen photo (as a data URL) in sessionStorage,
+    // then navigate to the scan screen. The scan screen reads it back, runs the
+    // (faked) agent, and writes any accepted problems to a return slot which we
+    // drain on load (see below). Real client: this is a server-backed extract +
+    // chat flow; the mock just fakes the round-trip.
+    const SCAN_PHOTO_KEY = 'qb-scan-photo';
+    const SCAN_RETURN_KEY = 'qb-scan-accepted';
+    const scanBtnEl = document.getElementById('scan-problems');
+    const scanInput = document.getElementById('scan-input');
+    scanBtnEl.addEventListener('click', () => scanInput.click());
+    scanInput.addEventListener('change', () => {
+      const file = scanInput.files && scanInput.files[0];
+      if (!file) return;
+      const fr = new FileReader();
+      fr.onload = () => {
+        try { sessionStorage.setItem(SCAN_PHOTO_KEY, fr.result); } catch { /* quota */ }
+        // Leaving for the scan side-trip — disarm the unsaved-changes guard so
+        // the in-flight edits aren't lost to a navigation prompt; we come right
+        // back to this same book.
+        dirty = false;
+        window.location.href = 'scan-problems.html?isbn=' + encodeURIComponent(isbn);
+      };
+      fr.readAsDataURL(file);
+    });
+
+    // On return from the scan screen: drain any accepted problems and append
+    // them, highlighting + scrolling the first new row into view.
+    function drainScanReturn() {
+      let payload;
+      try { payload = sessionStorage.getItem(SCAN_RETURN_KEY); } catch { return; }
+      if (!payload) return;
+      sessionStorage.removeItem(SCAN_RETURN_KEY);
+      let accepted;
+      try { accepted = JSON.parse(payload); } catch { return; }
+      if (!Array.isArray(accepted) || accepted.length === 0) return;
+      let firstNew = null;
+      accepted.forEach((p) => {
+        const r = problems.addRow({ label: p.label ?? null, latex: p.latex || '' });
+        r.el.classList.add('pr-new');
+        if (!firstNew) firstNew = r.el;
+      });
+      markDirty();
+      if (firstNew) {
+        firstNew.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        // Let the highlight fade after a beat.
+        setTimeout(() => {
+          document.querySelectorAll('.pr-new').forEach((el) => el.classList.remove('pr-new'));
+        }, 2400);
+      }
+    }
+
     refreshCover();
     syncCount();
     syncSave();
+    drainScanReturn();      // pick up problems accepted on the scan screen
     dirty = false;          // prefill itself is not a user change
   </script>
   <script src="footer.js" defer></script>

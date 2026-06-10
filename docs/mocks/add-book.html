@@ -88,6 +88,23 @@
         <div class="problems-head">
           <h2>Problems</h2>
         </div>
+
+        <!-- Scan a page of problems: the primary way to populate the list, so it
+             leads. In the real app this opens the OS camera/photo picker and
+             hands off to the scan-problems chat to extract problems and propose
+             additions — same as edit-book. The mock just stubs it with an alert;
+             the new book isn't saved yet, so we don't take the scan side-trip. -->
+        <button class="scan-problems" id="scan-problems" type="button">
+          <span class="cam" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 8a2 2 0 0 1 2-2h2l1.2-1.6A2 2 0 0 1 11.8 4h.4a2 2 0 0 1 1.6.8L15 6h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />
+              <circle cx="12" cy="12.5" r="3.2" />
+            </svg>
+          </span>
+          Scan a problems page
+        </button>
+
         <ol class="problem-list" id="problem-list"><!-- rows injected --></ol>
         <button class="add-problem" id="add-problem" type="button">
           <span class="plus" aria-hidden="true">
@@ -319,6 +336,14 @@
       scanBtn.disabled = false;
       void lookup();
     });
+
+    // ---- Scan a problems page (stub) --------------------------------------
+    // In the real app this opens the camera/photo picker and hands off to the
+    // scan-problems chat to extract problems and propose additions, exactly
+    // like edit-book. The mock can't take that side-trip here — the new book
+    // isn't saved yet — so it just stubs the entry point with an alert.
+    document.getElementById('scan-problems').addEventListener('click',
+      () => alert('→ scan a problems page (extract + propose additions)'));
 
     // ---- Submit (save) -----------------------------------------------------
     form.addEventListener('submit', (e) => {

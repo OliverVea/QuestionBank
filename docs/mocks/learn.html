@@ -3,14 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <!-- PWA: installable, runs in its own window (standalone). -->
-  <link rel="manifest" href="manifest.webmanifest" />
-  <meta name="theme-color" content="#f9ae60" />
   <link rel="icon" href="icon.svg" type="image/svg+xml" />
-  <link rel="apple-touch-icon" href="icon.svg" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="QuestionBank" />
   <title>Question Bank — Learn Mock</title>
   <!-- KaTeX vendored locally (served by `npm run mocks`); no network needed. -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css" />
@@ -159,15 +152,23 @@
     const bodyEl = document.getElementById('q-body');
     const stage = document.querySelector('.learn-stage');
 
+    let cur = 0;
     function showSample(n) {
-      const s = SAMPLES[((n % SAMPLES.length) + SAMPLES.length) % SAMPLES.length];
+      cur = ((n % SAMPLES.length) + SAMPLES.length) % SAMPLES.length;
+      const s = SAMPLES[cur];
       eyebrowEl.textContent = s.eyebrow;
       renderContent(bodyEl, s.text);
       stage.scrollTop = 0;
     }
 
     document.getElementById('back-btn').addEventListener('click', () => { window.location.href = 'index.html'; });
-    document.getElementById('skip-btn').addEventListener('click', () => alert('→ skip this question for 12h'));
+    // Skip 12h: real app PATCHes a 12h snooze on the question (skip/snooze API,
+    // TODO 2g) so it drops out of the due queue, then advances to the next due
+    // item. Mock fakes the snooze and steps to the next sample.
+    document.getElementById('skip-btn').addEventListener('click', () => {
+      // → api.snoozeQuestion(questionId, '12h')
+      showSample(cur + 1);
+    });
     document.getElementById('upload-btn').addEventListener('click', () => { window.location.href = 'grade.html'; });
     document.getElementById('type-btn').addEventListener('click', () => { window.location.href = 'grade.html'; });
 

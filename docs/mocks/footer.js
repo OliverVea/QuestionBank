@@ -10,12 +10,18 @@
   document.body.classList.add(known[anim] || known.cascade);
 
   // ---- PWA service worker ----
-  // Registering a service worker (with a fetch handler, see sw.js) is what makes
-  // the app installable, so launching it from the home screen honors the
-  // manifest's fullscreen display (no address bar). Scoped to the mocks dir.
+  // Previously we registered sw.js (a network pass-through) purely for PWA
+  // installability. It caused the home screen to render blank in normal tabs —
+  // an already-installed worker kept intercepting navigations across reloads
+  // and server restarts, so the page came up empty. Mocks don't need offline
+  // support, so we remove the worker entirely and actively unregister any copy
+  // a previous visit left controlling this origin, plus drop its caches.
   if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js').catch(() => { /* ignore in plain tab */ });
-    });
+    navigator.serviceWorker.getRegistrations()
+      .then((regs) => regs.forEach((r) => r.unregister()))
+      .catch(() => { /* ignore in plain tab */ });
+    if (window.caches && caches.keys) {
+      caches.keys().then((keys) => keys.forEach((k) => caches.delete(k))).catch(() => {});
+    }
   }
 })();

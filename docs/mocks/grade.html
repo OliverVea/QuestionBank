@@ -207,21 +207,71 @@
       chat.appendChild(msg);
     });
 
-    // --- Stub interactions ---
-    document.getElementById('back-btn').addEventListener('click', () => { window.location.href = 'learn.html'; });
-    document.getElementById('skip-btn').addEventListener('click', () => alert('→ skip this question for 12h'));
-    document.getElementById('send-btn').addEventListener('click', () => alert('→ send reply (stub)'));
+    // --- Interactions ---
+    // These mirror the real Learn flow: send a clarification and the grader
+    // re-grades; skip snoozes the question for 12h; saving the attempt records
+    // the grade. All three then advance to the next pending item — in the real
+    // app that's the session loop (TODO 19); the mock returns to learn.html,
+    // which surfaces the next due question.
+    const reply = document.getElementById('reply');
+    const chatEl = document.getElementById('chat');
 
+    function nextItem() {
+      // Real app: advance to the next pending lesson/repetition in the session
+      // loop. Mock: hop back to learn, which picks the next due question.
+      window.location.href = 'learn.html';
+    }
+
+    function appendTurn(turn, idx) {
+      const msg = document.createElement('div');
+      msg.className = `msg msg-${turn.kind} animate-in`;
+      msg.style.setProperty('--i', idx);
+      if (turn.kind === 'user') {
+        const body = document.createElement('div');
+        body.className = 'msg-body qbody';
+        renderContent(body, turn.text);
+        msg.appendChild(body);
+      }
+      chatEl.appendChild(msg);
+      msg.scrollIntoView({ block: 'end', behavior: 'smooth' });
+      return msg;
+    }
+
+    document.getElementById('back-btn').addEventListener('click', () => { window.location.href = 'learn.html'; });
+
+    // Skip 12h: real app PATCHes a 12h snooze on the question (skip/snooze API,
+    // TODO 2g) so it drops out of the due queue, then advances. Mock fakes it.
+    document.getElementById('skip-btn').addEventListener('click', () => {
+      // → api.snoozeQuestion(questionId, '12h')
+      nextItem();
+    });
+
+    // Send reply: post the user's clarification as a chat turn and (in the real
+    // app) re-grade against it. Mock appends the bubble and fakes a re-grade ack.
+    let turnIdx = TURNS.length;
+    function sendReply() {
+      const text = reply.value.trim();
+      if (!text) return;
+      // → api.reply(attemptDraft, text) then re-grade
+      appendTurn({ kind: 'user', text }, turnIdx++);
+      reply.value = '';
+      reply.style.height = 'auto';
+    }
+    document.getElementById('send-btn').addEventListener('click', sendReply);
+
+    // Save grade: record the attempt with the chosen grade, then advance.
     // Emphasize the grader's suggested grade (the last grader turn's grade) with
-    // a ring + a "Suggested" tag, and let any of the three save the attempt.
+    // a ring + a "Suggested" tag; any of the three saves the attempt.
     const suggested = [...TURNS].reverse().find((t) => t.kind === 'grader')?.grade;
     document.querySelectorAll('.grade-btn').forEach((btn) => {
       if (btn.dataset.grade === suggested) btn.classList.add('suggested');
-      btn.addEventListener('click', () => alert('→ save attempt as ' + btn.dataset.grade));
+      btn.addEventListener('click', () => {
+        // → api.saveAttempt({ questionId, grade: btn.dataset.grade, transcript })
+        nextItem();
+      });
     });
 
     // Auto-grow the reply textarea a little as you type.
-    const reply = document.getElementById('reply');
     reply.addEventListener('input', () => {
       reply.style.height = 'auto';
       reply.style.height = Math.min(reply.scrollHeight, 120) + 'px';

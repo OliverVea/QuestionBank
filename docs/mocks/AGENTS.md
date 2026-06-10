@@ -91,6 +91,10 @@ screen (the library) and the default landing page the server serves at `/`.
 From there: the Revisit/Learn banners open `learn.html`; the add-a-book footer
 row opens `add-book.html`; the library-header pencil opens `manage-books.html`;
 tapping a row in `manage-books.html` opens `edit-book.html?isbn=NNN`;
+in `edit-book.html` the "Scan a problems page" button opens the OS camera/photo
+picker and then hands off to `scan-problems.html?isbn=NNN` (the chosen photo is
+passed via `sessionStorage`); `scan-problems.html` → back to `edit-book.html`
+on "Add to book" (accepted problems handed back via `sessionStorage`);
 `learn.html` → `grade.html` on upload; Back/back actions return to the previous
 screen. Wire new screens into this flow with
 plain `window.location.href` links (real interaction logic belongs in the

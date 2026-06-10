@@ -8,7 +8,13 @@ import type { Store } from '../storage/store.js';
 export function practiceRouter(store: Store): Router {
   const router = Router();
   router.get('/due', async (req, res) => {
-    res.json(await dueQueue(store, requireCustomerId(req), nowIso()));
+    const items = await dueQueue(store, requireCustomerId(req), nowIso());
+    // index.html's revisit banner wants just the number; ?count=true returns it.
+    if (req.query.count === 'true') {
+      res.json({ count: items.length });
+      return;
+    }
+    res.json(items);
   });
   return router;
 }

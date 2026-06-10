@@ -24,13 +24,36 @@
   font-weight: 700;
 }
 
-/* ---- ISBN field: text input + inline "Look up" button ---- */
+/* ---- ISBN field: text input + scan + inline "Look up" button ---- */
 .isbn-row {
   display: flex;
   align-items: stretch;
   gap: 0.5rem;
 }
 .isbn-input { flex: 1; min-width: 0; }
+
+/* Icon-only scan button — quiet/secondary next to the filled "Look up". */
+.isbn-scan {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.6rem;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--fg);
+  border-radius: 9px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s ease, color 0.12s ease, transform 0.08s ease;
+}
+.isbn-scan svg { width: 1.35rem; height: 1.35rem; display: block; }
+.isbn-scan:active { transform: scale(0.96); background: var(--purple-50); color: var(--revisit); }
+.isbn-scan:disabled { color: var(--grey-100); cursor: default; }
+@media (hover: hover) {
+  .isbn-scan:not(:disabled):hover { background: var(--purple-50); color: var(--revisit); }
+}
+
 .isbn-go {
   flex: none;
   border: none;

@@ -27,6 +27,19 @@
         <span class="isbn-row">
           <input class="field-in isbn-input" id="isbn-input" inputmode="numeric"
                  placeholder="e.g. 9781107179868" aria-label="ISBN" />
+          <button class="isbn-scan" id="isbn-scan" type="button"
+                  aria-label="Scan barcode" title="Scan barcode">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <!-- camera-style framing corners -->
+              <path d="M3 7V5a2 2 0 0 1 2-2h2" />
+              <path d="M17 3h2a2 2 0 0 1 2 2v2" />
+              <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
+              <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
+              <!-- barcode bars -->
+              <path d="M7 8v8" /><path d="M10 8v8" /><path d="M13 8v8" /><path d="M17 8v8" />
+            </svg>
+          </button>
           <button class="isbn-go" id="isbn-go" type="button">Look up</button>
         </span>
       </label>
@@ -134,7 +147,7 @@
       },
     };
 
-    // ---- Cover resolution (ported from single-screen.html) ----------------
+    // ---- Cover resolution (ported from the home screen, index.html) -------
     // Fallback tile in a fixed on-palette color, then swap in a real cover once
     // it resolves; degrade gracefully offline. In the real client the cover
     // URL/bytes come back from the server's lookup record — here the mock stands
@@ -181,6 +194,7 @@
     // ---- DOM refs ----------------------------------------------------------
     const form = document.getElementById('book-form');
     const isbnInput = document.getElementById('isbn-input');
+    const scanBtn = document.getElementById('isbn-scan');
     const goBtn = document.getElementById('isbn-go');
     const status = document.getElementById('lookup-status');
     const coverSlot = document.getElementById('cover-slot');
@@ -295,6 +309,20 @@
       if (e.key === 'Enter') { e.preventDefault(); void lookup(); }
     });
 
+    // ---- Scan barcode ------------------------------------------------------
+    // In the real client this opens the camera and decodes the book's EAN-13
+    // barcode into an ISBN. The mock fakes a successful scan: it shows a brief
+    // "Scanning…" state, drops in one of the sample ISBNs, and runs the lookup.
+    scanBtn.addEventListener('click', async () => {
+      scanBtn.disabled = true;
+      setStatus('<span class="spinner" aria-hidden="true"></span> Scanning barcode…', 'loading');
+      const codes = Object.keys(SAMPLES);
+      const isbn = codes[isbnInput.value.length % codes.length]; // vary without Math.random
+      isbnInput.value = isbn;
+      scanBtn.disabled = false;
+      void lookup();
+    });
+
     // ---- Submit (save) -----------------------------------------------------
     form.addEventListener('submit', (e) => {
       e.preventDefault();
@@ -306,10 +334,10 @@
         (fAuthor.value.trim() ? ' — ' + fAuthor.value.trim() : '') +
         '\n' + chapters.length + ' chapter(s)',
       );
-      window.location.href = 'single-screen.html';
+      window.location.href = 'index.html';
     });
     document.getElementById('back-btn').addEventListener('click',
-      () => { window.location.href = 'single-screen.html'; });
+      () => { window.location.href = 'index.html'; });
 
     // Start with one empty chapter row and a fallback cover.
     addChapterRow();

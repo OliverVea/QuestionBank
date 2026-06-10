@@ -42,12 +42,11 @@ way; otherwise, leave it inline.
 - **Design tokens** — `:root` color variables (base + `--revisit`/`--learn`
   accents and their `-dark` variants).
 - **Base reset** — `box-sizing`, full-height `html/body`, base typography.
-- **`.mock-footer`** — the floating "← Back to gallery" pill, injected by
-  `footer.js`.
 
 Screen-specific layout (the `.app` shell, `.banner`, `.book` rows, etc.)
-lives in `single-screen.css`. If you find yourself reaching for one of those
-on a *second* screen, that's the signal to lift it into `mocks.css`.
+lives in `single-screen.css` (the home screen's stylesheet). If you find
+yourself reaching for one of those on a *second* screen, that's the signal to
+lift it into `mocks.css`.
 
 ## Phone-first
 
@@ -75,17 +74,27 @@ npm run mocks      # serves docs/mocks at http://localhost:4173
 - **Vendor heavy assets locally** rather than hot-linking a CDN, so mocks work
   offline. KaTeX is vendored under `vendor/katex/` (copied from the repo's
   `katex` dependency); reference `vendor/katex/katex.min.css` + `.min.js`.
-- Cross-page markup can still be injected with a shared script (see
-  `footer.js`) styled by a shared `mocks.css` class.
+- Shared cross-page chrome can be injected with a shared script (see
+  `footer.js`, which applies the `?anim=` load-in style on every page).
 - External assets that need the network (e.g. Open Library covers) must still
   degrade gracefully offline.
+
+## Navigation
+
+The mocks form a navigable flow, not a gallery. `index.html` is the home
+screen (the library) and the default landing page the server serves at `/`.
+From there: the Revisit/Learn banners open `learn.html`; the add-a-book footer
+row opens `add-book.html`; `learn.html` → `grade.html` on upload; Back/back
+actions return to the previous screen. Wire new screens into this flow with
+plain `window.location.href` links (real interaction logic belongs in the
+client, not the mock).
 
 ## Adding a new mock
 
 1. Create `<name>.html`; link `mocks.css` first, then a `<name>.css` for
    screen-specific layout.
 2. Reuse shared components; lift anything reusable into `mocks.css`.
-3. Add `<script src="footer.js" defer></script>` before `</body>` for the
-   back-to-gallery pill.
-4. Add a link to it in `index.html` (the gallery).
+3. Add `<script src="footer.js" defer></script>` before `</body>` so the
+   load-in animation switch applies.
+4. Wire it into the flow (see **Navigation**) from whatever screen leads to it.
 5. Run `npm run mocks` and check it on a narrow viewport before calling it done.

@@ -84,17 +84,32 @@ npm run mocks      # serves docs/mocks at http://localhost:4173
 The mocks form a navigable flow, not a gallery. `index.html` is the home
 screen (the library) and the default landing page the server serves at `/`.
 From there: the Revisit/Learn banners open `learn.html`; the add-a-book footer
-row opens `add-book.html`; `learn.html` → `grade.html` on upload; Back/back
-actions return to the previous screen. Wire new screens into this flow with
+row opens `add-book.html`; the library-header pencil opens `manage-books.html`;
+`learn.html` → `grade.html` on upload; Back/back actions return to the previous
+screen. Wire new screens into this flow with
 plain `window.location.href` links (real interaction logic belongs in the
 client, not the mock).
+
+## Skeleton-first, navigable-first
+
+**Always start a new screen as a navigable skeleton.** The first
+implementation step for any new mock is a bare screen (chrome + layout
+placeholders, no real interactivity) that is already **reachable from the
+screen that leads to it** via a real `window.location.href` link. Land that
+first; flesh out behavior in later steps.
+
+Why: it keeps the flow walkable at every step, surfaces navigation/layout
+problems before logic is built on top of them, and gives a real thing to look
+at on a narrow viewport early.
 
 ## Adding a new mock
 
 1. Create `<name>.html`; link `mocks.css` first, then a `<name>.css` for
    screen-specific layout.
-2. Reuse shared components; lift anything reusable into `mocks.css`.
-3. Add `<script src="footer.js" defer></script>` before `</body>` so the
+2. **Skeleton first:** ship the bare, navigable screen wired into the flow
+   (see **Skeleton-first, navigable-first** and **Navigation**) before any
+   real interaction logic.
+3. Reuse shared components; lift anything reusable into `mocks.css`.
+4. Add `<script src="footer.js" defer></script>` before `</body>` so the
    load-in animation switch applies.
-4. Wire it into the flow (see **Navigation**) from whatever screen leads to it.
 5. Run `npm run mocks` and check it on a narrow viewport before calling it done.

@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Question Bank — Manage Books Mock</title>
+  <link rel="stylesheet" href="mocks.css" />
+  <link rel="stylesheet" href="manage-books.css" />
+</head>
+<body class="anim-cascade">
+  <div class="app">
+    <!-- Top bar: Back (left). Per-row actions live on the rows; no select mode. -->
+    <header class="topbar">
+      <button class="topbar-btn" id="back-btn">
+        <span aria-hidden="true">←</span> Back
+      </button>
+    </header>
+
+    <section class="manage">
+      <div class="manage-head animate-in" style="--i: 0">
+        <h1>Manage library</h1>
+      </div>
+
+      <!-- Book rows injected here. Each row: left handle = drag to reorder,
+           tap body = edit, right-side trash = delete (with Undo). Wired in
+           later steps; stubbed here. -->
+      <div id="books"></div>
+    </section>
+  </div>
+
+  <script>
+    // Skeleton only: demo data + render. Reorder/delete/edit are stubbed
+    // (alert) and get fleshed out in later steps. Keep mock JS inline.
+    const data = {
+      books: [
+        { title: 'Introduction to Quantum Mechanics', author: 'David J. Griffiths', isbn: '9781107179868' },
+        { title: 'Calculus', author: 'Michael Spivak', isbn: '9780914098911' },
+        { title: 'Linear Algebra Done Right', author: 'Sheldon Axler', isbn: '9783319110790' },
+        { title: 'Classical Mechanics', author: 'John R. Taylor', isbn: '9781891389221' },
+        { title: 'Mathematical Methods for Physicists', author: 'Arfken & Weber', isbn: '9780123846549' },
+      ],
+    };
+
+    // ---- Cover resolution (ported from index.html) ------------------------
+    const COVER_CACHE_PREFIX = 'qb-cover:';
+    const ORANGE_STEPS = ['--orange-200', '--orange-300', '--orange-400', '--orange-500'];
+    function titleColor(title) {
+      const norm = title.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
+      let hash = 0;
+      for (const ch of norm) hash = (hash * 31 + ch.codePointAt(0)) >>> 0;
+      return `var(${ORANGE_STEPS[hash % ORANGE_STEPS.length]})`;
+    }
+    function makeFallback(book) {
+      const tile = document.createElement('span');
+      tile.className = 'b-cover-fallback';
+      tile.style.background = titleColor(book.title);
+      const inner = document.createElement('span');
+      inner.textContent = book.title;
+      tile.appendChild(inner);
+      return tile;
+    }
+    async function resolveCover(book) {
+      const key = COVER_CACHE_PREFIX + book.isbn;
+      const cached = localStorage.getItem(key);
+      if (cached) return cached;
+      const url = `https://covers.openlibrary.org/b/isbn/${book.isbn}-M.jpg?default=false`;
+      try {
+        const res = await fetch(url);
+        if (!res.ok) return null;
+        const blob = await res.blob();
+        if (blob.size < 100) return null;
+        const dataUrl = await new Promise((resolve, reject) => {
+          const fr = new FileReader();
+          fr.onload = () => resolve(fr.result);
+          fr.onerror = reject;
+          fr.readAsDataURL(blob);
+        });
+        try { localStorage.setItem(key, dataUrl); } catch { /* quota */ }
+        return dataUrl;
+      } catch { return null; }
+    }
+    async function loadCover(placeholder, book) {
+      const dataUrl = await resolveCover(book);
+      if (!dataUrl) return;
+      const img = document.createElement('img');
+      img.className = 'b-cover';
+      img.alt = `${book.title} cover`;
+      img.src = dataUrl;
+      placeholder.replaceWith(img);
+    }
+
+    // ---- Render the list --------------------------------------------------
+    const booksHost = document.getElementById('books');
+    const ROW_INDEX_OFFSET = 1; // after the manage-head (0)
+    data.books.forEach((b, i) => {
+      const row = document.createElement('div');
+      row.className = 'm-book animate-in';
+      row.style.setProperty('--i', ROW_INDEX_OFFSET + i);
+
+      const placeholder = makeFallback(b);
+
+      const title = document.createElement('div');
+      title.className = 'b-title2';
+      title.textContent = b.title;
+      const author = document.createElement('div');
+      author.className = 'b-author';
+      author.textContent = b.author;
+
+      // Per-row delete (trash). Stops the row's edit tap; delete + Undo toast
+      // are wired in a later step.
+      const del = document.createElement('button');
+      del.className = 'm-del';
+      del.type = 'button';
+      del.setAttribute('aria-label', 'Delete book');
+      del.innerHTML = `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3 6h18" />
+          <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" />
+          <path d="M6 6l1 14a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-14" />
+          <path d="M10 11v6M14 11v6" />
+        </svg>`;
+      del.addEventListener('click', (e) => {
+        e.stopPropagation();
+        alert('→ delete book: ' + b.title + ' (with Undo) — wired in a later step');
+      });
+
+      // Left drag handle (reorder wired in a later step).
+      const handle = document.createElement('span');
+      handle.className = 'm-handle';
+      handle.setAttribute('aria-label', 'Drag to reorder');
+      handle.innerHTML = `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M8 6h.01M8 12h.01M8 18h.01M16 6h.01M16 12h.01M16 18h.01" />
+        </svg>`;
+
+      row.append(handle, placeholder, title, author, del);
+      row.addEventListener('click', () => alert('→ edit book: ' + b.title));
+      booksHost.appendChild(row);
+
+      void loadCover(placeholder, b);
+    });
+
+    document.getElementById('back-btn').addEventListener('click',
+      () => { window.location.href = 'index.html'; });
+  </script>
+  <script src="footer.js" defer></script>
+</body>
+</html>

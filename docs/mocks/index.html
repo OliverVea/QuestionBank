@@ -218,7 +218,7 @@
     });
 
     document.getElementById('library-edit').addEventListener('click',
-      () => alert('→ edit library (add/rename/remove books)'));
+      () => { window.location.href = 'manage-books.html'; });
 
     // Add-book row animates in last, after every book row.
     const addBook = document.getElementById('add-book');

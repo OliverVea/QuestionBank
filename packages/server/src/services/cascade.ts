@@ -1,25 +1,23 @@
 import type { Store } from '../storage/store.js';
 
-/** Delete a chapter and every question under it, scoped to one customer. */
-export async function deleteChapterCascade(
-  store: Store,
-  customerId: string,
-  chapterId: string,
-): Promise<void> {
-  for (const q of await store.questions.getAll(customerId)) {
-    if (q.chapterId === chapterId) await store.questions.delete(customerId, q.id);
-  }
-  await store.chapters.delete(customerId, chapterId);
-}
-
-/** Delete a book, every chapter under it, and every question under those chapters, scoped to one customer. */
+/**
+ * Delete a book and everything under it — its questions and each question's attempts —
+ * scoped to one customer. Chapters no longer exist; books own questions directly.
+ */
 export async function deleteBookCascade(
   store: Store,
   customerId: string,
   bookId: string,
 ): Promise<void> {
-  for (const chapter of await store.chapters.getAll(customerId)) {
-    if (chapter.bookId === bookId) await deleteChapterCascade(store, customerId, chapter.id);
+  const questions = (await store.questions.getAll(customerId)).filter((q) => q.bookId === bookId);
+  const questionIds = new Set(questions.map((q) => q.id));
+  for (const attempt of await store.attempts.getAll(customerId)) {
+    if (questionIds.has(attempt.questionId)) {
+      await store.attempts.delete(customerId, attempt.id);
+    }
+  }
+  for (const q of questions) {
+    await store.questions.delete(customerId, q.id);
   }
   await store.books.delete(customerId, bookId);
 }

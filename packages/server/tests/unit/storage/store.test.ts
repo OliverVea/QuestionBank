@@ -2,7 +2,7 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { Store } from './store.js';
+import { Store } from '@/storage/store.js';
 
 const C = 'local';
 
@@ -17,10 +17,9 @@ afterEach(async () => {
 });
 
 describe('Store', () => {
-  it('opens four empty collections in a fresh data dir', async () => {
+  it('opens three empty collections in a fresh data dir', async () => {
     const store = await Store.open(dir);
     expect(await store.books.getAll(C)).toEqual([]);
-    expect(await store.chapters.getAll(C)).toEqual([]);
     expect(await store.questions.getAll(C)).toEqual([]);
     expect(await store.attempts.getAll(C)).toEqual([]);
   });
@@ -31,9 +30,7 @@ describe('Store', () => {
       id: 'a1',
       customerId: C,
       questionId: 'q1',
-      imagePaths: ['images/x.jpg'],
-      answerText: 'x',
-      transcription: 'z^3 = 1',
+      answer: 'z^3 = 1',
       recommendedGrade: 'partial',
       rating: 'correct',
       issues: [{ severity: 'medium', description: 'sign error' }],
@@ -41,7 +38,7 @@ describe('Store', () => {
     });
     expect(created.id).toEqual('a1');
     expect(await store.attempts.getAll(C)).toHaveLength(1);
-    expect((await store.attempts.getAll(C))[0]?.imagePaths).toEqual(['images/x.jpg']);
+    expect((await store.attempts.getAll(C))[0]?.answer).toEqual('z^3 = 1');
   });
 
   it('persists each entity type to its own file', async () => {
@@ -50,11 +47,12 @@ describe('Store', () => {
       id: 'b1',
       customerId: C,
       title: 'Calc',
+      questionIds: [],
       createdAt: '2026-06-06T00:00:00.000Z',
     });
 
     const reopened = await Store.open(dir);
     expect((await reopened.books.getById(C, 'b1'))?.title).toEqual('Calc');
-    expect(await reopened.chapters.getAll(C)).toEqual([]);
+    expect(await reopened.questions.getAll(C)).toEqual([]);
   });
 });

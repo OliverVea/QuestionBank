@@ -24,16 +24,20 @@ export function booksRouter(store: Store): Router {
       res.status(400).json({ error: 'title is required' });
       return;
     }
+    const authorVal = trimmed(author);
+    const learningGoalVal = trimmed(learningGoal);
+    const isbnVal = trimmed(isbn);
+    const publisherVal = trimmed(publisher);
     const book: Book = {
       id: newId(),
       customerId,
       title: title.trim(),
       questionIds: [],
       createdAt: nowIso(),
-      ...(trimmed(author) ? { author: trimmed(author) } : {}),
-      ...(trimmed(learningGoal) ? { learningGoal: trimmed(learningGoal) } : {}),
-      ...(trimmed(isbn) ? { isbn: trimmed(isbn) } : {}),
-      ...(trimmed(publisher) ? { publisher: trimmed(publisher) } : {}),
+      ...(authorVal ? { author: authorVal } : {}),
+      ...(learningGoalVal ? { learningGoal: learningGoalVal } : {}),
+      ...(isbnVal ? { isbn: isbnVal } : {}),
+      ...(publisherVal ? { publisher: publisherVal } : {}),
       ...(typeof year === 'number' ? { year } : {}),
     };
     res.status(201).json(await store.books.create(customerId, book));

@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest';
-import { html } from './html';
+import { html } from '@/lib/html';
 
 describe('html', () => {
   test('returns the root element of the template', () => {

@@ -67,12 +67,19 @@
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import express from 'express';
 import request from 'supertest';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createApp } from '../index.js';
 import { FakeProvider } from '../llm/fake-provider.js';
 import { LlmError } from '../llm/provider.js';
-import type { ResolveCustomerConfig } from '../middleware/resolve-customer.js';
+import {
+  configFromEnv,
+  resolveCustomer,
+  type ResolveCustomerConfig,
+} from '../middleware/resolve-customer.js';
+import { lookupRouter } from '../routes/lookup.js';
+import type { BookMetadata } from '../services/isbn-lookup.js';
 import { Store } from '../storage/store.js';
 
 // A tiny valid-enough PNG header so multipart image uploads are accepted by the mime check.
@@ -321,10 +328,36 @@ describe('UAT: API flows on the flat problems model', () => {
   //    surface exists and the customer middleware still gates it.)
   // -------------------------------------------------------------------------
   it('Lookup: GET /lookup/isbn/:isbn returns mapped metadata (or 404 when unknown)', async () => {
-    // The production mount uses the default Open Library fetcher, so a bogus ISBN with no
-    // network is expected to surface as not-found or a gateway error — never a 200 with data.
-    const res = await request(app).get('/api/lookup/isbn/0000000000000');
-    expect([404, 502]).toContain(res.status);
+    // Like the LLM, the external catalog is the one faked collaborator here: we mount the REAL
+    // lookupRouter behind the REAL customer middleware, but inject an offline fetcher so the flow
+    // is deterministic and never touches the network. A known ISBN returns an Open-Library-shaped
+    // record (exercising the real parseOpenLibrary mapping); an unknown one returns nothing.
+    const KNOWN = '9780914098911';
+    const fakeFetcher = async (isbn: string): Promise<unknown> =>
+      isbn === KNOWN
+        ? {
+            title: 'Calculus',
+            authors: [{ name: 'Michael Spivak' }],
+            publishers: [{ name: 'Publish or Perish' }],
+            publish_date: '2008',
+          }
+        : undefined;
+    const lookupApp = express();
+    lookupApp.use('/api', resolveCustomer(configFromEnv(process.env)));
+    lookupApp.use('/api/lookup', lookupRouter(fakeFetcher));
+
+    const hit = await request(lookupApp).get(`/api/lookup/isbn/${KNOWN}`);
+    expect(hit.status).toEqual(200);
+    expect(hit.body as BookMetadata).toMatchObject({
+      title: 'Calculus',
+      author: 'Michael Spivak',
+      publisher: 'Publish or Perish',
+      year: 2008,
+    });
+
+    // An ISBN the catalog has no record for surfaces as a clean 404, not a partial/empty 200.
+    const miss = await request(lookupApp).get('/api/lookup/isbn/0000000000000');
+    expect(miss.status).toEqual(404);
   });
 
   // -------------------------------------------------------------------------

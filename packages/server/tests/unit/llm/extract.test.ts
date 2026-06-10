@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { bufferImage } from './image-ref.js';
-import { extractQuestions, parseExtractionResult } from './extract.js';
-import { FakeProvider } from './fake-provider.js';
-import { LlmError } from './provider.js';
+import { bufferImage } from '@/llm/image-ref.js';
+import { extractQuestions, parseExtractionResult } from '@/llm/extract.js';
+import { FakeProvider } from '@/llm/fake-provider.js';
+import { LlmError } from '@/llm/provider.js';
 
 describe('parseExtractionResult', () => {
   it('keeps canonicalText, includes label when non-blank, drops blank label', () => {

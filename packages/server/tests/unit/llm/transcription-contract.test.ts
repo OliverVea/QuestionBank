@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildTranscriptionPrompt, transcriptionSchema } from './transcription-contract.js';
+import { buildTranscriptionPrompt, transcriptionSchema } from '@/llm/transcription-contract.js';
 
 describe('buildTranscriptionPrompt', () => {
   it('includes the question text as reference', () => {

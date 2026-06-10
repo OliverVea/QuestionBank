@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { deriveGrade, type GradingIssue } from './grading-contract.js';
+import { deriveGrade, type GradingIssue } from '@/llm/grading-contract.js';
 
 function issue(severity: GradingIssue['severity']): GradingIssue {
   return { severity, description: `${severity} issue` };

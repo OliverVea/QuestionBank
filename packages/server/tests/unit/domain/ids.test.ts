@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { newId, nowIso } from './ids.js';
+import { newId, nowIso } from '@/domain/ids.js';
 
 describe('ids', () => {
   it('newId returns a unique uuid each call', () => {

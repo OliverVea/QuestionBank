@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { Attempt, Grade } from '../domain/types.js';
-import { scheduleFor } from './srs.js';
+import type { Attempt, Grade } from '@/domain/types.js';
+import { scheduleFor } from '@/services/srs.js';
 
 /** Build a minimal Attempt with a given rating and createdAt; other fields are irrelevant to the scheduler. */
 function attempt(rating: Grade, createdAt: string): Attempt {
@@ -8,9 +8,7 @@ function attempt(rating: Grade, createdAt: string): Attempt {
     id: createdAt,
     customerId: 'local',
     questionId: 'q',
-    imagePaths: [],
-    answerText: '',
-    transcription: '',
+    answer: '',
     recommendedGrade: rating,
     rating,
     issues: [],

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
-import { AnthropicApiProvider } from './anthropic-api-provider.js';
-import { bufferImage } from './image-ref.js';
-import { LlmError } from './provider.js';
+import { AnthropicApiProvider } from '@/llm/anthropic-api-provider.js';
+import { bufferImage } from '@/llm/image-ref.js';
+import { LlmError } from '@/llm/provider.js';
 
 /** Build a fake Anthropic client whose messages.create returns a canned message. */
 function fakeClient(message: unknown) {

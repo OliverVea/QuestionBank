@@ -2,7 +2,7 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { JsonCollection } from './json-collection.js';
+import { JsonCollection } from '@/storage/json-collection.js';
 
 interface Widget {
   id: string;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { extractionPrompt, extractionSchema } from './extraction-contract.js';
+import { extractionPrompt, extractionSchema } from '@/llm/extraction-contract.js';
 
 describe('extractionPrompt', () => {
   it('still forbids solving/answering/hinting', () => {

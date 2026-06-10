@@ -20,7 +20,9 @@
     "build:server": "npm --workspace @qb/server run build",
     "build:client": "npm --workspace @qb/client run build",
     "test": "vitest run",
-    "typecheck": "tsc -b",
+    "test:client": "vitest run --project client",
+    "test:server": "vitest run --project server",
+    "typecheck": "tsc -b && tsc -p packages/server/tsconfig.test.json && tsc -p packages/client/tsconfig.test.json",
     "mocks": "sirv docs/mocks --dev --port 4173 --host"
   },
   "devDependencies": {

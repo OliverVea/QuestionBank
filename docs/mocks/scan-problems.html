@@ -136,9 +136,24 @@
       '9780914098911': { title: 'Calculus' },
       '9783319110790': { title: 'Linear Algebra Done Right' },
     };
-    const wantedIsbn = new URLSearchParams(location.search).get('isbn');
+    const params = new URLSearchParams(location.search);
+    const wantedIsbn = params.get('isbn');
     const isbn = BOOKS[wantedIsbn] ? wantedIsbn : Object.keys(BOOKS)[0];
     document.getElementById('book-ctx').textContent = BOOKS[isbn].title;
+
+    // Where to return when done. Edit-book reloads the book by isbn; add-book is
+    // building an unsaved book held in memory, so it restores its own working
+    // set on return. Default to edit-book for backward compatibility. Only allow
+    // known in-flow targets so the param can't redirect off-flow.
+    const RETURN_TARGETS = { 'edit-book.html': true, 'add-book.html': true };
+    const origin = RETURN_TARGETS[params.get('origin')] ? params.get('origin') : 'edit-book.html';
+    // Add-book has no saved isbn to reload by; edit-book needs it. Carry it only
+    // when returning to edit-book.
+    function returnHref() {
+      return origin === 'edit-book.html'
+        ? 'edit-book.html?isbn=' + encodeURIComponent(isbn)
+        : origin;
+    }
 
     // ---- The canned agent delta (what the server/LLM would return) ----------
     // Most items are `add`; one `edit` shows the before/after path. `accepted`
@@ -392,12 +407,12 @@
         latex: c.item.kind === 'edit' ? c.item.after : c.item.latex,
       }));
       try { sessionStorage.setItem(SCAN_RETURN_KEY, JSON.stringify(accepted)); } catch { /* quota */ }
-      window.location.href = 'edit-book.html?isbn=' + encodeURIComponent(isbn);
+      window.location.href = returnHref();
     });
 
     // Back returns without applying (drops the proposed delta).
     document.getElementById('back-btn').addEventListener('click', () => {
-      window.location.href = 'edit-book.html?isbn=' + encodeURIComponent(isbn);
+      window.location.href = returnHref();
     });
   </script>
   <script src="footer.js" defer></script>

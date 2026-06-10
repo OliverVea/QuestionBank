@@ -315,13 +315,18 @@
       void lookup();
     });
 
-    // ---- Scan a problems page (stub) --------------------------------------
-    // In the real app this opens the camera/photo picker and hands off to the
-    // scan-problems chat to extract problems and propose additions, exactly
-    // like edit-book. The mock can't take that side-trip here — the new book
-    // isn't saved yet — so it just stubs the entry point with an alert.
+    // ---- Scan a problems page (mock stub) ---------------------------------
+    // REQUIREMENT (real client): tapping this opens the camera/photo picker and
+    // hands off to the scan-problems chat to extract problems and propose
+    // additions, exactly like edit-book. The book is NOT saved yet here — the
+    // whole working set (title, author, goal, ISBN, problems) lives only in
+    // memory, since nothing is persisted before "Add to library". So the client
+    // must keep that unsaved draft in memory across the scan side-trip and
+    // restore it (plus the accepted problems) on return — no save required.
+    // This disposable mock has no backend, so it just opens the scan screen to
+    // keep the flow walkable; it does not actually preserve the draft.
     document.getElementById('scan-problems').addEventListener('click',
-      () => alert('→ scan a problems page (extract + propose additions)'));
+      () => { window.location.href = 'scan-problems.html?origin=add-book.html'; });
 
     // ---- Submit (save) -----------------------------------------------------
     form.addEventListener('submit', (e) => {

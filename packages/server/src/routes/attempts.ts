@@ -28,13 +28,6 @@ function parseIssues(raw: unknown): GradingIssue[] | undefined {
   return out;
 }
 
-/** Validate the imagePaths field into a string[] (defaults to [] when absent). */
-function parseImagePaths(raw: unknown): string[] | undefined {
-  if (raw === undefined) return [];
-  if (!Array.isArray(raw) || raw.some((p) => typeof p !== 'string')) return undefined;
-  return raw as string[];
-}
-
 /** Nested under /api/questions/:id/attempts — list + create (final-state only). */
 export function questionAttemptsRouter(store: Store): Router {
   const router = Router({ mergeParams: true });
@@ -56,18 +49,10 @@ export function questionAttemptsRouter(store: Store): Router {
       res.status(404).json({ error: 'question not found' });
       return;
     }
-    const { imagePaths, answerText, transcription, recommendedGrade, rating, issues } =
-      req.body ?? {};
+    const { answer, recommendedGrade, rating, issues } = req.body ?? {};
 
-    const paths = parseImagePaths(imagePaths);
-    if (paths === undefined) {
-      res.status(400).json({ error: 'imagePaths must be an array of strings' });
-      return;
-    }
-    const answer = typeof answerText === 'string' ? answerText.trim() : '';
-    // Invariant: at least one of a photo or a typed answer.
-    if (paths.length === 0 && answer === '') {
-      res.status(400).json({ error: 'attach a photo or type an answer' });
+    if (typeof answer !== 'string' || answer.trim() === '') {
+      res.status(400).json({ error: 'answer is required' });
       return;
     }
     if (!isGrade(recommendedGrade) || !isGrade(rating)) {
@@ -83,9 +68,7 @@ export function questionAttemptsRouter(store: Store): Router {
       id: newId(),
       customerId,
       questionId,
-      imagePaths: paths,
-      answerText: answer,
-      transcription: typeof transcription === 'string' ? transcription : '',
+      answer: answer.trim(),
       recommendedGrade,
       rating,
       issues: parsedIssues,

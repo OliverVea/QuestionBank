@@ -1,0 +1,16 @@
+/* Base reset for @qb/client.
+   Ported from docs/mocks/mocks.css. Establishes box model, full-height shell,
+   base typography, and disables touch rubber-banding. Imported once globally
+   (see src/main.ts). */
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  color: var(--fg);
+  background: var(--bg);
+  /* The app shells own their own scrolling; stop the page itself from
+     rubber-band scrolling/bouncing past the content on touch. */
+  overscroll-behavior: none;
+}

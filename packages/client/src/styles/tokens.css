@@ -1,0 +1,38 @@
+/* Design tokens for @qb/client.
+   Ported from docs/mocks/mocks.css — same palette, same look/feel.
+   Imported once globally (see src/main.ts). A future re-tint is a one-file
+   change here: screen/component CSS should use the semantic tokens, not the
+   raw ramps. */
+:root {
+  /* ---- Brand ramps (50 → 900) ----
+     Raw palette. Don't reach for these directly in component CSS — use the
+     semantic tokens below so a future re-tint is a one-line change here. */
+  --purple-50: #fcfafe;  --purple-100: #dcc9f9;
+  --purple-400: #862bd4; --purple-500: #591a8f; --purple-600: #300a50;
+
+  --orange-100: #f9ae60; --orange-200: #d4862b;
+  --orange-300: #a86920; --orange-400: #7a4b14; --orange-500: #4b2c09;
+
+  --green-50: #5cfdaa;   --green-100: #2bd486;  --green-200: #20a96a;
+  --green-300: #178351;
+
+  --grey-50: #edeff0;    --grey-100: #c2c9cc;   --grey-200: #9ba3a8;
+  --grey-300: #7b8285;   --grey-400: #595f61;   --grey-600: #191b1c;
+
+  /* ---- Semantic tokens (use THESE in component CSS) ---- */
+  --bg: #fff;
+  --fg: var(--grey-600);
+  --muted: var(--grey-400);
+  --border: var(--grey-100);
+  --surface: var(--grey-50);   /* subtle filled backgrounds (cards, footers) */
+
+  --revisit: var(--purple-400);       /* purple */
+  --revisit-dark: var(--purple-500);
+  --learn: var(--green-200);           /* green */
+  --learn-dark: var(--green-300);
+  /* --orange-* is the book/accent color used by the add/edit + book screens. */
+
+  /* One consistent elevation for raised surfaces (cards, primary buttons).
+     Tight blur so it doesn't get clipped by scroll containers; darker tone. */
+  --shadow: 0 3px 12px rgba(25, 27, 28, 0.28);
+}

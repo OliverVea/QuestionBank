@@ -34,8 +34,7 @@ The goal is to stay close to framework-free. Express is the one concession on th
 ## Getting started
 
 ```bash
-npm install
-npm run dev
+QB_ALLOW_DEFAULT_CUSTOMER=1 npm run dev
 ```
 
 This starts:
@@ -43,7 +42,40 @@ This starts:
 - Server on http://localhost:3001 (health check at `/api/health`)
 - Client on http://localhost:5173 (proxies `/api/*` to the server)
 
+`QB_ALLOW_DEFAULT_CUSTOMER=1` is required for local use: by default the API rejects any
+request that carries no customer identity (see [Customer segmentation](#customer-segmentation)).
+With it set, unattributed requests resolve to the `local` customer.
+
 Open http://localhost:5173 — you'll see the three-tab shell (Learn / Practice / Manage) with the Manage tab active for adding books, chapters, and questions.
+
+## Customer segmentation
+
+Every data entity is scoped to a **customer** (an opaque string id) so multiple customers'
+data coexist without leaking. The API performs **no token validation by design** — it is meant
+to sit behind a forward-auth proxy (e.g. Traefik + Authentik) that authenticates the request
+and forwards an identity header. The API trusts that header.
+
+A single middleware resolves the owning customer for each `/api` request (the order matters):
+
+1. **Proxy-secret gate** (only if `QB_TRUSTED_PROXY_SECRET` is set): the request must carry a
+   matching secret header, compared in constant time. Absent/mismatch → `401`.
+2. **Identity header**: if `QB_CUSTOMER_HEADER` is present, its value is the customer id.
+3. **Default fallback**: if the identity header is absent and `QB_ALLOW_DEFAULT_CUSTOMER` is
+   truthy, the customer is `local`.
+4. Otherwise → `401`.
+
+| Env var | Default | Effect |
+| --- | --- | --- |
+| `QB_CUSTOMER_HEADER` | `X-Customer-Id` | Trusted identity header. Behind Authentik, set to e.g. `X-authentik-uid`. |
+| `QB_ALLOW_DEFAULT_CUSTOMER` | off | When truthy, unattributed requests fall back to customer `local`. For local/dev/tests. |
+| `QB_TRUSTED_PROXY_SECRET` | unset | When set, requires a matching proxy-secret header (proof-of-proxy, not identity). |
+| `QB_PROXY_SECRET_HEADER` | `X-Proxy-Secret` | Name of the proxy-secret header checked when the secret is set. |
+
+**Deployment requirements** (the design is only safe when these hold — enforced by the proxy,
+not the API): the API must not be directly reachable (the proxy is the sole ingress); the proxy
+must strip/overwrite any client-supplied identity and proxy-secret headers so only its own values
+survive. `QB_ALLOW_DEFAULT_CUSTOMER` and `QB_TRUSTED_PROXY_SECRET` are the only sanctioned ways
+to run outside this topology.
 
 ## Scripts
 

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { newId, nowIso } from '../domain/ids.js';
 import type { Attempt, Grade, GradingIssue, IssueSeverity } from '../domain/types.js';
+import { requireCustomerId } from '../middleware/resolve-customer.js';
 import type { Store } from '../storage/store.js';
 
 const GRADES: readonly Grade[] = ['correct', 'partial', 'incorrect'];
@@ -38,18 +39,20 @@ function parseImagePaths(raw: unknown): string[] | undefined {
 export function questionAttemptsRouter(store: Store): Router {
   const router = Router({ mergeParams: true });
 
-  router.get('/', (req, res) => {
+  router.get('/', async (req, res) => {
+    const customerId = requireCustomerId(req);
     const questionId = (req.params as { id: string }).id;
-    if (!store.questions.getById(questionId)) {
+    if (!(await store.questions.getById(customerId, questionId))) {
       res.status(404).json({ error: 'question not found' });
       return;
     }
-    res.json(store.attempts.getAll().filter((a) => a.questionId === questionId));
+    res.json((await store.attempts.getAll(customerId)).filter((a) => a.questionId === questionId));
   });
 
-  router.post('/', (req, res) => {
+  router.post('/', async (req, res) => {
+    const customerId = requireCustomerId(req);
     const questionId = (req.params as { id: string }).id;
-    if (!store.questions.getById(questionId)) {
+    if (!(await store.questions.getById(customerId, questionId))) {
       res.status(404).json({ error: 'question not found' });
       return;
     }
@@ -78,6 +81,7 @@ export function questionAttemptsRouter(store: Store): Router {
     }
     const attempt: Attempt = {
       id: newId(),
+      customerId,
       questionId,
       imagePaths: paths,
       answerText: answer,
@@ -87,7 +91,7 @@ export function questionAttemptsRouter(store: Store): Router {
       issues: parsedIssues,
       createdAt: nowIso(),
     };
-    res.status(201).json(store.attempts.create(attempt));
+    res.status(201).json(await store.attempts.create(customerId, attempt));
   });
 
   return router;

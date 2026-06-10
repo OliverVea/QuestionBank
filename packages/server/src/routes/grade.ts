@@ -7,6 +7,7 @@ import {
   type GradingTurnResult,
 } from '../llm/grading-contract.js';
 import { LlmError, type LlmProvider, type Message, type Role } from '../llm/provider.js';
+import { requireCustomerId } from '../middleware/resolve-customer.js';
 import { log } from '../logging/logger.js';
 import type { Store } from '../storage/store.js';
 
@@ -30,8 +31,9 @@ export function questionGradeRouter(store: Store, provider: LlmProvider): Router
   const router = Router({ mergeParams: true });
 
   router.post('/', async (req, res) => {
+    const customerId = requireCustomerId(req);
     const questionId = (req.params as { id: string }).id;
-    const question = store.questions.getById(questionId);
+    const question = await store.questions.getById(customerId, questionId);
     if (!question) {
       res.status(404).json({ error: 'question not found' });
       return;
@@ -46,8 +48,8 @@ export function questionGradeRouter(store: Store, provider: LlmProvider): Router
       return;
     }
 
-    const chapter = store.chapters.getById(question.chapterId);
-    const book = chapter ? store.books.getById(chapter.bookId) : undefined;
+    const chapter = await store.chapters.getById(customerId, question.chapterId);
+    const book = chapter ? await store.books.getById(customerId, chapter.bookId) : undefined;
     const ctx: GradingContext = {
       canonicalText: question.canonicalText,
       ...(chapter?.description !== undefined ? { chapterDescription: chapter.description } : {}),

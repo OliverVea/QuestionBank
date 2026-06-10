@@ -15,8 +15,8 @@ export interface DueItem {
  * nextReviewDate is at or before `now`, that are not skipped, ordered by nextReviewDate
  * ascending (most overdue first). Schedule is computed on read from attempt history.
  */
-export function dueQueue(store: Store, now: string): DueItem[] {
-  const attempts = store.attempts.getAll();
+export async function dueQueue(store: Store, customerId: string, now: string): Promise<DueItem[]> {
+  const attempts = await store.attempts.getAll(customerId);
   const byQuestion = new Map<string, typeof attempts>();
   for (const a of attempts) {
     const list = byQuestion.get(a.questionId);
@@ -24,11 +24,11 @@ export function dueQueue(store: Store, now: string): DueItem[] {
     else byQuestion.set(a.questionId, [a]);
   }
 
-  const chapterById = new Map(store.chapters.getAll().map((c) => [c.id, c]));
-  const bookById = new Map(store.books.getAll().map((b) => [b.id, b]));
+  const chapterById = new Map((await store.chapters.getAll(customerId)).map((c) => [c.id, c]));
+  const bookById = new Map((await store.books.getAll(customerId)).map((b) => [b.id, b]));
 
   const items: DueItem[] = [];
-  for (const question of store.questions.getAll()) {
+  for (const question of await store.questions.getAll(customerId)) {
     if (question.skipped === true) continue;
     const qAttempts = byQuestion.get(question.id);
     if (qAttempts === undefined) continue; // never attempted → not in the ladder

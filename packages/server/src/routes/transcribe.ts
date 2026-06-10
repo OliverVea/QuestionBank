@@ -3,6 +3,7 @@ import { Router } from 'express';
 import multer from 'multer';
 import { bufferImage, fileImage, type ImageMimeType } from '../llm/image-ref.js';
 import { LlmError, type LlmProvider, type Message } from '../llm/provider.js';
+import { requireCustomerId } from '../middleware/resolve-customer.js';
 import { log } from '../logging/logger.js';
 import {
   buildTranscriptionPrompt,
@@ -33,8 +34,9 @@ export function questionTranscribeRouter(
   const upload = multer({ storage: multer.memoryStorage() });
 
   router.post('/', upload.array('images'), async (req, res) => {
+    const customerId = requireCustomerId(req);
     const questionId = (req.params as { id: string }).id;
-    const question = store.questions.getById(questionId);
+    const question = await store.questions.getById(customerId, questionId);
     if (!question) {
       res.status(404).json({ error: 'question not found' });
       return;
@@ -88,8 +90,9 @@ export function questionTranscribeRouter(
   // Retranscribe using saved image paths + a plain-English correction note.
   // Does NOT re-upload; images are already on disk from the first transcription.
   router.post('/retry', async (req, res) => {
+    const customerId = requireCustomerId(req);
     const questionId = (req.params as { id: string }).id;
-    const question = store.questions.getById(questionId);
+    const question = await store.questions.getById(customerId, questionId);
     if (!question) {
       res.status(404).json({ error: 'question not found' });
       return;

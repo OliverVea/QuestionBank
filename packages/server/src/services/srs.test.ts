@@ -6,6 +6,7 @@ import { scheduleFor } from './srs.js';
 function attempt(rating: Grade, createdAt: string): Attempt {
   return {
     id: createdAt,
+    customerId: 'local',
     questionId: 'q',
     imagePaths: [],
     answerText: '',

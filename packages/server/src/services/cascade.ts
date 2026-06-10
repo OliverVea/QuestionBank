@@ -1,17 +1,25 @@
 import type { Store } from '../storage/store.js';
 
-/** Delete a chapter and every question under it. */
-export function deleteChapterCascade(store: Store, chapterId: string): void {
-  for (const q of store.questions.getAll()) {
-    if (q.chapterId === chapterId) store.questions.delete(q.id);
+/** Delete a chapter and every question under it, scoped to one customer. */
+export async function deleteChapterCascade(
+  store: Store,
+  customerId: string,
+  chapterId: string,
+): Promise<void> {
+  for (const q of await store.questions.getAll(customerId)) {
+    if (q.chapterId === chapterId) await store.questions.delete(customerId, q.id);
   }
-  store.chapters.delete(chapterId);
+  await store.chapters.delete(customerId, chapterId);
 }
 
-/** Delete a book, every chapter under it, and every question under those chapters. */
-export function deleteBookCascade(store: Store, bookId: string): void {
-  for (const chapter of store.chapters.getAll()) {
-    if (chapter.bookId === bookId) deleteChapterCascade(store, chapter.id);
+/** Delete a book, every chapter under it, and every question under those chapters, scoped to one customer. */
+export async function deleteBookCascade(
+  store: Store,
+  customerId: string,
+  bookId: string,
+): Promise<void> {
+  for (const chapter of await store.chapters.getAll(customerId)) {
+    if (chapter.bookId === bookId) await deleteChapterCascade(store, customerId, chapter.id);
   }
-  store.books.delete(bookId);
+  await store.books.delete(customerId, bookId);
 }

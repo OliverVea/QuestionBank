@@ -9,6 +9,8 @@ export interface QuestionSource {
 
 export interface Book {
   id: string;
+  /** Owning customer — every entity is scoped to one. Opaque stable id from the identity source. */
+  customerId: string;
   title: string;
   author?: string;
   /** Core feature, optional per-book. */
@@ -18,6 +20,8 @@ export interface Book {
 
 export interface Chapter {
   id: string;
+  /** Owning customer. */
+  customerId: string;
   bookId: string;
   title: string;
   /** Topics covered; also feeds critique later. */
@@ -31,6 +35,8 @@ export type Relevance = 'essential' | 'relevant' | 'can-skip' | 'should-skip';
 
 export interface Question {
   id: string;
+  /** Owning customer. */
+  customerId: string;
   chapterId: string;
   /** Book's own numbering, e.g. "2.4". */
   label?: string;
@@ -63,6 +69,8 @@ export interface GradingIssue {
 /** A committed grading attempt — final state only; the in-flight chat is not stored. */
 export interface Attempt {
   id: string;
+  /** Owning customer. */
+  customerId: string;
   questionId: string;
   /** Saved answer-photo paths, relative under data/images (like extraction); may be empty. */
   imagePaths: string[];

@@ -7,5 +7,8 @@ import { configDefaults, defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     exclude: [...configDefaults.exclude, '**/dist/**'],
+    // Sets QB_ALLOW_DEFAULT_CUSTOMER so existing route tests resolve to the "local"
+    // customer without each one wiring identity headers. Runs once before any test.
+    setupFiles: ['packages/server/src/test-setup.ts'],
   },
 });

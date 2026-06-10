@@ -12,13 +12,17 @@ export interface LearnNext {
  * ordered by book order → chapter.order → question.createdAt. `now` is passed in so
  * the query is pure/testable. Returns undefined when nothing is eligible.
  */
-export function suggestNext(store: Store, now: string): LearnNext | undefined {
-  const attempted = new Set(store.attempts.getAll().map((a) => a.questionId));
-  const books = store.books.getAll();
+export async function suggestNext(
+  store: Store,
+  customerId: string,
+  now: string,
+): Promise<LearnNext | undefined> {
+  const attempted = new Set((await store.attempts.getAll(customerId)).map((a) => a.questionId));
+  const books = await store.books.getAll(customerId);
   const bookOrder = new Map(books.map((b, i) => [b.id, i]));
-  const chapterById = new Map(store.chapters.getAll().map((c) => [c.id, c]));
+  const chapterById = new Map((await store.chapters.getAll(customerId)).map((c) => [c.id, c]));
 
-  const eligible = store.questions.getAll().filter((q) => {
+  const eligible = (await store.questions.getAll(customerId)).filter((q) => {
     if (attempted.has(q.id)) return false;
     if (q.skipped === true) return false;
     if (q.snoozedUntil !== undefined && q.snoozedUntil > now) return false;

@@ -15,6 +15,11 @@ import { AnthropicApiProvider } from './llm/anthropic-api-provider.js';
 import type { LlmProvider } from './llm/provider.js';
 import { errorLogger, requestLogger } from './logging/http.js';
 import { log } from './logging/logger.js';
+import {
+  configFromEnv,
+  resolveCustomer,
+  type ResolveCustomerConfig,
+} from './middleware/resolve-customer.js';
 import { ImageStore } from './storage/images.js';
 import { Store } from './storage/store.js';
 
@@ -25,14 +30,24 @@ const PORT = Number(process.env.PORT ?? 3001);
 const DATA_DIR = process.env.QB_DATA_DIR ?? join(homedir(), '.question-bank');
 
 /** Build the Express app over a given store. Exported so tests can mount it without a port. */
-export function createApp(store: Store, provider: LlmProvider, imageStore: ImageStore): Express {
+export function createApp(
+  store: Store,
+  provider: LlmProvider,
+  imageStore: ImageStore,
+  customerConfig: ResolveCustomerConfig = configFromEnv(process.env),
+): Express {
   const app = express();
   app.use(requestLogger);
   app.use(express.json());
 
+  // Health is unauthenticated so a proxy/uptime check needs no identity.
   app.get('/api/health', (_req, res) => {
     res.json({ status: 'ok' });
   });
+
+  // Every /api route below resolves the owning customer first; unattributed requests are
+  // rejected here, before any handler runs, and handlers read req.customerId.
+  app.use('/api', resolveCustomer(customerConfig));
 
   app.use('/api/books', booksRouter(store));
   app.use('/api/books/:bookId/chapters', bookChaptersRouter(store));

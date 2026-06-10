@@ -14,10 +14,10 @@ Olve.Diagrams flowchart tool to render it as a Mermaid graph. Each task must be 
 
 ---
 
-0. Per customer data segmentation do now before building more BE or UI on top
-  a. Introduce a customer id that scopes every data entity book problem attempt and review [1b]
-  b. Repository and storage layer reads and writes are filtered by the active customer id [0a]
-  c. All routes resolve the active customer id and never leak data across customers [0b]
+0. (done) Per customer data segmentation do now before building more BE or UI on top
+  a. (done) Introduce a customer id that scopes every data entity book problem attempt and review [1b]
+  b. (done) Repository and storage layer reads and writes are filtered by the active customer id [0a]
+  c. (done) All routes resolve the active customer id and never leak data across customers [0b]
 
 1. (done) Foundation Manage tab
   a. (done) Three tab app shell with Manage functional and others stubbed

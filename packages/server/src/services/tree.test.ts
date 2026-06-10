@@ -5,6 +5,8 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { Store } from '../storage/store.js';
 import { buildBookTree } from './tree.js';
 
+const C = 'local';
+
 let dir: string;
 let store: Store;
 
@@ -18,23 +20,38 @@ afterEach(async () => {
 });
 
 describe('buildBookTree', () => {
-  it('returns undefined for an unknown book', () => {
-    expect(buildBookTree(store, 'nope')).toBeUndefined();
+  it('returns undefined for an unknown book', async () => {
+    expect(await buildBookTree(store, C, 'nope')).toBeUndefined();
   });
 
-  it('nests chapters (ordered) and their questions under the book', () => {
-    const book = store.books.create({ id: 'b1', title: 'B', createdAt: 't' });
-    store.chapters.create({ id: 'c2', bookId: 'b1', title: 'Second', order: 1, createdAt: 't' });
-    store.chapters.create({ id: 'c1', bookId: 'b1', title: 'First', order: 0, createdAt: 't' });
-    store.questions.create({
+  it('nests chapters (ordered) and their questions under the book', async () => {
+    const book = await store.books.create(C, { id: 'b1', customerId: C, title: 'B', createdAt: 't' });
+    await store.chapters.create(C, {
+      id: 'c2',
+      customerId: C,
+      bookId: 'b1',
+      title: 'Second',
+      order: 1,
+      createdAt: 't',
+    });
+    await store.chapters.create(C, {
+      id: 'c1',
+      customerId: C,
+      bookId: 'b1',
+      title: 'First',
+      order: 0,
+      createdAt: 't',
+    });
+    await store.questions.create(C, {
       id: 'q1',
+      customerId: C,
       chapterId: 'c1',
       canonicalText: 'x',
       source: { kind: 'text', rawText: 'x' },
       createdAt: 't',
     });
 
-    const tree = buildBookTree(store, book.id);
+    const tree = await buildBookTree(store, C, book.id);
     expect(tree?.title).toEqual('B');
     expect(tree?.chapters.map((c) => c.title)).toEqual(['First', 'Second']);
     expect(tree?.chapters[0]?.questions).toHaveLength(1);

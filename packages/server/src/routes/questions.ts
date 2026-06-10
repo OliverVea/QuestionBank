@@ -5,6 +5,7 @@ import type { Question } from '../domain/types.js';
 import { extractQuestions } from '../llm/extract.js';
 import { bufferImage, type ImageMimeType } from '../llm/image-ref.js';
 import { LlmError, type LlmProvider } from '../llm/provider.js';
+import { requireCustomerId } from '../middleware/resolve-customer.js';
 import type { ImageStore } from '../storage/images.js';
 import type { Store } from '../storage/store.js';
 
@@ -29,14 +30,16 @@ export function chapterQuestionsRouter(
   // Memory storage: we read the buffer ourselves and hand it to ImageStore.
   const upload = multer({ storage: multer.memoryStorage() });
 
-  router.get('/', (req, res) => {
+  router.get('/', async (req, res) => {
+    const customerId = requireCustomerId(req);
     const chapterId = (req.params as { chapterId: string }).chapterId;
-    res.json(store.questions.getAll().filter((q) => q.chapterId === chapterId));
+    res.json((await store.questions.getAll(customerId)).filter((q) => q.chapterId === chapterId));
   });
 
-  router.post('/', (req, res) => {
+  router.post('/', async (req, res) => {
+    const customerId = requireCustomerId(req);
     const chapterId = (req.params as { chapterId: string }).chapterId;
-    if (!store.chapters.getById(chapterId)) {
+    if (!(await store.chapters.getById(customerId, chapterId))) {
       res.status(404).json({ error: 'chapter not found' });
       return;
     }
@@ -48,18 +51,20 @@ export function chapterQuestionsRouter(
     const text = canonicalText.trim();
     const question: Question = {
       id: newId(),
+      customerId,
       chapterId,
       canonicalText: text,
       source: { kind: 'text', rawText: text },
       createdAt: nowIso(),
       ...(typeof label === 'string' && label.trim() !== '' ? { label: label.trim() } : {}),
     };
-    res.status(201).json(store.questions.create(question));
+    res.status(201).json(await store.questions.create(customerId, question));
   });
 
   router.post('/extract', upload.single('image'), async (req, res) => {
+    const customerId = requireCustomerId(req);
     const chapterId = (req.params as { chapterId: string }).chapterId;
-    if (!store.chapters.getById(chapterId)) {
+    if (!(await store.chapters.getById(customerId, chapterId))) {
       res.status(404).json({ error: 'chapter not found' });
       return;
     }
@@ -91,15 +96,18 @@ export function chapterQuestionsRouter(
       throw err;
     }
 
-    const created = extracted.map((q) =>
-      store.questions.create({
-        id: newId(),
-        chapterId,
-        canonicalText: q.canonicalText,
-        source: { kind: 'image', imagePath },
-        createdAt: nowIso(),
-        ...(q.label && q.label.trim() !== '' ? { label: q.label.trim() } : {}),
-      }),
+    const created = await Promise.all(
+      extracted.map((q) =>
+        store.questions.create(customerId, {
+          id: newId(),
+          customerId,
+          chapterId,
+          canonicalText: q.canonicalText,
+          source: { kind: 'image', imagePath },
+          createdAt: nowIso(),
+          ...(q.label && q.label.trim() !== '' ? { label: q.label.trim() } : {}),
+        }),
+      ),
     );
     res.status(201).json(created);
   });
@@ -111,8 +119,10 @@ export function chapterQuestionsRouter(
 export function questionsRouter(store: Store): Router {
   const router = Router();
 
-  router.patch('/:id', (req, res) => {
-    if (!store.questions.getById(req.params.id)) {
+  router.patch('/:id', async (req, res) => {
+    const customerId = requireCustomerId(req);
+    const current = await store.questions.getById(customerId, req.params.id);
+    if (!current) {
       res.status(404).json({ error: 'not found' });
       return;
     }
@@ -120,27 +130,26 @@ export function questionsRouter(store: Store): Router {
 
     // Clear-snooze: update() shallow-merges and cannot remove a key, so delete + re-create.
     if (snoozedUntil === null) {
-      const current = store.questions.getById(req.params.id)!;
       const { snoozedUntil: _drop, ...rest } = current;
       const rebuilt: Question = { ...rest };
       if (typeof canonicalText === 'string') rebuilt.canonicalText = canonicalText.trim();
       if (typeof label === 'string') rebuilt.label = label.trim();
       if (typeof skipped === 'boolean') rebuilt.skipped = skipped;
-      store.questions.delete(req.params.id);
-      res.json(store.questions.create(rebuilt));
+      await store.questions.delete(customerId, req.params.id);
+      res.json(await store.questions.create(customerId, rebuilt));
       return;
     }
 
-    const patch: Partial<Omit<Question, 'id'>> = {};
+    const patch: Partial<Omit<Question, 'id' | 'customerId'>> = {};
     if (typeof canonicalText === 'string') patch.canonicalText = canonicalText.trim();
     if (typeof label === 'string') patch.label = label.trim();
     if (typeof skipped === 'boolean') patch.skipped = skipped;
     if (typeof snoozedUntil === 'string') patch.snoozedUntil = snoozedUntil;
-    res.json(store.questions.update(req.params.id, patch));
+    res.json(await store.questions.update(customerId, req.params.id, patch));
   });
 
-  router.delete('/:id', (req, res) => {
-    store.questions.delete(req.params.id);
+  router.delete('/:id', async (req, res) => {
+    await store.questions.delete(requireCustomerId(req), req.params.id);
     res.status(204).end();
   });
 

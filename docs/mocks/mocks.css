@@ -4,21 +4,17 @@
   /* ---- Brand ramps (50 → 900) ----
      Raw palette. Don't reach for these directly in screen CSS — use the
      semantic tokens below so a future re-tint is a one-line change here. */
-  --purple-50: #fcfafe;  --purple-100: #dcc9f9; --purple-200: #bf96f5;
-  --purple-300: #a662f1; --purple-400: #862bd4; --purple-500: #591a8f;
-  --purple-600: #300a50;
+  --purple-50: #fcfafe;  --purple-100: #dcc9f9;
+  --purple-400: #862bd4; --purple-500: #591a8f; --purple-600: #300a50;
 
-  --orange-50: #fde1c8;  --orange-100: #f9ae60; --orange-200: #d4862b;
+  --orange-100: #f9ae60; --orange-200: #d4862b;
   --orange-300: #a86920; --orange-400: #7a4b14; --orange-500: #4b2c09;
-  --orange-600: #211102;
 
   --green-50: #5cfdaa;   --green-100: #2bd486;  --green-200: #20a96a;
-  --green-300: #178351;  --green-400: #0d5c37;  --green-500: #04351e;
-  --green-600: #011207;
+  --green-300: #178351;
 
   --grey-50: #edeff0;    --grey-100: #c2c9cc;   --grey-200: #9ba3a8;
-  --grey-300: #7b8285;   --grey-400: #595f61;   --grey-500: #383b3d;
-  --grey-600: #191b1c;
+  --grey-300: #7b8285;   --grey-400: #595f61;   --grey-600: #191b1c;
 
   /* ---- Semantic tokens (use THESE in screen CSS) ---- */
   --bg: #fff;
@@ -31,16 +27,12 @@
   --revisit-dark: var(--purple-500);
   --learn: var(--green-200);           /* green */
   --learn-dark: var(--green-300);
-  /* --orange-* reserved for a future accent (e.g. "due soon"); unused for now. */
+  /* --orange-* is the book/accent color used by the add/edit + book screens. */
 
   /* One consistent elevation for raised surfaces (cards, primary buttons).
      Tight blur so it doesn't get clipped by scroll containers; darker tone. */
   --shadow: 0 3px 12px rgba(25, 27, 28, 0.28);
 }
-
-/* Shared elevation utility — apply to any raised surface so shadows stay
-   consistent across mocks. */
-.shadow { box-shadow: var(--shadow); }
 
 * { box-sizing: border-box; }
 html, body { height: 100%; }

@@ -130,7 +130,6 @@
   margin-top: 0.1rem;
 }
 .issue-critical .issue-sev { background: color-mix(in srgb, var(--purple-400) 16%, transparent); color: var(--purple-500); }
-.issue-medium   .issue-sev { background: color-mix(in srgb, var(--orange-200) 22%, transparent); color: var(--orange-400); }
 .issue-minor    .issue-sev { background: var(--grey-50); color: var(--grey-400); }
 .issue-desc { font-size: 0.95rem; }
 

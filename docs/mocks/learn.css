@@ -32,8 +32,6 @@
   border-bottom: 1px solid var(--border);   /* divider, mirrors the actions' top border */
   background: var(--bg);       /* solid bar — masks the grid behind it */
 }
-/* Only the title TEXT animates in; the bar/divider above stays static. */
-.qcard-eyebrow .animate-in { display: inline-block; }
 
 /* Scroll region for the question card. Vertically centers a short problem;
    scrolls (from the top) when a long one overflows. The horizontal padding is

@@ -73,13 +73,6 @@
   letter-spacing: 0.05em;
   opacity: 0.85;
 }
-.banner .b-title {
-  font-size: 1.15rem;
-  font-weight: 700;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
 .banner .b-cta {
   font-size: 1.15rem;
   font-weight: 700;

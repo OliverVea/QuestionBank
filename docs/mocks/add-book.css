@@ -97,20 +97,6 @@
 @media (prefers-reduced-motion: reduce) {
   .lookup-status .spinner { animation: none; }
 }
-.status-link {
-  border: none;
-  background: none;
-  font: inherit;
-  font-weight: 600;
-  color: var(--revisit);
-  cursor: pointer;
-  padding: 0;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  -webkit-tap-highlight-color: transparent;
-}
-.status-link:active { color: var(--revisit-dark); }
-
 /* ---- Cover + core details ---- */
 .details-row {
   margin: 1.1rem 0 0;
@@ -200,91 +186,7 @@ textarea.field-in { resize: vertical; line-height: 1.4; }
   color: var(--muted);
 }
 
-/* ---- Chapters ---- */
-.chapters { margin-top: 1.1rem; }
-.chapters-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
-}
-.chapters-head h2 {
-  margin: 0;
-  font-size: 0.78rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--muted);
-}
-.chapters-src {
-  font-size: 0.72rem;
-  color: var(--learn-dark);
-  font-weight: 600;
-}
-
-.chapter-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-.chapter-row {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-}
-.ch-num {
-  flex: none;
-  width: 1.6rem;
-  height: 1.6rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: var(--muted);
-  background: var(--surface);
-  border-radius: 7px;
-}
-.ch-in {
-  flex: 1;
-  min-width: 0;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--bg);
-  font: inherit;
-  font-size: 0.92rem;
-  color: var(--fg);
-  padding: 0.45rem 0.55rem;
-  outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-.ch-in:focus {
-  border-color: var(--revisit);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--revisit) 16%, transparent);
-}
-.ch-del {
-  flex: none;
-  width: 1.9rem;
-  height: 1.9rem;
-  border: none;
-  background: none;
-  color: var(--muted);
-  font-size: 1.3rem;
-  line-height: 1;
-  border-radius: 8px;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition: background 0.12s ease, color 0.12s ease;
-}
-.ch-del:active { background: var(--surface); color: var(--orange-200); }
-@media (hover: hover) {
-  .ch-del:hover { background: var(--surface); color: var(--orange-200); }
-}
-
-.add-chapter, .add-problem {
+.add-problem {
   display: flex;
   align-items: center;
   gap: 0.55rem;
@@ -302,14 +204,14 @@ textarea.field-in { resize: vertical; line-height: 1.4; }
   -webkit-tap-highlight-color: transparent;
   transition: background 0.12s ease, color 0.2s ease, border-color 0.15s ease;
 }
-.add-chapter:active, .add-problem:active { background: var(--surface); color: var(--orange-200); border-color: var(--orange-200); }
+.add-problem:active { background: var(--surface); color: var(--orange-200); border-color: var(--orange-200); }
 @media (hover: hover) {
-  .add-chapter:hover, .add-problem:hover { background: var(--surface); color: var(--orange-200); border-color: var(--orange-200); }
+  .add-problem:hover { background: var(--surface); color: var(--orange-200); border-color: var(--orange-200); }
 }
-.add-chapter .plus, .add-problem .plus { flex: none; width: 1.2rem; height: 1.2rem; line-height: 0; color: var(--muted); transition: color 0.2s ease; }
-.add-chapter:active .plus, .add-problem:active .plus { color: var(--orange-200); }
-@media (hover: hover) { .add-chapter:hover .plus, .add-problem:hover .plus { color: var(--orange-200); } }
-.add-chapter .plus svg, .add-problem .plus svg { width: 100%; height: 100%; display: block; }
+.add-problem .plus { flex: none; width: 1.2rem; height: 1.2rem; line-height: 0; color: var(--muted); transition: color 0.2s ease; }
+.add-problem:active .plus { color: var(--orange-200); }
+@media (hover: hover) { .add-problem:hover .plus { color: var(--orange-200); } }
+.add-problem .plus svg { width: 100%; height: 100%; display: block; }
 
 /* Scan-a-page action: same dashed shape as [+ add problem] but accented in the
    revisit/purple so it reads as the distinct "let the agent fill the list"

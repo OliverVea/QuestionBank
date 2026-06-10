@@ -30,7 +30,7 @@
     </header>
 
     <!-- One plain form. Every field is editable from the start; the ISBN field
-         is just a shortcut that prefills the rest (incl. chapters) on lookup. -->
+         is just a shortcut that prefills the rest (metadata + cover) on lookup. -->
     <form class="add-stage" id="book-form" autocomplete="off">
       <h1 class="add-title animate-in" style="--i: 0">Add a book</h1>
 
@@ -130,49 +130,27 @@
   <script>
     // ---- Demo lookup records (what the SERVER would return) ----------------
     // In the real client the ISBN lookup is a single server call — the server
-    // owns talking to the catalog/cover/ToC sources and hands back one record
-    // (title, author, publisher, year, cover, chapters). This mock fakes that
-    // server response inline: each sample is the shape the endpoint would
-    // return. The ToC is hand-authored here for design; the real server would
-    // source it (catalog ToC / OCR of the contents page).
+    // owns talking to the catalog/cover sources and hands back one record
+    // (title, author, publisher, year, cover). This mock fakes that server
+    // response inline: each sample is the shape the endpoint would return.
     const SAMPLES = {
       '9781107179868': {
         title: 'Introduction to Quantum Mechanics',
         author: 'David J. Griffiths',
         publisher: 'Cambridge University Press',
         year: '2018',
-        toc: [
-          'The Wave Function', 'Time-Independent Schrödinger Equation',
-          'Formalism', 'Quantum Mechanics in Three Dimensions',
-          'Identical Particles', 'Symmetries & Conservation Laws',
-          'Time-Independent Perturbation Theory', 'The Variational Principle',
-          'The WKB Approximation', 'Scattering',
-        ],
       },
       '9780914098911': {
         title: 'Calculus',
         author: 'Michael Spivak',
         publisher: 'Publish or Perish',
         year: '2008',
-        toc: [
-          'Basic Properties of Numbers', 'Numbers of Various Sorts',
-          'Functions', 'Graphs', 'Limits', 'Continuous Functions',
-          'Three Hard Theorems', 'Least Upper Bounds', 'Derivatives',
-          'Differentiation', 'Significance of the Derivative', 'Integrals',
-        ],
       },
       '9783319110790': {
         title: 'Linear Algebra Done Right',
         author: 'Sheldon Axler',
         publisher: 'Springer',
         year: '2015',
-        toc: [
-          'Vector Spaces', 'Finite-Dimensional Vector Spaces',
-          'Linear Maps', 'Polynomials', 'Eigenvalues & Eigenvectors',
-          'Inner Product Spaces', 'Operators on Inner Product Spaces',
-          'Operators on Complex Vector Spaces', 'Operators on Real Vector Spaces',
-          'Trace & Determinant',
-        ],
       },
     };
 

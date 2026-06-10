@@ -45,4 +45,21 @@ describe('html', () => {
     expect(el.querySelector('em')).toBe(badge);
     expect(el.textContent).toBe('hello world!');
   });
+
+  test('false / null / undefined interpolate to nothing (safe conditional render)', () => {
+    const shown = true;
+    const hidden = false;
+    const el = html`<div>${shown && html`<span class="yes">y</span>`}${hidden && html`<span class="no">n</span>`}${null}${undefined}</div>`;
+    expect(el.querySelector('.yes')).not.toBeNull();
+    expect(el.querySelector('.no')).toBeNull();
+    // No stray "false" / "null" / "undefined" text leaked into the output.
+    expect(el.textContent).toBe('y');
+  });
+
+  test('ignores a user-authored comment that is not a real marker', () => {
+    const el = html`<div><!--qb:note-->hi</div>`;
+    // The look-alike comment is left intact (not treated as an interpolation slot)…
+    expect(el.textContent).toBe('hi');
+    expect(el.innerHTML).toContain('<!--qb:note-->');
+  });
 });

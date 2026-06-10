@@ -38,7 +38,7 @@ export function html(
   let current = walker.nextNode();
   while (current) {
     const text = (current as Comment).data;
-    if (text.startsWith('qb:')) markers.push(current as Comment);
+    if (/^qb:\d+$/.test(text)) markers.push(current as Comment);
     current = walker.nextNode();
   }
 
@@ -61,6 +61,9 @@ export function html(
 function toNodes(value: unknown): Node[] {
   if (value instanceof Node) return [value];
   if (Array.isArray(value)) return value.flatMap(toNodes);
-  // string | number | anything else → text (injection-safe).
+  // null / undefined / false render nothing, so `${cond && el}` is safe — the
+  // same convention every JSX runtime uses for conditional children.
+  if (value == null || value === false) return [];
+  // string | number (and other values) → text (injection-safe).
   return [document.createTextNode(String(value))];
 }

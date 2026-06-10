@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Question Bank">
+  <!-- Maskable: the orange fills the whole canvas (it gets cropped to a shape),
+       and the glyph sits within the ~80% safe zone so nothing important clips. -->
+  <rect width="512" height="512" fill="#f9ae60"/>
+  <g transform="translate(51.2 51.2) scale(0.8)">
+    <g fill="none" stroke="#ffffff" stroke-width="22" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M256 152c-40-28-92-32-132-20v224c40-12 92-8 132 20 40-28 92-32 132-20V132c-40-12-92-8-132 20z"/>
+      <path d="M256 152v244"/>
+    </g>
+    <g fill="#ffffff">
+      <path d="M256 232c0-18 14-30 32-30s32 12 32 28c0 14-9 21-19 28-8 6-13 11-13 21v4h-22v-6c0-15 8-23 18-30 7-5 12-9 12-17 0-7-6-12-14-12s-14 5-14 12z"/>
+      <circle cx="287" cy="322" r="13"/>
+    </g>
+  </g>
+</svg>

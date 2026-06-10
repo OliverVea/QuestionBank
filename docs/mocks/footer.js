@@ -8,4 +8,14 @@
   const anim = new URLSearchParams(location.search).get('anim') || 'cascade';
   const known = { fade: 'anim-fade', cascade: 'anim-cascade', pop: 'anim-pop' };
   document.body.classList.add(known[anim] || known.cascade);
+
+  // ---- PWA service worker ----
+  // Registering a service worker (with a fetch handler, see sw.js) is what makes
+  // the app installable, so launching it from the home screen honors the
+  // manifest's fullscreen display (no address bar). Scoped to the mocks dir.
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(() => { /* ignore in plain tab */ });
+    });
+  }
 })();

@@ -59,19 +59,49 @@ pre-populated for the chosen book. Opened by tapping a row.
 Fields (all editable):
 
 - **ISBN** — kept, including the look-up shortcut, so the user can re-run a
-  lookup to re-prefill metadata/chapters for an existing book.
+  lookup to refresh metadata for an existing book.
 - **Title** (required — gates Save), **Author**, **Learning goal**.
-- **Chapters** — full list: add, rename, remove. Numbering derives from
-  position, matching the add screen.
+- **Problems** — the book's ordered problem list (see "Problems model" below),
+  replacing the old "Chapters" section.
 
 Differences from add-book:
 
 - Heading reads **Edit book** (not "Add a book").
 - Primary button reads **Save changes** (not "Add to library").
 
-Inline demo data and labels stay local to this file, per the mocks' "keep JS
-inline and disposable" rule; some markup is duplicated from add-book, which is
-acceptable for mocks.
+## Problems model
+
+**There are no chapters.** A book is a **flat, ordered list of problems**. This
+list appears on **both** `add-book.html` and `edit-book.html` (same component),
+replacing the former "Chapters" section. The shared behavior lives in a shared
+script, `problems-list.js` (lifted out per the mocks' "lift truly-reusable
+interactive patterns" rule, like `footer.js`), not duplicated inline.
+
+Each problem has two **required** fields:
+
+- **Label** — e.g. `1.A.3` (read as chapter 1, section A, problem 3), free-form
+  text. **Auto unless overridden:** by default it shows the problem's live
+  position (1, 2, 3…) and renumbers as problems reorder; typing a custom label
+  pins it to that problem and stops auto-numbering; clearing a custom label
+  reverts it to the auto-index.
+- **LaTeX text** — the problem statement in LaTeX (mixed text + `$…$` / `$$…$$`,
+  parsed exactly as `learn.html` does). **Rendered (KaTeX) by default**; tapping
+  it swaps to a raw-LaTeX editable text field showing just the source.
+  **Enter or blur (click away) commits** the edit into the page's working
+  state and returns to the rendered view.
+
+Each problem **row**: left **drag handle** (reorder — same pointer-drag as the
+manage-books rows), the label + rendered LaTeX (tap to edit), right **trash**
+(delete). An **[+ add problem]** action appends a blank row (auto-label, empty
+LaTeX opened in edit mode). Bulk image ingestion is a later feature, not in this
+iteration.
+
+### Saving & unsaved-changes guard
+
+- A **Save changes** / **Add to library** button commits the whole form.
+- Editing anything marks the page **dirty**; navigating away (Back, close)
+  while dirty triggers a **`beforeunload` unsaved-changes warning**. Saving (or
+  reverting to a clean state) clears the guard.
 
 ## Delete
 
@@ -92,15 +122,21 @@ Per `docs/mocks/AGENTS.md`, the first step is always a navigable skeleton.
 1. **Skeleton** *(done)* — bare "Manage library" screen, rows showing a left
    drag handle, cover, title/author, and a right trash button, navigable from
    the home pencil. Edit/delete/reorder are stubbed (`alert`).
-2. **Delete** — wire the trash button to remove the row + show the "Book
-   deleted — Undo" toast with restore.
-3. **Reorder** — wire the drag handle to move rows.
-4. **Edit screen** — create `edit-book.html` from the add-book layout,
-   pre-populated, opened by a row tap.
+2. **Reorder** *(done)* — drag handle moves rows via a pointer-drag with a
+   lifted row + placeholder gap.
+3. **Edit screen** *(done, evolving)* — `edit-book.html` from the add-book
+   layout, pre-populated, opened by a row tap.
+4. **Problems model** — drop chapters; build the shared `problems-list.js`
+   (label auto/custom, LaTeX render + inline edit, drag-reorder, delete,
+   add-row, dirty-guard) and use it on both `add-book.html` and
+   `edit-book.html`.
+5. **Delete (book)** — wire the manage-books trash to remove the row + show the
+   "Book deleted — Undo" toast with restore.
 
 ## Out of scope
 
 - Real persistence / API wiring (this is a mock).
 - Bulk / multi-select delete (deliberately dropped — one book at a time).
-- Chapter-level reorder (tracked separately as its own feature).
+- Chapters and per-problem sections (chapters removed; sections deferred).
+- Bulk image ingestion of problems (later feature).
 - Adding books (already covered by `add-book.html`).

@@ -2,7 +2,15 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <!-- PWA: installable, runs in its own window (standalone). -->
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#f9ae60" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icon.svg" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="QuestionBank" />
   <title>Question Bank — Manage Books Mock</title>
   <link rel="stylesheet" href="mocks.css" />
   <link rel="stylesheet" href="manage-books.css" />
@@ -22,15 +30,20 @@
       </div>
 
       <!-- Book rows injected here. Each row: left handle = drag to reorder,
-           tap body = edit, right-side trash = delete (with Undo). Wired in
-           later steps; stubbed here. -->
+           tap body = edit, right-side trash = delete (with Undo). -->
       <div id="books"></div>
     </section>
+
+    <!-- Undo toast for deletes; hidden until a delete happens. -->
+    <div class="toast" id="undo-toast" role="status" aria-live="polite" hidden>
+      <span class="toast-msg" id="toast-msg"></span>
+      <button class="toast-action" id="toast-undo" type="button">Undo</button>
+    </div>
   </div>
 
   <script>
-    // Skeleton only: demo data + render. Reorder/delete/edit are stubbed
-    // (alert) and get fleshed out in later steps. Keep mock JS inline.
+    // Mock manage-books screen: demo data + render, with drag-reorder, tap-to-
+    // edit, and per-row delete + Undo toast. Mock-only: nothing is persisted.
     const data = {
       books: [
         { title: 'Introduction to Quantum Mechanics', author: 'David J. Griffiths', isbn: '9781107179868' },
@@ -89,8 +102,116 @@
       placeholder.replaceWith(img);
     }
 
-    // ---- Render the list --------------------------------------------------
+    // ---- Drag-to-reorder (pointer events; touch + mouse) ------------------
+    // Mock-only: reorders the DOM live, no persistence.
+    //
+    // Pattern: lift + placeholder. On drag start the row is pinned to the
+    // viewport (`position: fixed`) so it follows the finger's Y exactly and
+    // smoothly, and an empty spacer of the same height takes its slot in the
+    // list — that's the visible gap. As the finger crosses a neighbor's
+    // midpoint we move the *spacer* (the gap slides; siblings animate aside).
+    // On release the row drops into the spacer's slot and the spacer is removed.
     const booksHost = document.getElementById('books');
+
+    // ---- Undo toast --------------------------------------------------------
+    // Shows "<title> deleted — Undo" for a few seconds. Undo runs the supplied
+    // restore callback; otherwise the toast just fades after the timeout. A new
+    // delete replaces any visible toast (and finalizes the previous delete).
+    const toast = document.getElementById('undo-toast');
+    const toastMsg = document.getElementById('toast-msg');
+    const toastUndo = document.getElementById('toast-undo');
+    let toastTimer = null;
+    let pendingUndo = null;
+
+    function hideToast() {
+      toast.hidden = true;
+      toast.classList.remove('show');
+      pendingUndo = null;
+      if (toastTimer) { clearTimeout(toastTimer); toastTimer = null; }
+    }
+    function showUndoToast(message, onUndo) {
+      pendingUndo = onUndo;
+      toastMsg.textContent = message;
+      toast.hidden = false;
+      // next frame so the transition runs
+      requestAnimationFrame(() => toast.classList.add('show'));
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(hideToast, 5000);
+    }
+    toastUndo.addEventListener('click', () => {
+      const fn = pendingUndo;
+      hideToast();
+      if (fn) fn();
+    });
+
+    function makeDraggable(row, handle) {
+      handle.addEventListener('pointerdown', (e) => {
+        e.preventDefault();                 // don't start a text selection / scroll
+        const startRect = row.getBoundingClientRect();
+        // Offset of the grab point within the row, so the row doesn't jump to
+        // center itself under the finger.
+        const grabOffsetY = e.clientY - startRect.top;
+        let moved = false;
+
+        // Spacer holds the row's place — this is the gap the user sees.
+        const spacer = document.createElement('div');
+        spacer.className = 'm-book-spacer';
+        spacer.style.height = startRect.height + 'px';
+        booksHost.insertBefore(spacer, row);
+
+        // Pin the row to the viewport at its current spot; from now it follows
+        // the finger via top:, independent of the list's layout.
+        row.classList.add('dragging');
+        row.style.width = startRect.width + 'px';
+        row.style.left = startRect.left + 'px';
+        row.style.top = startRect.top + 'px';
+
+        handle.setPointerCapture(e.pointerId);
+
+        const onMove = (ev) => {
+          if (!moved && Math.abs(ev.clientY - startRect.top - grabOffsetY) > 3) moved = true;
+          row.style.top = (ev.clientY - grabOffsetY) + 'px';
+
+          // Center of the lifted row in viewport coords.
+          const dragCenter = ev.clientY - grabOffsetY + startRect.height / 2;
+
+          // Reposition the spacer relative to the resting rows (every .m-book
+          // except the lifted one). Move the spacer above the first row whose
+          // midpoint is below the drag center; if none, send it to the end.
+          const rows = [...booksHost.querySelectorAll('.m-book:not(.dragging)')];
+          let placed = false;
+          for (const other of rows) {
+            const box = other.getBoundingClientRect();
+            if (dragCenter < box.top + box.height / 2) {
+              if (spacer.nextElementSibling !== other) booksHost.insertBefore(spacer, other);
+              placed = true;
+              break;
+            }
+          }
+          if (!placed && booksHost.lastElementChild !== spacer) booksHost.appendChild(spacer);
+        };
+
+        const onUp = (ev) => {
+          handle.releasePointerCapture(ev.pointerId);
+          // Drop the row where the gap is, then clear the lifted state.
+          booksHost.insertBefore(row, spacer);
+          spacer.remove();
+          row.classList.remove('dragging');
+          row.style.cssText = row.style.cssText
+            .replace(/(width|left|top):[^;]+;?/g, '');   // strip the pin styles
+          if (moved) row.dataset.dragged = '1';          // swallow the click that follows
+          handle.removeEventListener('pointermove', onMove);
+          handle.removeEventListener('pointerup', onUp);
+          handle.removeEventListener('pointercancel', onUp);
+        };
+
+        handle.addEventListener('pointermove', onMove);
+        handle.addEventListener('pointerup', onUp);
+        handle.addEventListener('pointercancel', onUp);
+      });
+    }
+
+    // ---- Render the list --------------------------------------------------
     const ROW_INDEX_OFFSET = 1; // after the manage-head (0)
     data.books.forEach((b, i) => {
       const row = document.createElement('div');
@@ -106,8 +227,9 @@
       author.className = 'b-author';
       author.textContent = b.author;
 
-      // Per-row delete (trash). Stops the row's edit tap; delete + Undo toast
-      // are wired in a later step.
+      // Per-row delete (trash). Removes the row immediately and offers Undo via
+      // a toast. Stops the row's edit tap so the two don't both fire. Mock-only:
+      // nothing is persisted; Undo just re-inserts the DOM row in place.
       const del = document.createElement('button');
       del.className = 'm-del';
       del.type = 'button';
@@ -122,10 +244,16 @@
         </svg>`;
       del.addEventListener('click', (e) => {
         e.stopPropagation();
-        alert('→ delete book: ' + b.title + ' (with Undo) — wired in a later step');
+        const anchor = row.nextElementSibling;   // remember position for Undo
+        row.remove();
+        showUndoToast(`“${b.title}” deleted`, () => {
+          // Restore in place: before the remembered next row, else at the end.
+          if (anchor && anchor.parentNode === booksHost) booksHost.insertBefore(row, anchor);
+          else booksHost.appendChild(row);
+        });
       });
 
-      // Left drag handle (reorder wired in a later step).
+      // Left drag handle — starts a pointer-drag reorder (see makeDraggable).
       const handle = document.createElement('span');
       handle.className = 'm-handle';
       handle.setAttribute('aria-label', 'Drag to reorder');
@@ -136,7 +264,12 @@
         </svg>`;
 
       row.append(handle, placeholder, title, author, del);
-      row.addEventListener('click', () => alert('→ edit book: ' + b.title));
+      // Tap the row body to edit — but not if the tap ended a drag (see below).
+      row.addEventListener('click', () => {
+        if (row.dataset.dragged) { delete row.dataset.dragged; return; }
+        window.location.href = 'edit-book.html?isbn=' + encodeURIComponent(b.isbn);
+      });
+      makeDraggable(row, handle);
       booksHost.appendChild(row);
 
       void loadCover(placeholder, b);

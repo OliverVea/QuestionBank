@@ -1,0 +1,26 @@
+{
+  "name": "Question Bank",
+  "short_name": "QuestionBank",
+  "description": "A question bank for books.",
+  "start_url": "index.html",
+  "scope": "./",
+  "orientation": "portrait",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "background_color": "#ffffff",
+  "theme_color": "#f9ae60",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

@@ -64,10 +64,15 @@ These mocks are **primarily for phone use**. Design mobile-first:
 Mocks are served over http, **not** opened from `file://`. Run them with:
 
 ```
-npm run mocks      # serves docs/mocks at http://localhost:4173
+npm run mocks      # serves docs/mocks at http://localhost:4173 (+ LAN via --host)
 ```
 
-(`sirv-cli`, a zero-config static server.) Because there's a real origin:
+(`sirv-cli`, a zero-config static server.) For installing the PWA on a phone
+(needs a trusted-HTTPS origin), expose the local server over your tailnet with
+`tailscale serve --bg --https=443 http://localhost:4173` — that gives a real
+Let's Encrypt cert, no self-signed-cert trusting needed.
+
+Because there's a real origin:
 
 - **`fetch()` of local files works** — mocks may read served data/assets
   directly. The old `file://` CORS workarounds are no longer needed.
@@ -85,6 +90,7 @@ The mocks form a navigable flow, not a gallery. `index.html` is the home
 screen (the library) and the default landing page the server serves at `/`.
 From there: the Revisit/Learn banners open `learn.html`; the add-a-book footer
 row opens `add-book.html`; the library-header pencil opens `manage-books.html`;
+tapping a row in `manage-books.html` opens `edit-book.html?isbn=NNN`;
 `learn.html` → `grade.html` on upload; Back/back actions return to the previous
 screen. Wire new screens into this flow with
 plain `window.location.href` links (real interaction logic belongs in the
@@ -101,6 +107,22 @@ first; flesh out behavior in later steps.
 Why: it keeps the flow walkable at every step, surfaces navigation/layout
 problems before logic is built on top of them, and gives a real thing to look
 at on a narrow viewport early.
+
+## Installable (PWA)
+
+The mocks are an installable PWA so the app can be added to a home screen and
+run **fullscreen** (no browser or OS status-bar chrome). `manifest.webmanifest`
+(`display: fullscreen` with a `standalone` fallback via `display_override`,
+brand theme color, `icon.svg` + `icon-maskable.svg`) is linked from every
+page's `<head>`, alongside `theme-color` and the `apple-mobile-web-app-*` meta
+tags (iOS ignores the manifest `display`, so `apple-mobile-web-app-capable` +
+`status-bar-style: black-translucent` drive the fullscreen feel there). The
+viewport uses `viewport-fit=cover` so `env(safe-area-inset-*)` works on
+notched/fullscreen displays. New mocks should copy the same `<head>` block.
+
+**Note:** `display` mode only applies to the *installed* app (Add to Home
+Screen → launch from the icon) — in a normal browser tab you'll still see
+browser chrome no matter what.
 
 ## Adding a new mock
 

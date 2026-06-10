@@ -50,6 +50,9 @@ body {
   font-family: system-ui, sans-serif;
   color: var(--fg);
   background: var(--bg);
+  /* The app shells own their own scrolling; stop the page itself from
+     rubber-band scrolling/bouncing past the content on touch. */
+  overscroll-behavior: none;
 }
 
 /* ---- Top bar ----

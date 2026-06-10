@@ -82,6 +82,8 @@ Olve.Diagrams flowchart tool to render it as a Mermaid graph. Each task must be 
 
 11. Provider configuration future
   a. Register LLM provider key and models via UI instead of env only [2a]
+  b. Backend abstraction that accepts any LLM provider via a broad multi provider library or an OpenAI compatible gateway maximizing supported providers [2a]
+  c. Map the generalized LlmProvider complete and completeStructured and ImageRef contract onto the chosen library so swapping providers needs no app changes [11b]
 
 12. Chapter numbering and reordering future
   a. Explicit chapter numbers [1c]
@@ -95,3 +97,27 @@ Olve.Diagrams flowchart tool to render it as a Mermaid graph. Each task must be 
   b. Endless scrolling canvas so the drawing surface grows as needed [14a]
   c. Zoom in and out on the canvas [14a]
   d. Support rotating the phone 90 degrees to landscape for more room to work [14a]
+
+15. History and revert
+  a. Record a change history of edits and deletes across books and problems [1b]
+  b. Revert a recorded change to undo it restoring the prior state [15a]
+  c. History UI to browse recent changes and revert from there [15b]
+  d. Immediate Undo affordance after a destructive action such as delete a book [15b]
+
+16. Flat problems model replacing chapters
+  a. A book is a flat ordered list of problems with no chapters [1c]
+  b. Each problem has a required label defaulting to its index and editable to a custom value like 1.A.3 [16a]
+  c. Problem text is LaTeX rendered by default and edited as raw source committing on enter or blur [16a]
+  d. Drag to reorder problems and renumber auto labels [16a]
+  e. Edit book screen folds metadata and the problems list with save changes and an unsaved changes guard [16a]
+
+17. Scan to delta problem ingestion v0
+  a. Scan or photograph a page of problems and send to the LLM [2a][16a]
+  b. LLM generates a delta of updates and additions against the current problems list [17a]
+  c. Polish the proposed delta in a conversation before accepting [17b]
+  d. Accept applies the delta to the problems list and reject discards it [17c]
+
+18. Dark mode
+  a. Define dark theme values for the semantic tokens in the root palette [1a]
+  b. Follow the system color scheme by default via prefers color scheme [18a]
+  c. Optional manual light dark toggle that overrides the system preference [18b]

@@ -284,7 +284,7 @@ textarea.field-in { resize: vertical; line-height: 1.4; }
   .ch-del:hover { background: var(--surface); color: var(--orange-200); }
 }
 
-.add-chapter {
+.add-chapter, .add-problem {
   display: flex;
   align-items: center;
   gap: 0.55rem;
@@ -302,14 +302,14 @@ textarea.field-in { resize: vertical; line-height: 1.4; }
   -webkit-tap-highlight-color: transparent;
   transition: background 0.12s ease, color 0.2s ease, border-color 0.15s ease;
 }
-.add-chapter:active { background: var(--surface); color: var(--orange-200); border-color: var(--orange-200); }
+.add-chapter:active, .add-problem:active { background: var(--surface); color: var(--orange-200); border-color: var(--orange-200); }
 @media (hover: hover) {
-  .add-chapter:hover { background: var(--surface); color: var(--orange-200); border-color: var(--orange-200); }
+  .add-chapter:hover, .add-problem:hover { background: var(--surface); color: var(--orange-200); border-color: var(--orange-200); }
 }
-.add-chapter .plus { flex: none; width: 1.2rem; height: 1.2rem; line-height: 0; color: var(--muted); transition: color 0.2s ease; }
-.add-chapter:active .plus { color: var(--orange-200); }
-@media (hover: hover) { .add-chapter:hover .plus { color: var(--orange-200); } }
-.add-chapter .plus svg { width: 100%; height: 100%; display: block; }
+.add-chapter .plus, .add-problem .plus { flex: none; width: 1.2rem; height: 1.2rem; line-height: 0; color: var(--muted); transition: color 0.2s ease; }
+.add-chapter:active .plus, .add-problem:active .plus { color: var(--orange-200); }
+@media (hover: hover) { .add-chapter:hover .plus, .add-problem:hover .plus { color: var(--orange-200); } }
+.add-chapter .plus svg, .add-problem .plus svg { width: 100%; height: 100%; display: block; }
 
 /* ---- Sticky bottom action ---- */
 .add-actions {
@@ -338,3 +338,159 @@ textarea.field-in { resize: vertical; line-height: 1.4; }
   .primary-btn:not(:disabled):hover { filter: brightness(1.05); }
 }
 .sb-count { font-weight: 600; opacity: 0.85; font-size: 0.9rem; }
+
+/* ---- Problems list (shared by add-book + edit-book; see problems-list.js) ----
+   A flat ordered list of problems. Each row: left drag handle, a small label
+   input, the LaTeX body (rendered, tap to edit), and a right trash button. */
+.problems { margin-top: 1.1rem; }
+.problems-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+.problems-head h2 {
+  margin: 0;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.problem-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.pr-row {
+  display: grid;
+  grid-template-columns: auto 3.2rem 1fr auto;
+  grid-template-areas: "handle label body del";
+  align-items: start;
+  column-gap: 0.5rem;
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Drag handle */
+.pr-handle {
+  grid-area: handle;
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.8rem;
+  height: 1.8rem;
+  color: var(--grey-200);
+  cursor: grab;
+  border-radius: 7px;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.pr-handle svg { width: 1.15rem; height: 1.15rem; display: block; }
+.pr-handle:active { background: var(--surface); color: var(--fg); cursor: grabbing; }
+@media (hover: hover) { .pr-handle:hover { color: var(--fg); } }
+
+/* Label input — narrow; greyed while it's an auto index, solid when custom */
+.pr-label {
+  grid-area: label;
+  align-self: center;
+  width: 100%;
+  min-width: 0;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: var(--surface);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-align: center;
+  color: var(--fg);
+  padding: 0.35rem 0.25rem;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease;
+}
+.pr-label.auto { color: var(--muted); }
+.pr-label:focus {
+  border-color: var(--revisit);
+  background: var(--bg);
+  color: var(--fg);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--revisit) 16%, transparent);
+}
+
+/* LaTeX body — rendered view and raw editor share the slot */
+.pr-body { grid-area: body; min-width: 0; align-self: center; }
+.pr-rendered {
+  min-height: 1.6rem;
+  padding: 0.35rem 0.4rem;
+  border-radius: 7px;
+  cursor: text;
+  overflow-x: auto;
+  line-height: 1.5;
+  transition: background 0.12s ease;
+}
+.pr-rendered:active { background: var(--surface); }
+@media (hover: hover) { .pr-rendered:hover { background: var(--surface); } }
+.pr-rendered .pr-empty { color: var(--muted); font-style: italic; }
+.pr-editor {
+  width: 100%;
+  border: 1px solid var(--revisit);
+  border-radius: 7px;
+  background: var(--bg);
+  font: inherit;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.88rem;
+  color: var(--fg);
+  padding: 0.4rem 0.5rem;
+  outline: none;
+  resize: vertical;
+  line-height: 1.4;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--revisit) 16%, transparent);
+}
+
+/* Trash */
+.pr-del {
+  grid-area: del;
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border: none;
+  background: none;
+  color: var(--grey-200);
+  border-radius: 8px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.pr-del svg { width: 1.15rem; height: 1.15rem; display: block; }
+.pr-del:active { background: var(--surface); color: var(--orange-200); }
+@media (hover: hover) { .pr-del:hover { background: var(--surface); color: var(--orange-200); } }
+
+/* Dragging state — lifted row pinned to the viewport, with a placeholder gap */
+.pr-row.dragging {
+  position: fixed;
+  z-index: 10;
+  margin: 0;
+  box-shadow: var(--shadow);
+  pointer-events: none;
+}
+.pr-spacer {
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  transition: height 0.15s ease;
+  list-style: none;
+}
+@media (prefers-reduced-motion: reduce) { .pr-spacer { transition: none; } }
+

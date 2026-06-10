@@ -109,6 +109,9 @@
 .library {
   min-height: 0;
   overflow-y: auto;
+  /* Don't bounce/scroll-chain when the list already fits — stops the
+     "scroll past the end even with few books" rubber-banding on touch. */
+  overscroll-behavior: contain;
   padding: 0.75rem 0 0.5rem;
 }
 .library-head {

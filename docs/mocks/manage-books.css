@@ -54,6 +54,34 @@
   .m-book:hover .b-title2 { color: var(--orange-200); }
 }
 
+/* ---- Dragging state ----
+   The lifted row is pinned to the viewport (`position: fixed`, its top set in
+   JS) so it tracks the finger directly and smoothly. Raised above the list,
+   elevated, opaque, and rounded so it reads as picked-up. The grid layout from
+   .m-book still applies (we don't change display). No transition on `top` — it
+   must follow the finger 1:1. */
+.m-book.dragging {
+  position: fixed;
+  z-index: 10;
+  margin: 0;
+  background: var(--bg);
+  border-bottom: none;
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  cursor: grabbing;
+  pointer-events: none;          /* don't let the lifted row eat pointer hits */
+}
+
+/* The gap left in the list at the drop target. Slides as the finger moves;
+   the size transition makes neighbors glide aside rather than jump. */
+.m-book-spacer {
+  border-bottom: 1px solid var(--border);
+  transition: height 0.15s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .m-book-spacer { transition: none; }
+}
+
 /* ---- Per-row delete (trash) ----
    Rightmost control on the row. Quiet by default, reddening on press; the
    delete + Undo-toast logic is wired in a later step. */
@@ -123,8 +151,7 @@
 }
 
 /* ---- Drag handle (left) ----
-   The reorder affordance. grab cursor on desktop; press feedback on touch.
-   Drag behavior itself is wired in a later step. */
+   The reorder affordance. grab cursor on desktop; press feedback on touch. */
 .m-handle {
   grid-area: handle;
   align-self: center;
@@ -146,3 +173,46 @@
 @media (hover: hover) {
   .m-handle:hover { color: var(--fg); }
 }
+
+/* ---- Undo toast ----
+   Fixed near the bottom (above the safe-area inset), centered, light-purple
+   pill with an Undo action. Fades/rises in via the `.show` class. */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  transform: translate(-50%, 1rem);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  max-width: calc(100vw - 2rem);
+  background: var(--purple-100);
+  color: var(--purple-600);        /* dark purple text for contrast on the tint */
+  padding: 0.8rem 1rem 0.8rem 1.1rem;
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  opacity: 0;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+@media (prefers-reduced-motion: reduce) {
+  .toast { transition: opacity 0.18s ease; transform: translate(-50%, 0); }
+}
+.toast-msg { font-size: 0.92rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.toast-action {
+  flex: none;
+  border: none;
+  background: none;
+  color: var(--purple-500);
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.92rem;
+  padding: 0.2rem 0.4rem;
+  border-radius: 8px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s ease;
+}
+.toast-action:active { background: rgba(48, 10, 80, 0.12); }
+@media (hover: hover) { .toast-action:hover { background: rgba(48, 10, 80, 0.12); } }

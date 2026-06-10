@@ -48,11 +48,9 @@ export function questionGradeRouter(store: Store, provider: LlmProvider): Router
       return;
     }
 
-    const chapter = await store.chapters.getById(customerId, question.chapterId);
-    const book = chapter ? await store.books.getById(customerId, chapter.bookId) : undefined;
+    const book = await store.books.getById(customerId, question.bookId);
     const ctx: GradingContext = {
       canonicalText: question.canonicalText,
-      ...(chapter?.description !== undefined ? { chapterDescription: chapter.description } : {}),
       ...(book?.learningGoal !== undefined ? { bookLearningGoal: book.learningGoal } : {}),
     };
 

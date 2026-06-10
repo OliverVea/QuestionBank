@@ -121,7 +121,14 @@
       "Bash('/c/Program Files/Google/Chrome/Application/chrome.exe' --headless --disable-gpu --enable-logging=stderr --v=0 --virtual-time-budget=4000 --dump-dom http://localhost:4173/index.html)",
       "Bash(grep -o 'id=\"books\"[^>]*>.\\\\{0,80\\\\}' /tmp/idx-dom.html)",
       "Bash('/c/Program Files/Google/Chrome/Application/chrome.exe' --headless --disable-gpu --enable-logging=stderr --v=1 --virtual-time-budget=4000 --dump-dom http://localhost:4173/index.html)",
-      "Bash(awk '/<script>/{f=1;next} /<\\\\/script>/{if\\(f\\){f=0}} f' docs/mocks/index.html)"
+      "Bash(awk '/<script>/{f=1;next} /<\\\\/script>/{if\\(f\\){f=0}} f' docs/mocks/index.html)",
+      "Bash(awk 'NR==134' /c/Users/olive/QuestionBank/docs/mocks/mocks.css)",
+      "PowerShell($edge = \"C:\\\\Program Files \\(x86\\)\\\\Microsoft\\\\Edge\\\\Application\\\\msedge.exe\"; $chrome = \"C:\\\\Program Files\\\\Google\\\\Chrome\\\\Application\\\\chrome.exe\"; \"edge: $\\(Test-Path $edge\\)\"; \"chrome: $\\(Test-Path $chrome\\)\")",
+      "Read(//c/Users/olive/AppData/Local/Temp/**)",
+      "Bash(tailscale serve *)",
+      "Bash(python3 -c ' *)",
+      "Bash(Select-String -Pattern \"TODO|ROADMAP|BACKLOG|AGENTS|README\")",
+      "Bash(grep -vE '^\\\\.$|^\\\\.\\\\.$|node_modules|dist')"
     ],
     "deny": [
       "Read(//c/Users/olive/QuestionBank/node_modules/**)",

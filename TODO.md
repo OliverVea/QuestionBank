@@ -14,6 +14,11 @@ Olve.Diagrams flowchart tool to render it as a Mermaid graph. Each task must be 
 
 ---
 
+0. Per customer data segmentation do now before building more BE or UI on top
+  a. Introduce a customer id that scopes every data entity book problem attempt and review [1b]
+  b. Repository and storage layer reads and writes are filtered by the active customer id [0a]
+  c. All routes resolve the active customer id and never leak data across customers [0b]
+
 1. (done) Foundation Manage tab
   a. (done) Three tab app shell with Manage functional and others stubbed
   b. (done) Storage layer JSON files in memory working set write through repository
@@ -37,11 +42,11 @@ Olve.Diagrams flowchart tool to render it as a Mermaid graph. Each task must be 
   b. Persist the full critique transcript on the Attempt [2c][2f]
   c. (done) Text input extraction modality alongside image [2a]
   d. Extraction review gate before commit if misreads prove noisy [1d]
-  e. Orphan image GC sweep unreferenced images older than 15 minutes [1d]
-    a. Switch image filenames to time ordered UUIDv7 so creation time is self describing [1d]
-    b. Background timer every 15 minutes runs a mark and sweep over the images dir [3ea]
-    c. Mark is the union of all references then sweep deletes unreferenced files past the grace window [3eb]
-    d. Grace window covers the transcribe save to attempt commit gap and reclaims deleted entity leftovers [3ec]
+  e. Do not persist images send them transiently to the LLM and never write them to disk [1d]
+    a. Transcribe and extract accept image bytes in request and pass straight to the provider without saving [3e]
+    b. Stop writing to the images dir and remove the imagePath field from QuestionSource [3ea]
+    c. Attempts record the transcription text only not imagePaths so retranscribe needs the image re uploaded [3eb]
+    d. With nothing persisted there is no orphan image cleanup to do [3eb]
   f. Markdown beyond the observed subset such as lists headings and tables [1e]
   g. Edit an earlier chat message and revert the conversation to that point then regrade [2h]
 
@@ -76,7 +81,7 @@ Olve.Diagrams flowchart tool to render it as a Mermaid graph. Each task must be 
   c. Take pictures of index or contents pages and have the LLM populate chapters and sections [2a][9b]
 
 10. Backups designed and deferred
-  a. JSON BackupStore snapshot and restore all data files and images [1b]
+  a. JSON BackupStore snapshot and restore all data files [1b]
   b. Auto snapshot retention timer one per age bucket [10a]
   c. Admin UI for manual backup create list load and delete [10a]
 
@@ -121,3 +126,17 @@ Olve.Diagrams flowchart tool to render it as a Mermaid graph. Each task must be 
   a. Define dark theme values for the semantic tokens in the root palette [1a]
   b. Follow the system color scheme by default via prefers color scheme [18a]
   c. Optional manual light dark toggle that overrides the system preference [18b]
+
+19. Session looping through pending content v0
+  a. Loop Learn through all available lessons one after another until none remain [2h]
+  b. Loop Practice through all due repetitions one after another until none remain [6c]
+  c. Track how many lessons and repetitions the user has completed in the current session [19a][19b]
+  d. Pause screen at N completed items saying good job and offering a break or continue [19c]
+  e. Make the N item pause limit configurable [19d]
+
+20. Streak and goals future
+  a. Track a streak of days in a row with practice or learning activity [2c][6c]
+  b. Let the user set a cadence goal such as practice every 3 days [20a]
+  c. Track whether the user is fulfilling their goal and surface it [20b]
+  d. Notifications reminding the user to keep the streak or meet the goal [20c]
+

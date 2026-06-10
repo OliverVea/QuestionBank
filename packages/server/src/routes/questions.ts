@@ -1,156 +1,113 @@
 import { Router } from 'express';
-import multer from 'multer';
 import { newId, nowIso } from '../domain/ids.js';
 import type { Question } from '../domain/types.js';
-import { extractQuestions } from '../llm/extract.js';
-import { bufferImage, type ImageMimeType } from '../llm/image-ref.js';
-import { LlmError, type LlmProvider } from '../llm/provider.js';
 import { requireCustomerId } from '../middleware/resolve-customer.js';
-import type { ImageStore } from '../storage/images.js';
+import { planBatchSave, type IncomingQuestion } from '../services/batch-save.js';
+import { reconcileQuestionIds } from '../services/reconcile.js';
 import type { Store } from '../storage/store.js';
 
-/** Map a known image mimetype to a file extension; undefined ⇒ not an accepted image. */
-function imageExt(mimetype: string): string | undefined {
-  const map: Record<string, string> = {
-    'image/png': 'png',
-    'image/jpeg': 'jpg',
-    'image/webp': 'webp',
-    'image/gif': 'gif',
-  };
-  return map[mimetype];
+/** Order a book's questions by its (reconciled) questionIds; ids map 1:1 to questions. */
+function orderByIds(ids: string[], questions: Question[]): Question[] {
+  const byId = new Map(questions.map((q) => [q.id, q]));
+  return ids.map((id) => byId.get(id)).filter((q): q is Question => q !== undefined);
 }
 
-/** Nested under /api/chapters/:chapterId/questions — list, manual create, and extract-from-image. */
-export function chapterQuestionsRouter(
-  store: Store,
-  provider: LlmProvider,
-  imageStore: ImageStore,
-): Router {
+/** Validate the PUT body into IncomingQuestion[]; returns undefined on any malformed item. */
+function parseIncoming(raw: unknown): IncomingQuestion[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const out: IncomingQuestion[] = [];
+  for (const item of raw) {
+    if (typeof item !== 'object' || item === null) return undefined;
+    const { id, label, canonicalText } = item as Record<string, unknown>;
+    if (typeof canonicalText !== 'string' || canonicalText.trim() === '') return undefined;
+    if (typeof label !== 'string' || label.trim() === '') return undefined;
+    if (id !== undefined && typeof id !== 'string') return undefined;
+    out.push({
+      label: label.trim(),
+      canonicalText: canonicalText.trim(),
+      ...(typeof id === 'string' ? { id } : {}),
+    });
+  }
+  return out;
+}
+
+/** Nested under /api/books/:bookId/questions — reconciled list + atomic batch save. */
+export function bookQuestionsRouter(store: Store): Router {
   const router = Router({ mergeParams: true });
-  // Memory storage: we read the buffer ourselves and hand it to ImageStore.
-  const upload = multer({ storage: multer.memoryStorage() });
 
   router.get('/', async (req, res) => {
     const customerId = requireCustomerId(req);
-    const chapterId = (req.params as { chapterId: string }).chapterId;
-    res.json((await store.questions.getAll(customerId)).filter((q) => q.chapterId === chapterId));
+    const bookId = (req.params as { bookId: string }).bookId;
+    const book = await store.books.getById(customerId, bookId);
+    if (!book) {
+      res.status(404).json({ error: 'book not found' });
+      return;
+    }
+    const questions = (await store.questions.getAll(customerId)).filter((q) => q.bookId === bookId);
+    const healed = reconcileQuestionIds(book.questionIds, questions);
+    // Self-heal: persist the reconciled order back so the list converges on read.
+    const same =
+      healed.length === book.questionIds.length &&
+      healed.every((id, i) => id === book.questionIds[i]);
+    if (!same) {
+      await store.books.update(customerId, bookId, { questionIds: healed });
+    }
+    res.json(orderByIds(healed, questions));
   });
 
-  router.post('/', async (req, res) => {
+  router.put('/', async (req, res) => {
     const customerId = requireCustomerId(req);
-    const chapterId = (req.params as { chapterId: string }).chapterId;
-    if (!(await store.chapters.getById(customerId, chapterId))) {
-      res.status(404).json({ error: 'chapter not found' });
+    const bookId = (req.params as { bookId: string }).bookId;
+    if (!(await store.books.getById(customerId, bookId))) {
+      res.status(404).json({ error: 'book not found' });
       return;
     }
-    const { canonicalText, label } = req.body ?? {};
-    if (typeof canonicalText !== 'string' || canonicalText.trim() === '') {
-      res.status(400).json({ error: 'canonicalText is required' });
+    const incoming = parseIncoming((req.body ?? {}).questions);
+    if (incoming === undefined) {
+      res
+        .status(400)
+        .json({ error: 'questions must be an array of {label, canonicalText, id?}' });
       return;
     }
-    const text = canonicalText.trim();
-    const question: Question = {
-      id: newId(),
-      customerId,
-      chapterId,
-      canonicalText: text,
-      source: { kind: 'text', rawText: text },
-      createdAt: nowIso(),
-      ...(typeof label === 'string' && label.trim() !== '' ? { label: label.trim() } : {}),
-    };
-    res.status(201).json(await store.questions.create(customerId, question));
-  });
+    const stored = (await store.questions.getAll(customerId)).filter((q) => q.bookId === bookId);
+    const plan = planBatchSave({ incoming, stored, bookId, customerId, newId, nowIso });
 
-  router.post('/extract', upload.single('image'), async (req, res) => {
-    const customerId = requireCustomerId(req);
-    const chapterId = (req.params as { chapterId: string }).chapterId;
-    if (!(await store.chapters.getById(customerId, chapterId))) {
-      res.status(404).json({ error: 'chapter not found' });
-      return;
-    }
-    const file = req.file;
-    if (!file) {
-      res.status(400).json({ error: 'an image file is required' });
-      return;
-    }
-    const ext = imageExt(file.mimetype);
-    if (!ext) {
-      res.status(400).json({ error: 'upload must be an image (png, jpeg, webp, gif)' });
-      return;
-    }
-
-    // Store the image first; it is retained even if extraction fails (lets the user retry).
-    const { imagePath } = await imageStore.save(file.buffer, ext);
-
-    let extracted;
-    try {
-      extracted = await extractQuestions(
-        provider,
-        bufferImage(file.buffer, file.mimetype as ImageMimeType),
-      );
-    } catch (err) {
-      if (err instanceof LlmError) {
-        res.status(502).json({ error: 'extraction failed' });
-        return;
+    // Apply the diff, then commit the new order to the book. Single-writer store, so this
+    // sequence is effectively atomic (no concurrent writer can interleave).
+    if (plan.deleteIds.length > 0) {
+      const doomed = new Set(plan.deleteIds);
+      for (const attempt of await store.attempts.getAll(customerId)) {
+        if (doomed.has(attempt.questionId)) await store.attempts.delete(customerId, attempt.id);
       }
-      throw err;
+      for (const id of plan.deleteIds) await store.questions.delete(customerId, id);
     }
+    for (const q of plan.create) await store.questions.create(customerId, q);
+    for (const u of plan.update) {
+      await store.questions.update(customerId, u.id, {
+        label: u.label,
+        canonicalText: u.canonicalText,
+      });
+    }
+    await store.books.update(customerId, bookId, { questionIds: plan.questionIds });
 
-    const created = await Promise.all(
-      extracted.map((q) =>
-        store.questions.create(customerId, {
-          id: newId(),
-          customerId,
-          chapterId,
-          canonicalText: q.canonicalText,
-          source: { kind: 'image', imagePath },
-          createdAt: nowIso(),
-          ...(q.label && q.label.trim() !== '' ? { label: q.label.trim() } : {}),
-        }),
-      ),
-    );
-    res.status(201).json(created);
+    const saved = (await store.questions.getAll(customerId)).filter((q) => q.bookId === bookId);
+    res.json(orderByIds(plan.questionIds, saved));
   });
 
   return router;
 }
 
-/** Flat /api/questions/:id — patch + delete. */
+/** Flat /api/questions/:id — single-problem read. */
 export function questionsRouter(store: Store): Router {
   const router = Router();
 
-  router.patch('/:id', async (req, res) => {
-    const customerId = requireCustomerId(req);
-    const current = await store.questions.getById(customerId, req.params.id);
-    if (!current) {
+  router.get('/:id', async (req, res) => {
+    const question = await store.questions.getById(requireCustomerId(req), req.params.id);
+    if (!question) {
       res.status(404).json({ error: 'not found' });
       return;
     }
-    const { canonicalText, label, skipped, snoozedUntil } = req.body ?? {};
-
-    // Clear-snooze: update() shallow-merges and cannot remove a key, so delete + re-create.
-    if (snoozedUntil === null) {
-      const { snoozedUntil: _drop, ...rest } = current;
-      const rebuilt: Question = { ...rest };
-      if (typeof canonicalText === 'string') rebuilt.canonicalText = canonicalText.trim();
-      if (typeof label === 'string') rebuilt.label = label.trim();
-      if (typeof skipped === 'boolean') rebuilt.skipped = skipped;
-      await store.questions.delete(customerId, req.params.id);
-      res.json(await store.questions.create(customerId, rebuilt));
-      return;
-    }
-
-    const patch: Partial<Omit<Question, 'id' | 'customerId'>> = {};
-    if (typeof canonicalText === 'string') patch.canonicalText = canonicalText.trim();
-    if (typeof label === 'string') patch.label = label.trim();
-    if (typeof skipped === 'boolean') patch.skipped = skipped;
-    if (typeof snoozedUntil === 'string') patch.snoozedUntil = snoozedUntil;
-    res.json(await store.questions.update(customerId, req.params.id, patch));
-  });
-
-  router.delete('/:id', async (req, res) => {
-    await store.questions.delete(requireCustomerId(req), req.params.id);
-    res.status(204).end();
+    res.json(question);
   });
 
   return router;

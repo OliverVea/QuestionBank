@@ -4,11 +4,11 @@ import { join } from 'node:path';
 import { argv } from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { booksRouter } from './routes/books.js';
-import { bookChaptersRouter, chaptersRouter } from './routes/chapters.js';
-import { chapterQuestionsRouter, questionsRouter } from './routes/questions.js';
+import { bookQuestionsRouter, questionsRouter } from './routes/questions.js';
 import { questionAttemptsRouter } from './routes/attempts.js';
 import { questionTranscribeRouter } from './routes/transcribe.js';
 import { questionGradeRouter } from './routes/grade.js';
+import { lookupRouter } from './routes/lookup.js';
 import { learnRouter } from './routes/learn.js';
 import { practiceRouter } from './routes/practice.js';
 import { AnthropicApiProvider } from './llm/anthropic-api-provider.js';
@@ -20,20 +20,18 @@ import {
   resolveCustomer,
   type ResolveCustomerConfig,
 } from './middleware/resolve-customer.js';
-import { ImageStore } from './storage/images.js';
 import { Store } from './storage/store.js';
 
 const PORT = Number(process.env.PORT ?? 3001);
-// Data lives in the user's home dir, not the repo, so it survives `git clean`,
-// is never at risk of being committed, and is independent of the launch cwd
-// (the server is a long-running service that owns its storage). Override with QB_DATA_DIR.
+// Data lives in the user's home dir, not the repo, so it survives `git clean`, is never at
+// risk of being committed, and is independent of the launch cwd. Override with QB_DATA_DIR.
 const DATA_DIR = process.env.QB_DATA_DIR ?? join(homedir(), '.question-bank');
 
 /** Build the Express app over a given store. Exported so tests can mount it without a port. */
 export function createApp(
   store: Store,
   provider: LlmProvider,
-  imageStore: ImageStore,
+  _unused?: unknown,
   customerConfig: ResolveCustomerConfig = configFromEnv(process.env),
 ): Express {
   const app = express();
@@ -45,17 +43,15 @@ export function createApp(
     res.json({ status: 'ok' });
   });
 
-  // Every /api route below resolves the owning customer first; unattributed requests are
-  // rejected here, before any handler runs, and handlers read req.customerId.
+  // Every /api route below resolves the owning customer first.
   app.use('/api', resolveCustomer(customerConfig));
 
   app.use('/api/books', booksRouter(store));
-  app.use('/api/books/:bookId/chapters', bookChaptersRouter(store));
-  app.use('/api/chapters', chaptersRouter(store));
-  app.use('/api/chapters/:chapterId/questions', chapterQuestionsRouter(store, provider, imageStore));
+  app.use('/api/books/:bookId/questions', bookQuestionsRouter(store));
   app.use('/api/questions/:id/attempts', questionAttemptsRouter(store));
-  app.use('/api/questions/:id/transcribe', questionTranscribeRouter(store, provider, imageStore, imageStore.dataDir));
+  app.use('/api/questions/:id/transcribe', questionTranscribeRouter(store, provider));
   app.use('/api/questions/:id/grade', questionGradeRouter(store, provider));
+  app.use('/api/lookup', lookupRouter());
   app.use('/api/learn', learnRouter(store));
   app.use('/api/practice', practiceRouter(store));
   app.use('/api/questions', questionsRouter(store));
@@ -67,11 +63,8 @@ export function createApp(
 
 async function main(): Promise<void> {
   const store = await Store.open(DATA_DIR);
-  const imageStore = new ImageStore(DATA_DIR);
   const provider = new AnthropicApiProvider();
-  const app = createApp(store, provider, imageStore);
-  // Bind 0.0.0.0 so the API is reachable from other devices on the LAN (e.g. a
-  // phone), matching the Vite client's `host: true`. Override with HOST if needed.
+  const app = createApp(store, provider);
   const HOST = process.env.HOST ?? '0.0.0.0';
   app.listen(PORT, HOST, () => {
     log.info(`listening on http://${HOST}:${PORT}`);
@@ -79,9 +72,7 @@ async function main(): Promise<void> {
   });
 }
 
-// Only start a real server when this module is the process entry point — not when
-// a test imports createApp. fileURLToPath turns import.meta.url into a native path,
-// so the comparison works identically on Windows and POSIX (no manual slash munging).
+// Only start a real server when this module is the process entry point.
 const entry = argv[1];
 if (entry !== undefined && fileURLToPath(import.meta.url) === entry) {
   void main();

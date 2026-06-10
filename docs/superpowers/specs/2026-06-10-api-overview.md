@@ -211,6 +211,11 @@ scan-problems "Refine the problems…") are deferred to the LLM work — this pa
 maps `extract` returning a delta; the accepted set lands via the batch save.
 Image bytes are transient (TODO 3e).
 
+> **Implementation status (2026-06-10):** the flat-problems rewrite landed the
+> books/questions/attempts/transcribe/grade/lookup surface. `POST …/extract`
+> (scan → delta) is **designed but deferred** to the LLM work — accepted scan
+> items already ride the book's batch `PUT`, so nothing else blocks on it.
+
 ### Grading loop (learn → grade)
 
 | method + path | what it does | mock functionality served |

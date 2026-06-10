@@ -233,6 +233,13 @@
     addBook.classList.add('animate-in');
     addBook.style.setProperty('--i', ROW_INDEX_OFFSET + data.books.length);
     addBook.addEventListener('click', () => { window.location.href = 'add-book.html'; });
+
+    // Start at the top. The load-in cascade can leave the scroll container (and
+    // the page) nudged down on some browsers / on back-forward restore; pin both
+    // to the top so the home screen always opens at the first row.
+    if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+    const library = document.querySelector('.library');
+    requestAnimationFrame(() => { window.scrollTo(0, 0); if (library) library.scrollTop = 0; });
   </script>
   <script src="footer.js" defer></script>
 </body>

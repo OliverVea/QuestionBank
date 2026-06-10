@@ -1,5 +1,10 @@
 /* Single-screen home layout. Shared tokens + base reset come from mocks.css. */
 
+/* The home screen is a fixed one-screen shell: the PAGE never scrolls, only the
+   library list inside it does. Lock the document so there's no page-level
+   scroll/over-scroll and it can't start nudged down. */
+html, body { overflow: hidden; height: 100%; }
+
 /* One-screen shell: stacked regions, only the library list scrolls */
 .app {
   height: 100dvh;

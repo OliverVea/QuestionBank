@@ -7,10 +7,10 @@
   <link rel="stylesheet" href="mocks.css" />
   <link rel="stylesheet" href="single-screen.css" />
 </head>
-<body>
+<body class="anim-cascade">
   <div class="app">
     <!-- Banner 1: Revisit (blue) -->
-    <button class="banner revisit" id="revisit-banner">
+    <button class="banner revisit animate-in" style="--i: 0" id="revisit-banner">
       <span class="b-icon" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
              stroke-linecap="round" stroke-linejoin="round">
@@ -27,7 +27,7 @@
     </button>
 
     <!-- Banner 2: Learn (green) -->
-    <button class="banner learn" id="learn-banner">
+    <button class="banner learn animate-in" style="--i: 1" id="learn-banner">
       <span class="b-icon" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
              stroke-linecap="round" stroke-linejoin="round">
@@ -43,9 +43,9 @@
       </span>
     </button>
 
-    <!-- Library list -->
+    <!-- Library list (rows animate individually; see books loop) -->
     <section class="library">
-      <div class="library-head">
+      <div class="library-head animate-in" style="--i: 2">
         <h2>Your library</h2>
         <button class="edit-btn" id="library-edit" aria-label="Edit library" title="Edit library">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
@@ -90,7 +90,7 @@
       const n = data.revisitCount;
       document.getElementById('revisit-eyebrow').textContent =
         `Revisit: ${n} problem${n === 1 ? '' : 's'} waiting`;
-      revisitBanner.addEventListener('click', () => alert('→ open the Revisit queue'));
+      revisitBanner.addEventListener('click', () => { window.location.href = 'learn.html'; });
     } else {
       revisitBanner.classList.add('empty');
       document.getElementById('revisit-eyebrow').textContent = 'Revisit';
@@ -102,7 +102,7 @@
     if (data.learnNext) {
       document.getElementById('learn-eyebrow').textContent =
         `Next up: ${data.learnNext.context}`;
-      learnBanner.addEventListener('click', () => alert('→ open the Learn flow'));
+      learnBanner.addEventListener('click', () => { window.location.href = 'learn.html'; });
     } else {
       learnBanner.classList.add('empty');
       document.getElementById('learn-eyebrow').textContent = 'Learn';
@@ -113,19 +113,21 @@
     const COVER_CACHE_PREFIX = 'qb-cover:';
 
     /**
-     * Deterministic fallback color from the title. Normalize first: lowercase
-     * and keep only letters/numbers of ANY script (Latin, Chinese, Cyrillic,
-     * Arabic, …), dropping spaces and punctuation. Hash that to a hue so the
-     * same book always gets the same color regardless of formatting.
+     * Deterministic fallback color from the title, drawn from the brand orange
+     * ramp (not a random hue) so spines stay on-palette and a book always gets
+     * the same shade. Normalize first: lowercase and keep only letters/numbers
+     * of ANY script, dropping spaces and punctuation, then hash to a ramp step.
+     * Only the darker steps are used so white text stays readable.
      */
+    const ORANGE_STEPS = ['--orange-200', '--orange-300', '--orange-400', '--orange-500'];
     function titleColor(title) {
       const norm = title.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
       let hash = 0;
       for (const ch of norm) {
         hash = (hash * 31 + ch.codePointAt(0)) >>> 0; // unsigned 32-bit rolling hash
       }
-      const hue = hash % 360;
-      return `hsl(${hue} 55% 42%)`; // fixed S/L keeps text readable on every hue
+      const token = ORANGE_STEPS[hash % ORANGE_STEPS.length];
+      return `var(${token})`;
     }
 
     /** A colored placeholder tile showing the title, when no cover is available. */
@@ -183,9 +185,12 @@
     }
 
     const booksHost = document.getElementById('books');
-    data.books.forEach((b) => {
+    // Continue the load-in cascade after the banners (0,1) and library head (2).
+    const ROW_INDEX_OFFSET = 3;
+    data.books.forEach((b, i) => {
       const row = document.createElement('div');
-      row.className = 'book';
+      row.className = 'book animate-in';
+      row.style.setProperty('--i', ROW_INDEX_OFFSET + i);
 
       // Render the fallback tile immediately; loadCover swaps in the cover.
       const placeholder = makeFallback(b);
@@ -202,7 +207,7 @@
       num.className = 'ready-num' + (b.progress === 0 ? ' none' : '');
       num.textContent = `${b.progress}%`;
       const lbl = document.createElement('div');
-      lbl.className = 'ready-lbl';
+      lbl.className = 'ready-lbl' + (b.ready === 0 ? ' none' : '');
       lbl.textContent = b.ready === 0 ? '—' : `${b.ready} ready`;
 
       row.append(placeholder, title, author, num, lbl);
@@ -215,8 +220,11 @@
     document.getElementById('library-edit').addEventListener('click',
       () => alert('→ edit library (add/rename/remove books)'));
 
-    document.getElementById('add-book').addEventListener('click',
-      () => alert('→ add a book to your library'));
+    // Add-book row animates in last, after every book row.
+    const addBook = document.getElementById('add-book');
+    addBook.classList.add('animate-in');
+    addBook.style.setProperty('--i', ROW_INDEX_OFFSET + data.books.length);
+    addBook.addEventListener('click', () => alert('→ add a book to your library'));
   </script>
   <script src="footer.js" defer></script>
 </body>

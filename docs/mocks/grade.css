@@ -1,0 +1,249 @@
+/* Grade-chat screen: collapsible question on top, grading conversation in the
+   middle, reply + save pinned at the bottom. Shared tokens/shadow/topbar/anims
+   come from mocks.css. */
+
+/* White page with the shared engineering-pad grid behind everything. The .app
+   shell already clips (overflow:hidden), so .gridpad's rotated layer sits
+   behind the transparent chat and never adds scroll. */
+.app {
+  height: 100dvh;
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;   /* topbar / question / chat / actions */
+  overflow: hidden;
+  max-width: 760px;
+  margin: 0 auto;
+}
+/* The grid shows through the chat only; the topbar/question/actions keep solid
+   fills so they read as chrome over the grid. */
+.chat { background: transparent; }
+.app > .topbar { background: var(--bg); }
+
+/* ---- Collapsible question ---- */
+.qfold {
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+.qfold > summary {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.7rem 1rem;
+  cursor: pointer;
+  list-style: none;                 /* hide the default disclosure triangle */
+  -webkit-tap-highlight-color: transparent;
+}
+.qfold > summary::-webkit-details-marker { display: none; }
+.qfold-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--fg);
+}
+.qfold-ctx {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.qfold-chev { color: var(--muted); transition: transform 0.15s ease; }
+.qfold[open] .qfold-chev { transform: rotate(180deg); }
+.qfold .qbody {
+  font-size: 1.05rem;
+  line-height: 1.5;
+  color: var(--fg);
+  padding: 0 1rem 0.9rem;
+}
+
+/* ---- Chat thread ---- */
+.chat {
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 1rem 0.9rem 1.2rem;
+}
+.msg {
+  max-width: 88%;
+  min-width: 0;                     /* let flex children shrink so wide content can wrap/scroll */
+  border-radius: 16px;
+  padding: 0.8rem 0.95rem;
+  box-shadow: var(--shadow);
+  line-height: 1.45;
+}
+.msg .qbody { font-size: 1rem; overflow-wrap: anywhere; }
+/* Wide display math scrolls sideways within the bubble instead of overflowing it. */
+.msg .qbody-display { overflow-x: auto; max-width: 100%; }
+
+/* User answer: aligned right, learn-green tinted */
+.msg-user {
+  align-self: flex-end;
+  /* Soft orange fill with a full-strength orange outline. */
+  background: color-mix(in srgb, var(--orange-100) 36%, var(--bg));
+  border: 1px solid var(--orange-200);
+}
+/* Grader reply: aligned left, neutral surface */
+.msg-grader {
+  align-self: flex-start;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+/* Grade badge */
+.badge {
+  align-self: flex-start;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #fff;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+}
+.grade-correct { background: var(--learn-dark); }
+.grade-partial { background: var(--orange-200); }
+.grade-incorrect { background: var(--purple-400); }
+
+.grade-ok { font-size: 0.95rem; color: var(--learn-dark); font-weight: 600; }
+
+/* Issue list */
+.issue-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.issue { display: grid; grid-template-columns: auto 1fr; gap: 0.5rem; align-items: start; }
+.issue-sev {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.15rem 0.4rem;
+  border-radius: 6px;
+  white-space: nowrap;
+  margin-top: 0.1rem;
+}
+.issue-critical .issue-sev { background: color-mix(in srgb, var(--purple-400) 16%, transparent); color: var(--purple-500); }
+.issue-medium   .issue-sev { background: color-mix(in srgb, var(--orange-200) 22%, transparent); color: var(--orange-400); }
+.issue-minor    .issue-sev { background: var(--grey-50); color: var(--grey-400); }
+.issue-desc { font-size: 0.95rem; }
+
+/* Collapsible reasoning */
+.reasoning { font-size: 0.9rem; }
+.reasoning > summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-weight: 600;
+  list-style: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.reasoning > summary::-webkit-details-marker { display: none; }
+.reasoning-body { margin-top: 0.4rem; color: var(--muted); font-size: 0.9rem; }
+
+/* ---- Bottom actions ---- */
+.grade-actions {
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+  padding: 0.7rem 0.9rem max(0.8rem, env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+/* Input + send fused into one pill: rounded only on the outer corners, no gap,
+   a thin divider where they meet — (  |→). */
+.reply-row {
+  display: flex;
+  align-items: stretch;             /* button matches the textarea height */
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  overflow: hidden;                 /* clip children to the rounded outer shape */
+}
+.reply-row:focus-within {
+  border-color: var(--learn);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--learn) 30%, transparent);
+}
+.reply {
+  flex: 1;
+  resize: none;
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1.4;
+  color: var(--fg);
+  background: transparent;          /* the row carries the surface fill */
+  border: none;
+  padding: 0.6rem 0.8rem;
+  -webkit-tap-highlight-color: transparent;
+}
+.reply:focus { outline: none; }     /* focus ring lives on the row */
+.reply-send {
+  flex: none;
+  align-self: stretch;
+  width: 3rem;
+  border: none;
+  border-left: 1px solid var(--border);   /* the divider in (  |→) */
+  background: var(--learn);
+  color: #fff;
+  font-size: 1.2rem;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: filter 0.12s ease;
+}
+.reply-send:active { filter: brightness(0.92); }
+@media (hover: hover) { .reply-send:hover { filter: brightness(1.05); } }
+
+/* Three grade buttons. Tapping any one saves the attempt with that grade; the
+   grader's suggested grade is emphasized with a ring + a "Suggested" tag. */
+.grade-row { display: flex; align-items: stretch; gap: 0.5rem; }
+.grade-btn {
+  flex: 1;
+  position: relative;               /* anchor the "Suggested" tag */
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.95rem;
+  padding: 0.65rem 0.5rem;
+  border-radius: 12px;
+  cursor: pointer;
+  border: none;
+  box-shadow: var(--shadow);
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.08s ease, filter 0.12s ease, box-shadow 0.12s ease;
+}
+.grade-btn:active { transform: scale(0.97); filter: brightness(0.96); }
+
+/* incorrect = orange (solid) */
+.gb-incorrect { background: var(--orange-200); color: #fff; }
+/* partial = green outline (ghost) */
+.gb-partial { background: var(--bg); color: var(--learn-dark); box-shadow: inset 0 0 0 2px var(--learn), var(--shadow); }
+/* correct = full green (solid) */
+.gb-correct { background: var(--learn); color: #fff; }
+
+@media (hover: hover) {
+  .grade-btn:hover { filter: brightness(1.05); }
+  .gb-partial:hover { background: var(--green-50); filter: none; }
+}
+
+/* Suggested grade: marked by the capsule tag below it (no ring). */
+.grade-btn.suggested::before {
+  content: 'Suggested';
+  position: absolute;
+  left: 50%;
+  bottom: 0;                         /* sit below the button, lightly overlapping */
+  transform: translate(-50%, 60%);
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #fff;
+  background: var(--green-100);     /* one step brighter than the button */
+  padding: 0.14rem 0.5rem;
+  border-radius: 999px;
+  white-space: nowrap;
+  box-shadow: var(--shadow);
+}

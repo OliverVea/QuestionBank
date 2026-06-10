@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Question Bank — Add a Book Mock</title>
+  <link rel="stylesheet" href="mocks.css" />
+  <link rel="stylesheet" href="add-book.css" />
+</head>
+<body class="anim-cascade">
+  <div class="app">
+    <!-- Top bar: Back (left). No secondary action on this screen. -->
+    <header class="topbar">
+      <button class="topbar-btn" id="back-btn">
+        <span aria-hidden="true">←</span> Back
+      </button>
+    </header>
+
+    <!-- One plain form. Every field is editable from the start; the ISBN field
+         is just a shortcut that prefills the rest (incl. chapters) on lookup. -->
+    <form class="add-stage" id="book-form" autocomplete="off">
+      <h1 class="add-title animate-in" style="--i: 0">Add a book</h1>
+
+      <!-- ISBN: optional shortcut. Look up to prefill the fields below. -->
+      <label class="field animate-in" style="--i: 1">
+        <span class="field-lbl">ISBN <span class="field-opt">(optional — prefills the form)</span></span>
+        <span class="isbn-row">
+          <input class="field-in isbn-input" id="isbn-input" inputmode="numeric"
+                 placeholder="e.g. 9781107179868" aria-label="ISBN" />
+          <button class="isbn-go" id="isbn-go" type="button">Look up</button>
+        </span>
+      </label>
+
+      <!-- Status line: spinner / not-found note while looking up -->
+      <div class="lookup-status" id="lookup-status" hidden></div>
+
+      <!-- Cover + core details -->
+      <div class="details-row animate-in" style="--i: 2">
+        <div class="cover-slot" id="cover-slot"><!-- cover or fallback --></div>
+        <div class="details-fields">
+          <label class="field">
+            <span class="field-lbl">Title</span>
+            <input class="field-in" id="f-title" placeholder="Book title" required />
+          </label>
+          <label class="field">
+            <span class="field-lbl">Author</span>
+            <input class="field-in" id="f-author" placeholder="Author" />
+          </label>
+          <div class="field-meta" id="f-meta" hidden><!-- publisher · year --></div>
+        </div>
+      </div>
+
+      <label class="field field-block animate-in" style="--i: 3">
+        <span class="field-lbl">Learning goal <span class="field-opt">(optional)</span></span>
+        <textarea class="field-in" id="f-goal" rows="2"
+          placeholder="What do you want to get out of this book?"></textarea>
+      </label>
+
+      <!-- Chapters: prefilled from the ISBN lookup's table of contents, but
+           always editable / addable / removable. -->
+      <div class="chapters animate-in" style="--i: 4">
+        <div class="chapters-head">
+          <h2>Chapters</h2>
+          <span class="chapters-src" id="chapters-src" hidden>From the table of contents</span>
+        </div>
+        <ol class="chapter-list" id="chapter-list"><!-- rows injected --></ol>
+        <button class="add-chapter" id="add-chapter" type="button">
+          <span class="plus" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 5v14" /><path d="M5 12h14" />
+            </svg>
+          </span>
+          Add a chapter
+        </button>
+      </div>
+    </form>
+
+    <!-- Sticky bottom action; enabled once there's at least a title -->
+    <footer class="add-actions">
+      <button class="primary-btn" id="save-btn" type="submit" form="book-form" disabled>
+        Add to library
+        <span class="sb-count" id="sb-count"></span>
+      </button>
+    </footer>
+  </div>
+
+  <script>
+    // ---- Demo lookup records (what the SERVER would return) ----------------
+    // In the real client the ISBN lookup is a single server call — the server
+    // owns talking to the catalog/cover/ToC sources and hands back one record
+    // (title, author, publisher, year, cover, chapters). This mock fakes that
+    // server response inline: each sample is the shape the endpoint would
+    // return. The ToC is hand-authored here for design; the real server would
+    // source it (catalog ToC / OCR of the contents page).
+    const SAMPLES = {
+      '9781107179868': {
+        title: 'Introduction to Quantum Mechanics',
+        author: 'David J. Griffiths',
+        publisher: 'Cambridge University Press',
+        year: '2018',
+        toc: [
+          'The Wave Function', 'Time-Independent Schrödinger Equation',
+          'Formalism', 'Quantum Mechanics in Three Dimensions',
+          'Identical Particles', 'Symmetries & Conservation Laws',
+          'Time-Independent Perturbation Theory', 'The Variational Principle',
+          'The WKB Approximation', 'Scattering',
+        ],
+      },
+      '9780914098911': {
+        title: 'Calculus',
+        author: 'Michael Spivak',
+        publisher: 'Publish or Perish',
+        year: '2008',
+        toc: [
+          'Basic Properties of Numbers', 'Numbers of Various Sorts',
+          'Functions', 'Graphs', 'Limits', 'Continuous Functions',
+          'Three Hard Theorems', 'Least Upper Bounds', 'Derivatives',
+          'Differentiation', 'Significance of the Derivative', 'Integrals',
+        ],
+      },
+      '9783319110790': {
+        title: 'Linear Algebra Done Right',
+        author: 'Sheldon Axler',
+        publisher: 'Springer',
+        year: '2015',
+        toc: [
+          'Vector Spaces', 'Finite-Dimensional Vector Spaces',
+          'Linear Maps', 'Polynomials', 'Eigenvalues & Eigenvectors',
+          'Inner Product Spaces', 'Operators on Inner Product Spaces',
+          'Operators on Complex Vector Spaces', 'Operators on Real Vector Spaces',
+          'Trace & Determinant',
+        ],
+      },
+    };
+
+    // ---- Cover resolution (ported from single-screen.html) ----------------
+    // Fallback tile in a fixed on-palette color, then swap in a real cover once
+    // it resolves; degrade gracefully offline. In the real client the cover
+    // URL/bytes come back from the server's lookup record — here the mock stands
+    // in by hitting Open Library directly so unknown ISBNs still feel "live"
+    // without a backend. (The library list colors the spine by title; on this
+    // add screen the color is fixed so it doesn't shift while you type.)
+    const COVER_CACHE_PREFIX = 'qb-cover:';
+    const ORANGE_STEPS = ['--orange-200', '--orange-300', '--orange-400', '--orange-500'];
+    function makeFallback(title, color) {
+      const tile = document.createElement('span');
+      tile.className = 'cover-fallback';
+      tile.style.background = color;
+      const inner = document.createElement('span');
+      inner.textContent = title || '—';
+      tile.appendChild(inner);
+      return tile;
+    }
+
+    // Fixed spine color for this screen: chosen once, never recolored as the
+    // user types. (The library list still colors by title; here it stays put.)
+    const COVER_COLOR = `var(${ORANGE_STEPS[0]})`;
+    async function resolveCover(isbn) {
+      if (!isbn) return null;
+      const key = COVER_CACHE_PREFIX + isbn;
+      const cached = localStorage.getItem(key);
+      if (cached) return cached;
+      const url = `https://covers.openlibrary.org/b/isbn/${isbn}-M.jpg?default=false`;
+      try {
+        const res = await fetch(url);
+        if (!res.ok) return null;
+        const blob = await res.blob();
+        if (blob.size < 100) return null; // OL returns a 1px gif for misses
+        const dataUrl = await new Promise((resolve, reject) => {
+          const fr = new FileReader();
+          fr.onload = () => resolve(fr.result);
+          fr.onerror = reject;
+          fr.readAsDataURL(blob);
+        });
+        try { localStorage.setItem(key, dataUrl); } catch { /* quota */ }
+        return dataUrl;
+      } catch { return null; }
+    }
+
+    // ---- DOM refs ----------------------------------------------------------
+    const form = document.getElementById('book-form');
+    const isbnInput = document.getElementById('isbn-input');
+    const goBtn = document.getElementById('isbn-go');
+    const status = document.getElementById('lookup-status');
+    const coverSlot = document.getElementById('cover-slot');
+    const fTitle = document.getElementById('f-title');
+    const fAuthor = document.getElementById('f-author');
+    const fMeta = document.getElementById('f-meta');
+    const chapterList = document.getElementById('chapter-list');
+    const chaptersSrc = document.getElementById('chapters-src');
+    const addChapterBtn = document.getElementById('add-chapter');
+    const saveBtn = document.getElementById('save-btn');
+    const sbCount = document.getElementById('sb-count');
+
+    // ---- Chapter rows ------------------------------------------------------
+    // Editable, removable rows; numbering is derived from position (matches the
+    // model's `order`), so removing a row renumbers the rest.
+    function renumber() {
+      [...chapterList.children].forEach((li, i) => {
+        li.querySelector('.ch-num').textContent = i + 1;
+      });
+      const n = chapterList.children.length;
+      sbCount.textContent = n ? `· ${n} chapter${n === 1 ? '' : 's'}` : '';
+    }
+    function addChapterRow(title = '', { focus = false } = {}) {
+      const li = document.createElement('li');
+      li.className = 'chapter-row';
+      const num = document.createElement('span');
+      num.className = 'ch-num';
+      const inp = document.createElement('input');
+      inp.className = 'ch-in';
+      inp.value = title;
+      inp.placeholder = 'Chapter title';
+      const del = document.createElement('button');
+      del.className = 'ch-del';
+      del.type = 'button';
+      del.setAttribute('aria-label', 'Remove chapter');
+      del.textContent = '×';
+      del.addEventListener('click', () => { li.remove(); renumber(); });
+      li.append(num, inp, del);
+      chapterList.appendChild(li);
+      renumber();
+      if (focus) inp.focus();
+    }
+    addChapterBtn.addEventListener('click', () => addChapterRow('', { focus: true }));
+
+    // ---- Cover preview reflects the current title/ISBN --------------------
+    // Show the fallback tile with the fixed spine color and the current title;
+    // if there's an ISBN, try to swap in the real cover. Re-runs on title change
+    // (text only — the color stays constant).
+    function refreshCover() {
+      coverSlot.innerHTML = '';
+      const fb = makeFallback(fTitle.value.trim(), COVER_COLOR);
+      coverSlot.appendChild(fb);
+      const isbn = isbnInput.value.replace(/[^0-9Xx]/g, '');
+      if (!isbn) return;
+      void resolveCover(isbn).then((dataUrl) => {
+        if (!dataUrl || !coverSlot.contains(fb)) return; // title changed meanwhile
+        const img = document.createElement('img');
+        img.className = 'cover-img';
+        img.alt = `${fTitle.value.trim()} cover`;
+        img.src = dataUrl;
+        fb.replaceWith(img);
+      });
+    }
+
+    // ---- Title gates the save button --------------------------------------
+    function syncSave() { saveBtn.disabled = fTitle.value.trim() === ''; }
+    fTitle.addEventListener('input', () => { syncSave(); refreshCover(); });
+
+    // ---- ISBN lookup → prefill the form -----------------------------------
+    function setStatus(html, kind) {
+      status.hidden = false;
+      status.className = 'lookup-status' + (kind ? ' ' + kind : '');
+      status.innerHTML = html;
+    }
+    function clearStatus() { status.hidden = true; status.innerHTML = ''; }
+
+    async function lookup() {
+      const isbn = isbnInput.value.replace(/[^0-9Xx]/g, '');
+      if (!isbn) { isbnInput.focus(); return; }
+      goBtn.disabled = true;
+      setStatus('<span class="spinner" aria-hidden="true"></span> Looking up ' + isbn + '…', 'loading');
+
+      // Stand-in for `await api.lookupIsbn(isbn)`: the server owns the catalog /
+      // cover / ToC sources and returns one record. We just prefill from it.
+      const rec = SAMPLES[isbn];
+      if (rec) {
+        fTitle.value = rec.title || fTitle.value;
+        fAuthor.value = rec.author || fAuthor.value;
+        const meta = [rec.publisher, rec.year].filter(Boolean).join(' · ');
+        fMeta.textContent = meta;
+        fMeta.hidden = !meta;
+        if (rec.toc && rec.toc.length) {
+          chapterList.innerHTML = '';
+          rec.toc.forEach((t) => addChapterRow(t));
+          chaptersSrc.hidden = false;
+        }
+        clearStatus();
+      } else {
+        // Unknown to our sample data: keep the form as-is, just note the miss.
+        // A real server might still return a cover with no details.
+        setStatus('No match for that ISBN — fill in the details yourself.', 'warn');
+        fMeta.hidden = true;
+      }
+      refreshCover();
+      renumber();
+      syncSave();
+      goBtn.disabled = false;
+    }
+
+    goBtn.addEventListener('click', lookup);
+    isbnInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); void lookup(); }
+    });
+
+    // ---- Submit (save) -----------------------------------------------------
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (fTitle.value.trim() === '') return;
+      const chapters = [...chapterList.querySelectorAll('.ch-in')]
+        .map((i) => i.value.trim()).filter(Boolean);
+      alert(
+        '→ create book: ' + fTitle.value.trim() +
+        (fAuthor.value.trim() ? ' — ' + fAuthor.value.trim() : '') +
+        '\n' + chapters.length + ' chapter(s)',
+      );
+      window.location.href = 'single-screen.html';
+    });
+    document.getElementById('back-btn').addEventListener('click',
+      () => { window.location.href = 'single-screen.html'; });
+
+    // Start with one empty chapter row and a fallback cover.
+    addChapterRow();
+    refreshCover();
+    syncSave();
+
+    // ?isbn=NNN deep-links a lookup (handy for review screenshots).
+    const pre = new URLSearchParams(location.search).get('isbn');
+    if (pre) { isbnInput.value = pre; void lookup(); }
+  </script>
+  <script src="footer.js" defer></script>
+</body>
+</html>

@@ -60,15 +60,24 @@ These mocks are **primarily for phone use**. Design mobile-first:
 - Use `100dvh` for full-height shells and `env(safe-area-inset-*)` for fixed
   elements near screen edges.
 
-## No server — runs from `file://`
+## Served by a tiny static server
 
-Mocks are opened directly in a browser (`file://`), no dev server. So:
+Mocks are served over http, **not** opened from `file://`. Run them with:
 
-- **HTML includes / `fetch()` of local files are blocked by CORS.** To share
-  markup across pages, inject it with a small shared script (see `footer.js`),
-  styled by a shared class in `mocks.css`. Don't reach for a build step or a
-  server.
-- External assets that *do* need the network (e.g. Open Library covers) must
+```
+npm run mocks      # serves docs/mocks at http://localhost:4173
+```
+
+(`sirv-cli`, a zero-config static server.) Because there's a real origin:
+
+- **`fetch()` of local files works** — mocks may read served data/assets
+  directly. The old `file://` CORS workarounds are no longer needed.
+- **Vendor heavy assets locally** rather than hot-linking a CDN, so mocks work
+  offline. KaTeX is vendored under `vendor/katex/` (copied from the repo's
+  `katex` dependency); reference `vendor/katex/katex.min.css` + `.min.js`.
+- Cross-page markup can still be injected with a shared script (see
+  `footer.js`) styled by a shared `mocks.css` class.
+- External assets that need the network (e.g. Open Library covers) must still
   degrade gracefully offline.
 
 ## Adding a new mock
@@ -79,4 +88,4 @@ Mocks are opened directly in a browser (`file://`), no dev server. So:
 3. Add `<script src="footer.js" defer></script>` before `</body>` for the
    back-to-gallery pill.
 4. Add a link to it in `index.html` (the gallery).
-5. Check it on a narrow viewport before calling it done.
+5. Run `npm run mocks` and check it on a narrow viewport before calling it done.

@@ -98,10 +98,10 @@
 
 /* Disabled / nothing-to-do state keeps the banner but softens it */
 .banner.empty {
-  background: #f3f4f6;
+  background: var(--surface);
   color: var(--muted);
   cursor: default;
-  --icon-stroke: #cbd5e1;
+  --icon-stroke: var(--grey-100);
 }
 .banner.empty:hover { filter: none; }
 
@@ -135,7 +135,11 @@
   border-radius: 6px;
 }
 .edit-btn svg { width: 1.1rem; height: 1.1rem; display: block; }
-.edit-btn:hover { background: #eee; color: var(--fg); }
+.edit-btn { transition: color 0.2s ease, background 0.12s ease; }
+.edit-btn:active { color: var(--orange-200); }
+@media (hover: hover) {
+  .edit-btn:hover { background: var(--grey-50); color: var(--orange-200); }
+}
 
 .book {
   display: grid;
@@ -151,9 +155,13 @@
   -webkit-tap-highlight-color: transparent;
   transition: background 0.12s ease;
 }
-.book:active { background: #eef3ff; }        /* press feedback on touch */
+/* Title fades to the book-orange accent on interaction */
+.book .b-title2 { transition: color 0.2s ease; }
+.book:active { background: var(--surface); }         /* press feedback on touch */
+.book:active .b-title2 { color: var(--orange-200); }
 @media (hover: hover) {
-  .book:hover { background: #f7f9ff; }
+  .book:hover { background: var(--surface); }
+  .book:hover .b-title2 { color: var(--orange-200); }
 }
 
 .book .b-cover {
@@ -165,7 +173,7 @@
   justify-self: center;       /* center within the fixed cover column */
   border-radius: 3px;
   object-fit: contain;        /* show the whole cover, don't crop to a shape */
-  background: #e5e7eb;        /* placeholder tone while loading / on error */
+  background: var(--surface);   /* placeholder tone while loading / on error */
   box-shadow: 3px 4px 7px rgba(0, 0, 0, 0.3);
   display: block;
 }
@@ -206,7 +214,7 @@
   justify-self: end;
   font-size: 1.05rem;
   font-weight: 700;
-  color: var(--revisit);
+  color: var(--muted);
 }
 .book .ready-num.none { color: var(--border); }
 .book .ready-lbl {
@@ -215,9 +223,10 @@
   font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--muted);
+  color: var(--revisit);
   margin-top: 0.15rem;
 }
+.book .ready-lbl.none { color: var(--border); }
 
 /* ---- Add-book footer ---- */
 .add-book {
@@ -236,15 +245,24 @@
   -webkit-tap-highlight-color: transparent;
   transition: background 0.12s ease, color 0.12s ease;
 }
-.add-book:active { background: #e6eeff; color: var(--revisit); }
+.add-book {
+  transition: background 0.12s ease, color 0.2s ease;   /* slow color = the "fade" */
+}
+.add-book:active { background: var(--surface); color: var(--orange-200); }
 @media (hover: hover) {
-  .add-book:hover { background: #f0f4ff; color: var(--revisit); }
+  .add-book:hover { background: var(--surface); color: var(--orange-200); }
 }
 .add-book .plus {
   flex: none;
   width: 1.9rem;
   height: 1.9rem;
   line-height: 0;
-  color: var(--revisit);
+  color: var(--muted);
+  transition: color 0.2s ease;
+}
+/* On interaction the whole row (text + plus) fades toward the book-orange accent */
+.add-book:active .plus { color: var(--orange-200); }
+@media (hover: hover) {
+  .add-book:hover .plus { color: var(--orange-200); }
 }
 .add-book .plus svg { width: 100%; height: 100%; display: block; }

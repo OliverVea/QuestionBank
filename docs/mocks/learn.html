@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Question Bank — Learn Mock</title>
+  <!-- KaTeX vendored locally (served by `npm run mocks`); no network needed. -->
+  <link rel="stylesheet" href="vendor/katex/katex.min.css" />
+  <link rel="stylesheet" href="mocks.css" />
+  <link rel="stylesheet" href="learn.css" />
+</head>
+<body class="anim-cascade">
+  <script src="vendor/katex/katex.min.js"></script>
+  <div class="app">
+    <!-- Top bar: Back (left) / Skip 12h (right) -->
+    <header class="topbar">
+      <button class="topbar-btn" id="back-btn">
+        <span aria-hidden="true">←</span> Back
+      </button>
+      <button class="topbar-btn" id="skip-btn">
+        Skip <span class="tb-sub">12h</span>
+      </button>
+    </header>
+
+    <!-- Center: the question. Title pinned at the top of the stage; the problem
+         text fills the space, vertically centered, and scrolls when too long. -->
+    <main class="learn-stage gridpad">
+      <div class="qcard-eyebrow"><span id="q-eyebrow">Griffiths · Chapter 2 · Problem 1</span></div>
+      <div class="qscroll animate-in" style="--i: 0">
+        <div class="qbody" id="q-body"><!-- rendered question goes here --></div>
+      </div>
+    </main>
+
+    <!-- Bottom: primary camera action + secondary "type" path -->
+    <footer class="learn-actions">
+      <button class="solution-btn" id="upload-btn">
+        <span class="sb-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+               stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 8a2 2 0 0 1 2-2h2l1.2-1.6A2 2 0 0 1 11.8 4h.4a2 2 0 0 1 1.6.8L15 6h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />
+            <circle cx="12" cy="12.5" r="3.2" />
+          </svg>
+        </span>
+        Upload picture of solution
+      </button>
+      <button class="type-link" id="type-btn">or type it instead</button>
+    </footer>
+  </div>
+
+  <script>
+    // --- Sample questions (verbatim canonicalText from real data) ---
+    // Chosen to span the range: one line, a short display-math item, and the
+    // long multi-line \begin{cases} problem that stresses the renderer + scroll.
+    const SAMPLES = [
+      {
+        eyebrow: 'Griffiths · Chapter 2 · Problem 3',
+        text: 'Find two distinct square roots of $i$.',
+      },
+      {
+        eyebrow: 'Griffiths · Chapter 2 · Problem 1',
+        text: 'Suppose $a$ and $b$ are real numbers, not both 0. Find real numbers $c$ and $d$ such that\n$$1/(a+bi) = c+di.$$',
+      },
+      {
+        eyebrow: 'Griffiths · Chapter 1 · Problem 6',
+        text:
+          'Let $\\infty$ and $-\\infty$ denote two distinct objects, neither of which is in $\\mathbf{R}$. ' +
+          'Define an addition and scalar multiplication on $\\mathbf{R} \\cup \\{\\infty\\} \\cup \\{-\\infty\\}$ ' +
+          'as you could guess from the notation. Specifically, the sum and product of two real numbers is as ' +
+          'usual, and for $t \\in \\mathbf{R}$ define\n' +
+          '$$t\\infty = \\begin{cases} -\\infty & \\text{if } t < 0, \\\\ 0 & \\text{if } t = 0, \\\\ \\infty & \\text{if } t > 0, \\end{cases} \\qquad t(-\\infty) = \\begin{cases} \\infty & \\text{if } t < 0, \\\\ 0 & \\text{if } t = 0, \\\\ -\\infty & \\text{if } t > 0, \\end{cases}$$\n' +
+          '$$t + \\infty = \\infty + t = \\infty, \\qquad t + (-\\infty) = (-\\infty) + t = -\\infty,$$\n' +
+          '$$\\infty + \\infty = \\infty, \\qquad (-\\infty) + (-\\infty) = -\\infty, \\qquad \\infty + (-\\infty) = 0.$$\n' +
+          'Is $\\mathbf{R} \\cup \\{\\infty\\} \\cup \\{-\\infty\\}$ a vector space over $\\mathbf{R}$? Explain.',
+      },
+    ];
+
+    // --- LaTeX + markdown renderer, ported inline from the real client
+    //     (packages/client/src/render/content.ts) so the mock renders exactly
+    //     like production. Only math wrapped in $...$ / $$...$$ is rendered. ---
+
+    function splitMath(source) {
+      const segments = [];
+      let text = '';
+      const pushText = () => { if (text.length > 0) segments.push({ kind: 'text', value: text }); text = ''; };
+      let i = 0;
+      while (i < source.length) {
+        const ch = source[i];
+        if (ch === '\\' && source[i + 1] === '$') { text += '$'; i += 2; continue; }
+        if (ch === '$') {
+          const display = source[i + 1] === '$';
+          const open = display ? i + 2 : i + 1;
+          const close = findClosingDollar(source, open, display);
+          if (close === -1) { text += ch; i += 1; continue; }
+          pushText();
+          segments.push({ kind: 'math', value: source.slice(open, close), display });
+          i = display ? close + 2 : close + 1;
+          continue;
+        }
+        text += ch; i += 1;
+      }
+      pushText();
+      return segments;
+    }
+
+    function findClosingDollar(source, from, display) {
+      for (let j = from; j < source.length; j++) {
+        if (source[j] === '\\') { j++; continue; }
+        if (source[j] === '$') {
+          if (display) { if (source[j + 1] === '$') return j; continue; }
+          return j;
+        }
+      }
+      return -1;
+    }
+
+    const HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+    function escapeHtml(t) { return t.replace(/[&<>"']/g, (c) => HTML_ESCAPES[c]); }
+
+    function renderMarkup(text) {
+      let html = escapeHtml(text);
+      html = html.replace(/\*\*([^]+?)\*\*/g, '<strong>$1</strong>');
+      html = html.replace(/\*([^*]+?)\*/g, '<em>$1</em>');
+      html = html.replace(/\n\n+/g, '<br><br>');
+      html = html.replace(/\n/g, '<br>');
+      return html;
+    }
+
+    function renderContent(host, source) {
+      host.innerHTML = '';
+      for (const segment of splitMath(source)) {
+        if (segment.kind === 'text') {
+          const span = document.createElement('span');
+          span.innerHTML = renderMarkup(segment.value);
+          host.appendChild(span);
+          continue;
+        }
+        const mathHost = segment.display ? document.createElement('div') : document.createElement('span');
+        if (segment.display) mathHost.className = 'qbody-display';
+        // KaTeX may be missing if the CDN is blocked offline — fall back to raw source.
+        if (window.katex) {
+          katex.render(segment.value, mathHost, { displayMode: segment.display, throwOnError: false });
+        } else {
+          mathHost.textContent = segment.display ? segment.value : '$' + segment.value + '$';
+        }
+        host.appendChild(mathHost);
+      }
+    }
+
+    // --- Wire up the screen ---
+    const eyebrowEl = document.getElementById('q-eyebrow');
+    const bodyEl = document.getElementById('q-body');
+    const stage = document.querySelector('.learn-stage');
+
+    function showSample(n) {
+      const s = SAMPLES[((n % SAMPLES.length) + SAMPLES.length) % SAMPLES.length];
+      eyebrowEl.textContent = s.eyebrow;
+      renderContent(bodyEl, s.text);
+      stage.scrollTop = 0;
+    }
+
+    document.getElementById('back-btn').addEventListener('click', () => { window.location.href = 'single-screen.html'; });
+    document.getElementById('skip-btn').addEventListener('click', () => alert('→ skip this question for 12h'));
+    document.getElementById('upload-btn').addEventListener('click', () => { window.location.href = 'grade.html'; });
+    document.getElementById('type-btn').addEventListener('click', () => { window.location.href = 'grade.html'; });
+
+    // ?q=N opens a specific sample (used for review screenshots); defaults to 0.
+    const startParam = Number(new URLSearchParams(location.search).get('q'));
+    showSample(Number.isInteger(startParam) ? startParam : 0);
+  </script>
+  <script src="footer.js" defer></script>
+</body>
+</html>

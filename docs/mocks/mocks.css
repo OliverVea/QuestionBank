@@ -1,16 +1,46 @@
 /* Shared across all Question Bank mocks: design tokens + base reset.
    Screen-specific layout lives in its own stylesheet (e.g. single-screen.css). */
 :root {
-  --bg: #fff;
-  --fg: #1a1a1a;
-  --muted: #666;
-  --border: #ddd;
+  /* ---- Brand ramps (50 → 900) ----
+     Raw palette. Don't reach for these directly in screen CSS — use the
+     semantic tokens below so a future re-tint is a one-line change here. */
+  --purple-50: #fcfafe;  --purple-100: #dcc9f9; --purple-200: #bf96f5;
+  --purple-300: #a662f1; --purple-400: #862bd4; --purple-500: #591a8f;
+  --purple-600: #300a50;
 
-  --revisit: #2563eb;       /* blue */
-  --revisit-dark: #1d4ed8;
-  --learn: #16a34a;         /* green */
-  --learn-dark: #15803d;
+  --orange-50: #fde1c8;  --orange-100: #f9ae60; --orange-200: #d4862b;
+  --orange-300: #a86920; --orange-400: #7a4b14; --orange-500: #4b2c09;
+  --orange-600: #211102;
+
+  --green-50: #5cfdaa;   --green-100: #2bd486;  --green-200: #20a96a;
+  --green-300: #178351;  --green-400: #0d5c37;  --green-500: #04351e;
+  --green-600: #011207;
+
+  --grey-50: #edeff0;    --grey-100: #c2c9cc;   --grey-200: #9ba3a8;
+  --grey-300: #7b8285;   --grey-400: #595f61;   --grey-500: #383b3d;
+  --grey-600: #191b1c;
+
+  /* ---- Semantic tokens (use THESE in screen CSS) ---- */
+  --bg: #fff;
+  --fg: var(--grey-600);
+  --muted: var(--grey-400);
+  --border: var(--grey-100);
+  --surface: var(--grey-50);   /* subtle filled backgrounds (cards, footers) */
+
+  --revisit: var(--purple-400);       /* purple */
+  --revisit-dark: var(--purple-500);
+  --learn: var(--green-200);           /* green */
+  --learn-dark: var(--green-300);
+  /* --orange-* reserved for a future accent (e.g. "due soon"); unused for now. */
+
+  /* One consistent elevation for raised surfaces (cards, primary buttons).
+     Tight blur so it doesn't get clipped by scroll containers; darker tone. */
+  --shadow: 0 3px 12px rgba(25, 27, 28, 0.28);
 }
+
+/* Shared elevation utility — apply to any raised surface so shadows stay
+   consistent across mocks. */
+.shadow { box-shadow: var(--shadow); }
 
 * { box-sizing: border-box; }
 html, body { height: 100%; }
@@ -47,7 +77,104 @@ body {
   -webkit-tap-highlight-color: transparent;
   transition: background 0.12s ease, transform 0.08s ease;
 }
-.mock-footer a:active { transform: scale(0.96); background: #eef3ff; }
+.mock-footer a:active { transform: scale(0.96); background: var(--purple-50); }
 @media (hover: hover) {
-  .mock-footer a:hover { background: #f0f4ff; color: var(--revisit); }
+  .mock-footer a:hover { background: var(--purple-50); color: var(--revisit); }
+}
+
+/* ---- Top bar ----
+   Quiet in-flow chrome: a back action on the left, an optional secondary action
+   (Skip, etc.) on the right. Shared because it recurs on every in-flow screen.
+   The shell should reserve a row for it (e.g. grid-template-rows: auto ...). */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: max(0.6rem, env(safe-area-inset-top)) 0.6rem 0.4rem;
+  gap: 0.5rem;
+}
+.topbar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--muted);
+  padding: 0.5rem 0.6rem;
+  border-radius: 10px;
+  cursor: pointer;
+  line-height: 1;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s ease, color 0.12s ease, transform 0.08s ease;
+}
+.topbar-btn:active { transform: scale(0.96); background: var(--surface); color: var(--fg); }
+@media (hover: hover) {
+  .topbar-btn:hover { background: var(--surface); color: var(--fg); }
+}
+/* Sub-label under a top-bar action (e.g. Skip's "12h" hint) */
+.topbar-btn .tb-sub {
+  font-size: 0.72rem;
+  font-weight: 600;
+  opacity: 0.7;
+}
+
+/* ---- Engineering-pad grid ----
+   Add `.gridpad` to any container to paint a faint graph-paper grid behind its
+   content: a fine grid every 22px with every 3rd line thick (thin·thin·thick),
+   rotated ~25deg, on its own non-scrolling layer so it never adds scroll height
+   and stays independent of the text. The container clips it; direct children
+   render above it. Override --gridpad-bg to tint the surface behind the grid. */
+.gridpad {
+  position: relative;
+  overflow: hidden;
+  background: var(--gridpad-bg, transparent);
+}
+.gridpad::before {
+  content: '';
+  position: absolute;
+  inset: -60%;                    /* oversize so rotated corners still cover */
+  z-index: 0;
+  pointer-events: none;
+  --grid: 22px;
+  --grid-thin: color-mix(in srgb, var(--grey-200) 7%, transparent);
+  --grid-thick: color-mix(in srgb, var(--grey-300) 12%, transparent);
+  background-image:
+    repeating-linear-gradient(to right, var(--grid-thick) 0 1.4px, transparent 1.4px calc(var(--grid) * 3)),
+    repeating-linear-gradient(to bottom, var(--grid-thick) 0 1.4px, transparent 1.4px calc(var(--grid) * 3)),
+    repeating-linear-gradient(to right, var(--grid-thin) 0 1px, transparent 1px var(--grid)),
+    repeating-linear-gradient(to bottom, var(--grid-thin) 0 1px, transparent 1px var(--grid));
+  transform: translateY(-8%) rotate(25deg);
+  transform-origin: center;
+}
+.gridpad > * { position: relative; z-index: 1; }
+
+/* ---- Load-in animations ----
+   Mark an element with `.animate-in` to have it enter on page load. Set the
+   animation *style* by putting one of `.anim-fade` / `.anim-cascade` /
+   `.anim-pop` on <body>, and stagger order with `style="--i: N"` (0-based) on
+   each element. All gated behind prefers-reduced-motion so opted-out users get
+   instant, static content. Switch styles at runtime via ?anim= (see footer.js). */
+@media (prefers-reduced-motion: no-preference) {
+  /* Pre-animation resting state: hidden, so there's no flash before it runs. */
+  .anim-fade .animate-in,
+  .anim-cascade .animate-in,
+  .anim-pop .animate-in { opacity: 0; }
+
+  /* Per-element delay from its stagger index. Fade/pop use a small base delay;
+     cascade spaces them out more so the eye follows down the screen. */
+  .anim-fade .animate-in    { animation: anim-fade-rise 0.35s ease both;  animation-delay: calc(var(--i, 0) * 0.04s); }
+  .anim-cascade .animate-in { animation: anim-fade-rise 0.32s ease both;  animation-delay: calc(var(--i, 0) * 0.05s); }
+  .anim-pop .animate-in     { animation: anim-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both; animation-delay: calc(var(--i, 0) * 0.04s); }
+
+  @keyframes anim-fade-rise {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: none; }
+  }
+  @keyframes anim-pop {
+    from { opacity: 0; transform: scale(0.96); }
+    to   { opacity: 1; transform: scale(1); }
+  }
 }

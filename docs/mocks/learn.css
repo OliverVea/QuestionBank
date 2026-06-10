@@ -1,0 +1,135 @@
+/* Learn screen: one question, centered, with a camera/type action pinned at the
+   bottom. Shared tokens + base reset + .topbar come from mocks.css. */
+
+.app {
+  height: 100dvh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;   /* top bar / question stage / actions */
+  overflow: hidden;
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+/* ---- Question stage ----
+   The 1fr middle region: a pinned title row on top, then the question filling
+   the rest. The title stays put; the problem scrolls under it when long. */
+/* Uses the shared .gridpad component (mocks.css) for the engineering-pad grid. */
+.learn-stage {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto 1fr;   /* title / question */
+  padding: 0 0 1rem;              /* no top pad — the title bar owns the top edge */
+}
+.qcard-eyebrow {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  text-align: center;          /* centered above the question card */
+  padding: 0.75rem 0.6rem 0.7rem;   /* top pad now lives here, on the solid bar */
+  margin-bottom: 0;            /* no dead space below the divider before the grid */
+  border-bottom: 1px solid var(--border);   /* divider, mirrors the actions' top border */
+  background: var(--bg);       /* solid bar — masks the grid behind it */
+}
+/* Only the title TEXT animates in; the bar/divider above stays static. */
+.qcard-eyebrow .animate-in { display: inline-block; }
+
+/* Scroll region for the question card. Vertically centers a short problem;
+   scrolls (from the top) when a long one overflows. The horizontal padding is
+   the shadow's breathing room: overflow-y:auto also clips x, so the card's
+   shadow must fit inside this padding or it cuts off. It's >= the shadow blur
+   (see --shadow) so the shadow never clips, on phone OR desktop width. */
+.qscroll {
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: safe center;   /* center when short; `safe` keeps the top reachable when tall */
+  padding: 0.75rem;               /* >= shadow blur (8px) so it never clips */
+}
+
+/* Just the question is a card. One fixed, comfortable reading size for EVERY
+   question; long ones scroll (via .qscroll), never shrink. Capped + centered so
+   on a wide desktop viewport it stays a readable column with shadow room. */
+.qbody {
+  width: 100%;
+  max-width: 36rem;
+  margin: 0 auto;
+  font-size: clamp(1.15rem, 1rem + 1.2vw, 1.45rem);
+  line-height: 1.5;
+  color: var(--fg);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 1.4rem 1.3rem;
+  box-shadow: var(--shadow);
+}
+/* Wide display math (e.g. \begin{cases} tables) scrolls sideways instead of
+   forcing the whole card wide — same behavior as the real client. */
+.qbody-display {
+  overflow-x: auto;
+  padding-bottom: 0.2rem;   /* room for the scrollbar without clipping glyphs */
+}
+
+/* ---- Bottom actions ---- */
+.learn-actions {
+  padding: 0.75rem 1.25rem max(0.9rem, env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.55rem;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+}
+
+/* Primary: green camera button, ties the action to the Learn flow */
+.solution-btn {
+  width: 100%;
+  max-width: 26rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  border: none;
+  background: var(--learn);
+  color: #fff;
+  font: inherit;
+  font-size: 1.05rem;
+  font-weight: 700;
+  padding: 0.95rem 1.2rem;
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.08s ease, filter 0.12s ease, box-shadow 0.12s ease;
+}
+.solution-btn:active {
+  transform: scale(0.985);
+  filter: brightness(0.96);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.16);
+}
+@media (hover: hover) {
+  .solution-btn:hover { filter: brightness(1.05); }
+}
+.solution-btn .sb-icon { width: 1.4rem; height: 1.4rem; line-height: 0; }
+.solution-btn .sb-icon svg { width: 100%; height: 100%; display: block; }
+
+/* Secondary: quiet "or type it instead" text path */
+.type-link {
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--muted);
+  padding: 0.35rem 0.6rem;
+  border-radius: 8px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 0.12s ease, background 0.12s ease;
+}
+.type-link:active { color: var(--learn-dark); background: var(--surface); }
+@media (hover: hover) {
+  .type-link:hover { color: var(--learn-dark); }
+}

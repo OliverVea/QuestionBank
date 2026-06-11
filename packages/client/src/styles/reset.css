@@ -14,3 +14,18 @@ body {
      rubber-band scrolling/bouncing past the content on touch. */
   overscroll-behavior: none;
 }
+
+
+/* Load-in cascade animations. Add .anim-cascade to a container and
+   .animate-in + style="--i: N" to each child for staggered entrance. */
+@media (prefers-reduced-motion: no-preference) {
+  .anim-cascade .animate-in {
+    opacity: 0;
+    animation: anim-fade-rise 0.32s ease both;
+    animation-delay: calc(var(--i, 0) * 0.05s);
+  }
+  @keyframes anim-fade-rise {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: none; }
+  }
+}

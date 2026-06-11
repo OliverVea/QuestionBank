@@ -1,28 +1,43 @@
-.le-rendered {
-  min-height: 1.6rem;
-  padding: 0.35rem 0.4rem;
-  border-radius: 7px;
-  cursor: text;
-  overflow-x: auto;
-  line-height: 1.5;
-  transition: background 0.12s ease;
+.latex-editor {
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
 }
-.le-rendered:active { background: var(--surface); }
-@media (hover: hover) { .le-rendered:hover { background: var(--surface); } }
-.le-rendered .pr-empty { color: var(--muted); font-style: italic; }
+
+.le-rendered {
+  min-height: 1.6em;
+  padding: 0.4rem 0.5rem;
+  border-radius: 6px;
+  transition: background 0.12s ease;
+  line-height: 1.5;
+}
+
+.le-rendered:hover {
+  background: var(--surface);
+}
+
+.le-rendered .latex-empty {
+  color: var(--muted);
+  font-style: italic;
+  font-size: 0.9rem;
+}
 
 .le-editor {
   width: 100%;
-  border: 1px solid var(--revisit);
-  border-radius: 7px;
-  background: var(--bg);
-  font: inherit;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.88rem;
-  color: var(--fg);
+  min-height: 2.4rem;
   padding: 0.4rem 0.5rem;
-  outline: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  font-size: 0.9rem;
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
   resize: vertical;
-  line-height: 1.4;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--revisit) 16%, transparent);
+  outline: none;
+  transition: border-color 0.12s ease;
+}
+
+.le-editor:focus {
+  border-color: var(--revisit);
 }

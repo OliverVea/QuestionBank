@@ -141,3 +141,16 @@ Olve.Diagrams flowchart tool to render it as a Mermaid graph. Each task must be 
   c. Track whether the user is fulfilling their goal and surface it [20b]
   d. Notifications reminding the user to keep the streak or meet the goal [20c]
 
+
+21. Accessibility
+  a. Keyboard navigation model for all interactive screens including grade chat [8a]
+  b. Screen reader announcements for state changes such as grade result and new chat turns [2h][6c]
+  c. Focus management when switching screens via the router [8b]
+  d. Ensure all interactive elements have visible focus indicators [1a]
+
+22. Offline mode
+  a. Service worker caching the app shell and KaTeX assets for full offline launch [13a]
+  b. Pre-cache question data for the next session worth of due items so Learn and Practice work offline [6c][2h]
+  c. Degrade gracefully to self-grading when LLM is unreachable showing question then self-rate [2h]
+  d. Queue photographed solutions locally for batch grading when connectivity returns [22c]
+  e. Optionally pre-fetch LLM solution sketches for due questions to enable offline answer reveals [22b]

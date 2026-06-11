@@ -37,6 +37,7 @@ interface Book {
   id: string;
   title: string;
   author?: string;
+  isbn?: string;
   questionIds: string[];
 }
 
@@ -46,7 +47,6 @@ interface LearnNext { question: { id: string; bookId: string } | null; book?: { 
 export function LandingPage(): HTMLElement {
   const booksHost = html`<div></div>`;
 
-  // Render banners in empty state initially; fill when data arrives.
   const revisitBanner = Banner({
     colorClass: 'revisit',
     icon: revisitIcon(),
@@ -54,6 +54,8 @@ export function LandingPage(): HTMLElement {
     cta: 'All caught up',
     empty: true,
   });
+  revisitBanner.classList.add('animate-in');
+  revisitBanner.style.setProperty('--i', '0');
 
   const learnBanner = Banner({
     colorClass: 'learn',
@@ -62,12 +64,14 @@ export function LandingPage(): HTMLElement {
     cta: 'Nothing new right now',
     empty: true,
   });
+  learnBanner.classList.add('animate-in');
+  learnBanner.style.setProperty('--i', '1');
 
-  const page = html`<div class="landing">
+  const page = html`<div class="landing anim-cascade">
     ${revisitBanner}
     ${learnBanner}
     <section class="library">
-      <div class="library-head">
+      <div class="library-head animate-in" style="--i: 2">
         <h2>Your library</h2>
         <button class="edit-btn" aria-label="Edit library" title="Edit library">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
@@ -78,7 +82,7 @@ export function LandingPage(): HTMLElement {
         </button>
       </div>
       ${booksHost}
-      <button class="add-book">
+      <button class="add-book animate-in" style="--i: 20">
         <span class="plus" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                stroke-linecap="round" stroke-linejoin="round">
@@ -91,12 +95,13 @@ export function LandingPage(): HTMLElement {
     </section>
   </div>`;
 
+  // Wire navigation
+  page.querySelector('.add-book')!.addEventListener('click', () => {
+    window.location.hash = '#/add-book';
+  });
+
   // Fetch data and fill the page.
   void loadData(page, booksHost);
-
-  // Wire "Add a book" button to navigate to add-book page
-  const addBtn = page.querySelector('.add-book') as HTMLElement;
-  addBtn.addEventListener('click', () => { window.location.hash = '#/add-book'; });
 
   return page;
 }
@@ -118,6 +123,8 @@ async function loadData(page: HTMLElement, booksHost: HTMLElement): Promise<void
       eyebrow: `Revisit: ${n} problem${n === 1 ? '' : 's'} waiting`,
       cta: 'Make it stick',
     });
+    replacement.classList.add('animate-in');
+    replacement.style.setProperty('--i', '0');
     revisitSlot.replaceWith(replacement);
   }
 
@@ -130,15 +137,26 @@ async function loadData(page: HTMLElement, booksHost: HTMLElement): Promise<void
       eyebrow: `Next up: ${next.book.title}`,
       cta: 'Grow your knowledge',
     });
+    replacement.classList.add('animate-in');
+    replacement.style.setProperty('--i', '1');
     learnSlot.replaceWith(replacement);
   }
 
-  // Populate book rows.
-  for (const book of books) {
-    booksHost.appendChild(BookRow({
+  // Populate book rows with staggered animation.
+  const ROW_INDEX_OFFSET = 3;
+  books.forEach((book, i) => {
+    const row = BookRow({
       title: book.title,
       author: book.author,
       questionCount: book.questionIds.length,
-    }));
-  }
+      isbn: book.isbn,
+    });
+    row.classList.add('animate-in');
+    row.style.setProperty('--i', String(ROW_INDEX_OFFSET + i));
+    booksHost.appendChild(row);
+  });
+
+  // Update the add-book button's stagger index to come after all book rows.
+  const addBtn = page.querySelector('.add-book') as HTMLElement;
+  addBtn.style.setProperty('--i', String(ROW_INDEX_OFFSET + books.length));
 }

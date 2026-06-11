@@ -3,6 +3,7 @@
 // app-wide. Per-component CSS is co-located and imported by its component.
 import './styles/tokens.css';
 import './styles/reset.css';
+import 'katex/dist/katex.min.css';
 
 import Navigo from 'navigo';
 import { LandingPage } from '@/pages/LandingPage';

@@ -1,112 +1,104 @@
-import { ProblemRow } from '@/components/ProblemRow';
-import type { ProblemRowData, ProblemRowHandle } from '@/components/ProblemRow';
+import { html } from '@/lib/html';
+import { ProblemRow, type ProblemRowHandle } from '@/components/ProblemRow';
+import './ProblemsList.css';
+
+export interface Problem {
+  label: string;
+  latex: string;
+}
 
 export interface ProblemsListProps {
-  problems?: ProblemRowData[];
+  problems?: Problem[];
   onChange?: () => void;
 }
 
 export interface ProblemsListHandle {
   el: HTMLElement;
-  addButton: HTMLElement;
-  getProblems: () => { label: string; latex: string }[];
+  getProblems: () => Problem[];
 }
 
-export function ProblemsList(props: ProblemsListProps): ProblemsListHandle {
-  const onChange = props.onChange ?? (() => {});
+export function ProblemsList({ problems = [], onChange }: ProblemsListProps = {}): ProblemsListHandle {
   const rows: ProblemRowHandle[] = [];
+  const list = document.createElement('ol');
+  list.className = 'problem-list';
 
-  const host = document.createElement('ol');
-  host.className = 'problem-list';
-  host.style.cssText = 'list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:0.5rem;';
+  const notify = () => { renumber(); onChange?.(); };
 
   function renumber() {
-    const children = [...host.children] as HTMLElement[];
-    children.forEach((child, i) => {
-      const row = rows.find(r => r.el === child);
-      if (!row) return;
-      if (row.getCustomLabel() == null) {
-        row.labelInput.value = String(i + 1);
-        row.labelInput.classList.add('auto');
-      } else {
-        row.labelInput.classList.remove('auto');
-      }
-    });
+    rows.forEach((r, i) => r.setAutoLabel(i + 1));
   }
 
-  function markChanged() { renumber(); onChange(); }
-
-  function addRow(problem: ProblemRowData = { label: null, latex: '' }, focus = false) {
+  function addRow(problem: Problem = { label: '', latex: '' }, focus = false) {
     const handle = ProblemRow({
-      problem,
-      onChange: markChanged,
-      onDelete: (h) => {
-        const i = rows.indexOf(h);
+      label: problem.label,
+      latex: problem.latex,
+      onChange: notify,
+      onDelete: () => {
+        const i = rows.indexOf(handle);
         if (i >= 0) rows.splice(i, 1);
-        h.el.remove();
-        markChanged();
+        handle.el.remove();
+        notify();
       },
     });
     rows.push(handle);
-    host.appendChild(handle.el);
+    list.appendChild(handle.el);
     makeDraggable(handle);
     renumber();
     if (focus) handle.enterEdit();
   }
 
-  function makeDraggable(handle: ProblemRowHandle) {
-    const row = handle.el;
-    const dragHandle = row.querySelector('.pr-handle') as HTMLElement;
+  function makeDraggable(row: ProblemRowHandle) {
+    const dragHandle = row.el.querySelector('.pr-handle') as HTMLElement;
     if (!dragHandle) return;
 
     dragHandle.addEventListener('pointerdown', (e) => {
       e.preventDefault();
-      const startRect = row.getBoundingClientRect();
+      const startRect = row.el.getBoundingClientRect();
       const grabOffsetY = e.clientY - startRect.top;
       let moved = false;
 
       const spacer = document.createElement('li');
       spacer.className = 'pr-spacer';
       spacer.style.height = startRect.height + 'px';
-      host.insertBefore(spacer, row);
+      list.insertBefore(spacer, row.el);
 
-      row.classList.add('dragging');
-      row.style.width = startRect.width + 'px';
-      row.style.left = startRect.left + 'px';
-      row.style.top = startRect.top + 'px';
+      row.el.classList.add('dragging');
+      row.el.style.width = startRect.width + 'px';
+      row.el.style.left = startRect.left + 'px';
+      row.el.style.top = startRect.top + 'px';
       dragHandle.setPointerCapture(e.pointerId);
 
       const onMove = (ev: PointerEvent) => {
         if (!moved && Math.abs(ev.clientY - startRect.top - grabOffsetY) > 3) moved = true;
-        row.style.top = (ev.clientY - grabOffsetY) + 'px';
+        row.el.style.top = (ev.clientY - grabOffsetY) + 'px';
         const dragCenter = ev.clientY - grabOffsetY + startRect.height / 2;
-        const others = [...host.querySelectorAll('.pr-row:not(.dragging)')] as HTMLElement[];
+        const others = [...list.querySelectorAll('.pr-row:not(.dragging)')] as HTMLElement[];
         let placed = false;
         for (const other of others) {
           const box = other.getBoundingClientRect();
           if (dragCenter < box.top + box.height / 2) {
-            if (spacer.nextElementSibling !== other) host.insertBefore(spacer, other);
+            if (spacer.nextElementSibling !== other) list.insertBefore(spacer, other);
             placed = true;
             break;
           }
         }
-        if (!placed && host.lastElementChild !== spacer) host.appendChild(spacer);
+        if (!placed && list.lastElementChild !== spacer) list.appendChild(spacer);
       };
 
       const onUp = (ev: PointerEvent) => {
         dragHandle.releasePointerCapture(ev.pointerId);
-        host.insertBefore(row, spacer);
+        list.insertBefore(row.el, spacer);
         spacer.remove();
-        row.classList.remove('dragging');
-        row.style.width = '';
-        row.style.left = '';
-        row.style.top = '';
-        // Keep rows array in DOM order
+        row.el.classList.remove('dragging');
+        row.el.style.width = '';
+        row.el.style.left = '';
+        row.el.style.top = '';
+        // Sync rows array to DOM order.
         rows.sort((a, b) => {
-          const children = [...host.children];
+          const children = [...list.children];
           return children.indexOf(a.el) - children.indexOf(b.el);
         });
-        if (moved) markChanged();
+        if (moved) notify();
         dragHandle.removeEventListener('pointermove', onMove);
         dragHandle.removeEventListener('pointerup', onUp);
         dragHandle.removeEventListener('pointercancel', onUp);
@@ -118,22 +110,28 @@ export function ProblemsList(props: ProblemsListProps): ProblemsListHandle {
     });
   }
 
-  // Add button
-  const addButton = document.createElement('button');
-  addButton.className = 'add-problem';
-  addButton.type = 'button';
-  addButton.innerHTML = `<span class="plus" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg></span> Add a problem`;
-  addButton.addEventListener('click', () => { addRow({ label: null, latex: '' }, true); markChanged(); });
+  // Seed initial problems.
+  for (const p of problems) addRow(p);
 
-  // Seed initial problems
-  (props.problems ?? []).forEach(p => addRow(p));
+  const addBtn = html`<button class="add-problem" type="button">
+    <span class="plus" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 5v14" /><path d="M5 12h14" />
+      </svg>
+    </span>
+    Add a problem
+  </button>`;
+  addBtn.addEventListener('click', () => { addRow({ label: '', latex: '' }, true); notify(); });
+
+  const wrapper = html`<div class="problems">
+    <div class="problems-head"><h2>Problems</h2></div>
+    ${list}
+    ${addBtn}
+  </div>`;
 
   return {
-    el: host,
-    addButton,
-    getProblems: () => rows.map(r => ({
-      label: r.labelInput.value.trim(),
-      latex: r.getLatex().trim(),
-    })),
+    el: wrapper,
+    getProblems: () => rows.map(r => ({ label: r.getLabel(), latex: r.getLatex() })),
   };
 }

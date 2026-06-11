@@ -10,32 +10,14 @@
   align-items: center;
 }
 
-.book .b-cover-fallback {
+.book .cover-slot {
   grid-area: icon;
   align-self: center;
   justify-self: center;
-  width: max-content;
-  min-width: 40px;
-  max-width: 58px;
+  width: 48px;
   height: 68px;
   border-radius: 3px;
   box-shadow: 3px 4px 7px rgba(0, 0, 0, 0.3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 3px 2px;
-  overflow: hidden;
-}
-.book .b-cover-fallback span {
-  display: block;
-  text-align: center;
-  font-size: 0.55rem;
-  font-weight: 600;
-  line-height: 1.2;
-  color: #fff;
-  overflow: hidden;
-  overflow-wrap: anywhere;
-  max-height: 100%;
 }
 
 .book .b-title { grid-area: title; font-size: 1.05rem; font-weight: 600; }

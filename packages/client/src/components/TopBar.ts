@@ -2,18 +2,21 @@ import { html } from '@/lib/html';
 import './TopBar.css';
 
 export interface TopBarProps {
-  onBack: () => void;
+  onBack?: () => void;
+  /** Optional right-side element (button, context text, etc.) */
   right?: HTMLElement;
 }
 
-export function TopBar(props: TopBarProps): HTMLElement {
-  const el = html`<header class="topbar">
-    <button class="topbar-btn" type="button">
-      <span aria-hidden="true">\u2190</span> Back
-    </button>
+export function TopBar({ onBack, right }: TopBarProps = {}): HTMLElement {
+  const backBtn = html`<button class="topbar-btn" aria-label="Back">
+    <span aria-hidden="true">←</span> Back
+  </button>`;
+  if (onBack) backBtn.addEventListener('click', onBack);
+
+  const bar = html`<header class="topbar">
+    ${backBtn}
+    ${right}
   </header>`;
 
-  el.querySelector('.topbar-btn')!.addEventListener('click', props.onBack);
-  if (props.right) el.appendChild(props.right);
-  return el;
+  return bar;
 }

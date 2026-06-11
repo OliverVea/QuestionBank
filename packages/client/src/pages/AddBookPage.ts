@@ -6,241 +6,175 @@ import './AddBookPage.css';
 
 export function AddBookPage(): HTMLElement {
   let dirty = false;
+  let coverSlot = CoverSlot({});
 
-  // Form field references
+  const titleInput = document.createElement('input');
+  titleInput.className = 'field-in';
+  titleInput.id = 'f-title';
+  titleInput.placeholder = 'Book title';
+  titleInput.required = true;
+
+  const authorInput = document.createElement('input');
+  authorInput.className = 'field-in';
+  authorInput.id = 'f-author';
+  authorInput.placeholder = 'Author';
+
+  const goalInput = document.createElement('textarea');
+  goalInput.className = 'field-in';
+  goalInput.id = 'f-goal';
+  goalInput.rows = 2;
+  goalInput.placeholder = 'What do you want to get out of this book?';
+
   const isbnInput = document.createElement('input');
   isbnInput.className = 'field-in isbn-input';
   isbnInput.inputMode = 'numeric';
   isbnInput.placeholder = 'e.g. 9781107179868';
 
-  const goBtn = document.createElement('button');
-  goBtn.className = 'isbn-go';
-  goBtn.type = 'button';
-  goBtn.textContent = 'Look up';
+  const lookupStatus = html`<div class="lookup-status" hidden></div>`;
+  const saveBtn = html`<button class="primary-btn" type="button" disabled>Add to library</button>`;
 
-  const statusEl = document.createElement('div');
-  statusEl.className = 'lookup-status';
-  statusEl.hidden = true;
+  const problemsList = ProblemsList({ onChange: markDirty });
 
-  const fTitle = document.createElement('input');
-  fTitle.className = 'field-in';
-  fTitle.placeholder = 'Book title';
-  fTitle.required = true;
-
-  const fAuthor = document.createElement('input');
-  fAuthor.className = 'field-in';
-  fAuthor.placeholder = 'Author';
-
-  const fMeta = document.createElement('div');
-  fMeta.className = 'field-meta';
-  fMeta.hidden = true;
-
-  const fGoal = document.createElement('textarea');
-  fGoal.className = 'field-in';
-  fGoal.rows = 2;
-  fGoal.placeholder = 'What do you want to get out of this book?';
-
-  // Cover slot
-  const coverEl = CoverSlot({ title: '' });
-
-  // Problems list
-  const problems = ProblemsList({ onChange: () => { dirty = true; syncCount(); } });
-
-  // Save button
-  const saveBtn = document.createElement('button');
-  saveBtn.className = 'primary-btn';
-  saveBtn.type = 'submit';
-  saveBtn.disabled = true;
-
-  const sbCount = document.createElement('span');
-  sbCount.className = 'sb-count';
-  saveBtn.textContent = 'Add to library ';
-  saveBtn.appendChild(sbCount);
-
-  function syncCount() {
-    const n = problems.getProblems().length;
-    sbCount.textContent = n ? `\u00b7 ${n} problem${n === 1 ? '' : 's'}` : '';
+  function markDirty() {
+    dirty = true;
+    updateSaveState();
   }
 
-  function syncSave() { saveBtn.disabled = fTitle.value.trim() === ''; }
-
-  function refreshCover() {
-    const newCover = CoverSlot({ title: fTitle.value.trim() });
-    coverEl.replaceChildren(...Array.from(newCover.children));
+  function updateSaveState() {
+    const hasTitle = titleInput.value.trim() !== '';
+    (saveBtn as HTMLButtonElement).disabled = !hasTitle;
   }
 
-  function markDirty() { dirty = true; syncCount(); }
-
-  // Assemble the page
-  const page = html`<div class="add-book-page">
-    <div></div>
-    <form class="add-stage" autocomplete="off">
-      <h1 class="add-title">Add a book</h1>
-      <label class="field">
-        <span class="field-lbl">ISBN <span class="field-opt">(optional \u2014 prefills the form)</span></span>
-        <span class="isbn-row"></span>
-      </label>
-      <div></div>
-      <div class="details-row">
-        <div></div>
-        <div class="details-fields">
-          <label class="field">
-            <span class="field-lbl">Title</span>
-          </label>
-          <label class="field">
-            <span class="field-lbl">Author</span>
-          </label>
-          <div></div>
-        </div>
-      </div>
-      <label class="field field-block">
-        <span class="field-lbl">Learning goal <span class="field-opt">(optional)</span></span>
-      </label>
-      <div class="problems">
-        <div class="problems-head"><h2>Problems</h2></div>
-      </div>
-    </form>
-    <footer class="add-actions"></footer>
-  </div>`;
-
-  // Wire TopBar
-  const topbarSlot = page.children[0] as HTMLElement;
-  topbarSlot.replaceWith(TopBar({
-    onBack: () => {
-      if (dirty && !confirm('You have unsaved changes. Leave without saving?')) return;
-      window.location.hash = '#/';
-    },
-  }));
-
-  // Wire ISBN row
-  const isbnRow = page.querySelector('.isbn-row')!;
-  isbnRow.append(isbnInput, goBtn);
-
-  // Wire status
-  const isbnField = page.querySelector('.field')!;
-  isbnField.after(statusEl);
-
-  // Wire cover + fields
-  const detailsRow = page.querySelector('.details-row')!;
-  const coverPlaceholder = detailsRow.children[0] as HTMLElement;
-  coverPlaceholder.replaceWith(coverEl);
-
-  const detailsFields = page.querySelector('.details-fields')!;
-  const titleLabel = detailsFields.children[0] as HTMLElement;
-  titleLabel.appendChild(fTitle);
-  const authorLabel = detailsFields.children[1] as HTMLElement;
-  authorLabel.appendChild(fAuthor);
-  const metaSlot = detailsFields.children[2] as HTMLElement;
-  metaSlot.replaceWith(fMeta);
-
-  // Wire goal
-  const goalLabel = page.querySelector('.field-block')!;
-  goalLabel.appendChild(fGoal);
-
-  // Wire problems
-  const problemsSection = page.querySelector('.problems')!;
-  problemsSection.appendChild(problems.el);
-  problemsSection.appendChild(problems.addButton);
-
-  // Wire footer
-  const footer = page.querySelector('.add-actions')!;
-  footer.appendChild(saveBtn);
-
-  // Event wiring
-  fTitle.addEventListener('input', () => { syncSave(); refreshCover(); markDirty(); });
-  fAuthor.addEventListener('input', markDirty);
-  fGoal.addEventListener('input', markDirty);
-  isbnInput.addEventListener('input', markDirty);
-
-  // ISBN lookup
-  async function lookup() {
-    const isbn = isbnInput.value.replace(/[^0-9Xx]/g, '');
-    if (!isbn) { isbnInput.focus(); return; }
-    goBtn.disabled = true;
-    statusEl.hidden = false;
-    statusEl.className = 'lookup-status';
-    statusEl.innerHTML = '<span class="spinner"></span> Looking up\u2026';
+  // ISBN lookup.
+  async function doLookup() {
+    const isbn = isbnInput.value.trim();
+    if (!isbn) return;
+    lookupStatus.hidden = false;
+    lookupStatus.innerHTML = '<span class="spinner"></span> Looking up…';
 
     try {
-      const res = await fetch(`/api/lookup/isbn/${isbn}`);
-      if (!res.ok) throw new Error('not found');
-      const rec = await res.json();
-      fTitle.value = rec.title || fTitle.value;
-      fAuthor.value = rec.author || fAuthor.value;
-      const meta = [rec.publisher, rec.year].filter(Boolean).join(' \u00b7 ');
-      fMeta.textContent = meta;
-      fMeta.hidden = !meta;
-      statusEl.hidden = true;
+      const res = await fetch(`/api/lookup/isbn/${encodeURIComponent(isbn)}`);
+      if (!res.ok) {
+        lookupStatus.classList.add('warn');
+        lookupStatus.textContent = res.status === 404 ? 'Not found — enter details manually.' : 'Lookup failed.';
+        return;
+      }
+      const data = await res.json();
+      if (data.title) { titleInput.value = data.title; markDirty(); }
+      if (data.author) { authorInput.value = data.author; markDirty(); }
+      // Replace cover with one that has the ISBN.
+      const newCover = CoverSlot({ title: data.title, isbn });
+      coverSlot.replaceWith(newCover);
+      coverSlot = newCover;
+      lookupStatus.hidden = true;
+      lookupStatus.classList.remove('warn');
     } catch {
-      statusEl.className = 'lookup-status warn';
-      statusEl.textContent = 'No match for that ISBN \u2014 fill in the details yourself.';
-      fMeta.hidden = true;
+      lookupStatus.classList.add('warn');
+      lookupStatus.textContent = 'Network error.';
     }
-    refreshCover();
-    syncSave();
-    markDirty();
-    goBtn.disabled = false;
   }
 
-  goBtn.addEventListener('click', lookup);
-  isbnInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') { e.preventDefault(); void lookup(); }
-  });
+  const lookupBtn = html`<button class="isbn-go" type="button">Look up</button>`;
+  lookupBtn.addEventListener('click', doLookup);
+  isbnInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') doLookup(); });
+  titleInput.addEventListener('input', () => { markDirty(); updateSaveState(); });
+  authorInput.addEventListener('input', markDirty);
+  goalInput.addEventListener('input', markDirty);
 
-  // Form submit
-  const form = page.querySelector('form')!;
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    if (!fTitle.value.trim()) return;
-    saveBtn.disabled = true;
+  // Save action.
+  saveBtn.addEventListener('click', async () => {
+    const title = titleInput.value.trim();
+    if (!title) return;
+    (saveBtn as HTMLButtonElement).disabled = true;
+    saveBtn.textContent = 'Saving…';
 
-    const body = {
-      title: fTitle.value.trim(),
-      author: fAuthor.value.trim() || undefined,
-      learningGoal: fGoal.value.trim() || undefined,
-      isbn: isbnInput.value.trim() || undefined,
-    };
-
+    const problems = problemsList.getProblems();
     try {
-      const res = await fetch('/api/books', {
+      const bookRes = await fetch('/api/books', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify({
+          title,
+          author: authorInput.value.trim() || undefined,
+          learningGoal: goalInput.value.trim() || undefined,
+          isbn: isbnInput.value.trim() || undefined,
+        }),
       });
-      if (!res.ok) throw new Error('save failed');
-      const book = await res.json();
+      if (!bookRes.ok) throw new Error('Failed to create book');
+      const book = await bookRes.json();
 
-      // Create questions
-      const probs = problems.getProblems().filter(p => p.latex);
-      for (const prob of probs) {
+      // Create problems and add to book.
+      for (const p of problems) {
+        if (!p.latex.trim()) continue;
         await fetch('/api/questions', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ bookId: book.id, label: prob.label, text: prob.latex }),
+          body: JSON.stringify({ bookId: book.id, label: p.label, text: p.latex }),
         });
       }
 
       dirty = false;
       window.location.hash = '#/';
     } catch {
-      saveBtn.disabled = false;
+      saveBtn.textContent = 'Add to library';
+      (saveBtn as HTMLButtonElement).disabled = false;
     }
   });
 
-  // Dirty guard
-  window.addEventListener('beforeunload', (e) => {
-    if (!dirty) return;
-    e.preventDefault();
-    e.returnValue = '';
+  // Unsaved changes guard.
+  const beforeUnload = (e: BeforeUnloadEvent) => { if (dirty) e.preventDefault(); };
+  window.addEventListener('beforeunload', beforeUnload);
+
+  const page = html`<div class="add-book-page">
+    ${TopBar({ onBack: () => { window.location.hash = '#/'; } })}
+    <form class="add-stage" autocomplete="off">
+      <h1 class="add-title">Add a book</h1>
+
+      <label class="field">
+        <span class="field-lbl">ISBN <span class="field-opt">(optional — prefills the form)</span></span>
+        <span class="isbn-row">
+          ${isbnInput}
+          ${lookupBtn}
+        </span>
+      </label>
+
+      ${lookupStatus}
+
+      <div class="details-row">
+        ${coverSlot}
+        <div class="details-fields">
+          <label class="field">
+            <span class="field-lbl">Title</span>
+            ${titleInput}
+          </label>
+          <label class="field">
+            <span class="field-lbl">Author</span>
+            ${authorInput}
+          </label>
+        </div>
+      </div>
+
+      <label class="field field-block">
+        <span class="field-lbl">Learning goal <span class="field-opt">(optional)</span></span>
+        ${goalInput}
+      </label>
+
+      ${problemsList.el}
+    </form>
+
+    <footer class="add-actions">
+      ${saveBtn}
+    </footer>
+  </div>`;
+
+  // Clean up beforeunload when the page is unmounted.
+  const observer = new MutationObserver(() => {
+    if (!document.contains(page)) {
+      window.removeEventListener('beforeunload', beforeUnload);
+      observer.disconnect();
+    }
   });
-
-  syncCount();
-  syncSave();
-
-  // Handle ?isbn=X deep link
-  const params = new URLSearchParams(window.location.hash.split('?')[1] ?? '');
-  const preIsbn = params.get('isbn');
-  if (preIsbn) { isbnInput.value = preIsbn; void lookup().then(() => { dirty = false; }); }
+  observer.observe(document.body, { childList: true, subtree: true });
 
   return page;
 }

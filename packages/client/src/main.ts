@@ -4,8 +4,16 @@
 import './styles/tokens.css';
 import './styles/reset.css';
 
-// #app is intentionally empty this session — there are no pages yet. Page
-// mounting and the router (Navigo, hash mode) land with the first page; see
-// docs/client/approach.md.
-const root = document.getElementById('app');
-void root;
+import Navigo from 'navigo';
+import { LandingPage } from '@/pages/LandingPage';
+
+const app = document.getElementById('app')!;
+const router = new Navigo('/', { hash: true });
+
+function mount(page: () => HTMLElement) {
+  app.replaceChildren(page());
+}
+
+router
+  .on('/', () => mount(LandingPage))
+  .resolve();

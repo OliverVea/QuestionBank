@@ -1,10 +1,14 @@
 import { defineConfig } from 'vite';
+import path from 'path';
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, 'src'),
+    },
+  },
   server: {
     port: 5173,
-    // Listen on all interfaces so the app is reachable from other devices
-    // (e.g. a phone) on the same local network, not just localhost.
     host: true,
     proxy: {
       '/api': 'http://localhost:3001',

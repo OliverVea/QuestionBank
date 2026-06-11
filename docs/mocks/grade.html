@@ -19,13 +19,13 @@
 <body class="anim-cascade">
   <script src="vendor/katex/katex.min.js"></script>
   <div class="app gridpad">
-    <!-- Top bar: Back (left) / Skip 12h (right) -->
+    <!-- Top bar: Back (left) / Skip (right) -->
     <header class="topbar">
       <button class="topbar-btn" id="back-btn">
         <span aria-hidden="true">←</span> Back
       </button>
       <button class="topbar-btn" id="skip-btn">
-        Skip <span class="tb-sub">12h</span>
+        Skip
       </button>
     </header>
 
@@ -209,10 +209,10 @@
 
     // --- Interactions ---
     // These mirror the real Learn flow: send a clarification and the grader
-    // re-grades; skip snoozes the question for 12h; saving the attempt records
-    // the grade. All three then advance to the next pending item — in the real
-    // app that's the session loop (TODO 19); the mock returns to learn.html,
-    // which surfaces the next due question.
+    // re-grades; skip advances client-side only (v0 persists nothing on skip);
+    // saving the attempt records the grade. All three then advance to the next
+    // pending item — in the real app that's the session loop (TODO 19); the mock
+    // returns to learn.html, which surfaces the next due question.
     const reply = document.getElementById('reply');
     const chatEl = document.getElementById('chat');
 
@@ -239,10 +239,9 @@
 
     document.getElementById('back-btn').addEventListener('click', () => { window.location.href = 'learn.html'; });
 
-    // Skip 12h: real app PATCHes a 12h snooze on the question (skip/snooze API,
-    // TODO 2g) so it drops out of the due queue, then advances. Mock fakes it.
+    // Skip: v0 advances to the next item without persisting anything (the
+    // skipped question reappears next session). Mock just advances.
     document.getElementById('skip-btn').addEventListener('click', () => {
-      // → api.snoozeQuestion(questionId, '12h')
       nextItem();
     });
 

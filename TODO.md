@@ -56,6 +56,7 @@ Olve.Diagrams flowchart tool to render it as a Mermaid graph. Each task must be 
 
 5. Stats and progress
   a. Show book stats in Manage as percent completed [2c]
+    a. Library list API view with derived per book progress percent and ready count GET books view library deferred from the flat problems v0 [5a]
   b. Show more detailed per book stats [5a]
   c. (done) Record activity in v0 for backwards compatible history attempts and reviews carry createdAt so future stats read real history [2c]
 

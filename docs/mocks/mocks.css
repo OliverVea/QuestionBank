@@ -79,12 +79,6 @@ body {
 @media (hover: hover) {
   .topbar-btn:hover { background: var(--surface); color: var(--fg); }
 }
-/* Sub-label under a top-bar action (e.g. Skip's "12h" hint) */
-.topbar-btn .tb-sub {
-  font-size: 0.72rem;
-  font-weight: 600;
-  opacity: 0.7;
-}
 
 /* ---- Engineering-pad grid ----
    Add `.gridpad` to any container to paint a faint graph-paper grid behind its

@@ -1,0 +1,181 @@
+/* AddBookPage layout and form styling — ported from docs/mocks/add-book.css */
+
+.add-book-page {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.add-stage {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0.5rem 1.1rem 1.5rem;
+}
+
+.add-title {
+  margin: 0.4rem 0 1.1rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+/* ISBN field */
+.isbn-row {
+  display: flex;
+  align-items: stretch;
+  gap: 0.5rem;
+}
+.isbn-input { flex: 1; min-width: 0; }
+
+.isbn-go {
+  flex: none;
+  border: none;
+  background: var(--revisit);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 0 0.95rem;
+  border-radius: 9px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.08s ease, filter 0.12s ease;
+}
+.isbn-go:active { transform: scale(0.96); filter: brightness(0.95); }
+.isbn-go:disabled { background: var(--grey-100); cursor: default; }
+@media (hover: hover) { .isbn-go:not(:disabled):hover { filter: brightness(1.06); } }
+
+/* Lookup status */
+.lookup-status {
+  margin: 0.9rem 0 0;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--muted);
+}
+.lookup-status.warn { color: var(--orange-300); }
+.lookup-status .spinner {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid var(--border);
+  border-top-color: var(--revisit);
+  border-radius: 50%;
+  animation: ab-spin 0.7s linear infinite;
+}
+@keyframes ab-spin { to { transform: rotate(360deg); } }
+
+/* Cover + details */
+.details-row {
+  margin: 1.1rem 0 0;
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+.details-fields { flex: 1; min-width: 0; }
+
+/* Form fields */
+.field { display: block; }
+.field + .field { margin-top: 0.6rem; }
+.field-block { margin-top: 0.9rem; }
+.field-lbl {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  margin-bottom: 0.25rem;
+}
+.field-opt { font-weight: 600; text-transform: none; letter-spacing: 0; opacity: 0.8; }
+.field-in {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--bg);
+  font: inherit;
+  font-size: 0.95rem;
+  color: var(--fg);
+  padding: 0.5rem 0.6rem;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+textarea.field-in { resize: vertical; line-height: 1.4; }
+.field-in:focus {
+  border-color: var(--revisit);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--revisit) 16%, transparent);
+}
+.field-meta {
+  margin-top: 0.45rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+/* Problems section */
+.problems { margin-top: 1.1rem; }
+.problems-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+.problems-head h2 {
+  margin: 0;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.add-problem {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-top: 0.6rem;
+  border: 1px dashed var(--border);
+  background: none;
+  color: var(--fg);
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 0.6rem 0.7rem;
+  border-radius: 9px;
+  width: 100%;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s ease, color 0.2s ease, border-color 0.15s ease;
+}
+.add-problem:active { background: var(--surface); color: var(--orange-200); border-color: var(--orange-200); }
+@media (hover: hover) { .add-problem:hover { background: var(--surface); color: var(--orange-200); border-color: var(--orange-200); } }
+.add-problem .plus { flex: none; width: 1.2rem; height: 1.2rem; line-height: 0; color: var(--muted); transition: color 0.2s ease; }
+.add-problem:active .plus, .add-problem:hover .plus { color: var(--orange-200); }
+.add-problem .plus svg { width: 100%; height: 100%; display: block; }
+
+/* Sticky footer */
+.add-actions {
+  padding: 0.7rem 1.1rem max(0.7rem, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+}
+.primary-btn {
+  width: 100%;
+  border: none;
+  background: var(--revisit);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  font-size: 1.05rem;
+  padding: 0.95rem 1rem;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.08s ease, filter 0.12s ease;
+}
+.primary-btn:active { transform: scale(0.99); filter: brightness(0.96); }
+.primary-btn:disabled { background: var(--grey-100); color: var(--bg); cursor: default; box-shadow: none; }
+@media (hover: hover) { .primary-btn:not(:disabled):hover { filter: brightness(1.05); } }
+.sb-count { font-weight: 600; opacity: 0.85; font-size: 0.9rem; }

@@ -1,0 +1,39 @@
+.cover-slot {
+  flex: none;
+  width: 76px;
+  display: flex;
+  justify-content: center;
+}
+.cover-img, .cover-fallback {
+  border-radius: 4px;
+  box-shadow: 3px 4px 9px rgba(0, 0, 0, 0.3);
+}
+.cover-img {
+  width: auto;
+  height: 104px;
+  max-width: 76px;
+  object-fit: contain;
+  background: var(--surface);
+  display: block;
+}
+.cover-fallback {
+  width: max-content;
+  min-width: 52px;
+  max-width: 72px;
+  height: 104px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 3px;
+  overflow: hidden;
+}
+.cover-fallback span {
+  text-align: center;
+  font-size: 0.6rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #fff;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  max-height: 100%;
+}

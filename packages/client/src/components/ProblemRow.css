@@ -1,0 +1,94 @@
+.pr-row {
+  display: grid;
+  grid-template-columns: auto 3.2rem 1fr auto;
+  grid-template-areas: "handle label body del";
+  align-items: start;
+  column-gap: 0.5rem;
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pr-handle {
+  grid-area: handle;
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.8rem;
+  height: 1.8rem;
+  color: var(--grey-200);
+  cursor: grab;
+  border-radius: 7px;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.pr-handle svg { width: 1.15rem; height: 1.15rem; display: block; }
+.pr-handle:active { background: var(--surface); color: var(--fg); cursor: grabbing; }
+@media (hover: hover) { .pr-handle:hover { color: var(--fg); } }
+
+.pr-label {
+  grid-area: label;
+  align-self: center;
+  width: 100%;
+  min-width: 0;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: var(--surface);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-align: center;
+  color: var(--fg);
+  padding: 0.35rem 0.25rem;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease;
+}
+.pr-label.auto { color: var(--muted); }
+.pr-label:focus {
+  border-color: var(--revisit);
+  background: var(--bg);
+  color: var(--fg);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--revisit) 16%, transparent);
+}
+
+.pr-body { grid-area: body; min-width: 0; align-self: center; }
+
+.pr-del {
+  grid-area: del;
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border: none;
+  background: none;
+  color: var(--grey-200);
+  border-radius: 8px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.pr-del svg { width: 1.15rem; height: 1.15rem; display: block; }
+.pr-del:active { background: var(--surface); color: var(--orange-200); }
+@media (hover: hover) { .pr-del:hover { background: var(--surface); color: var(--orange-200); } }
+
+.pr-row.dragging {
+  position: fixed;
+  z-index: 10;
+  margin: 0;
+  box-shadow: var(--shadow);
+  pointer-events: none;
+}
+.pr-spacer {
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  transition: height 0.15s ease;
+  list-style: none;
+}
+@media (prefers-reduced-motion: reduce) { .pr-spacer { transition: none; } }

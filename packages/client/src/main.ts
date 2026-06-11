@@ -6,6 +6,7 @@ import './styles/reset.css';
 
 import Navigo from 'navigo';
 import { LandingPage } from '@/pages/LandingPage';
+import { AddBookPage } from '@/pages/AddBookPage';
 
 const app = document.getElementById('app')!;
 const router = new Navigo('/', { hash: true });
@@ -16,4 +17,5 @@ function mount(page: () => HTMLElement) {
 
 router
   .on('/', () => mount(LandingPage))
+  .on('/add-book', () => mount(AddBookPage))
   .resolve();

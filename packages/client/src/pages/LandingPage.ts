@@ -94,6 +94,10 @@ export function LandingPage(): HTMLElement {
   // Fetch data and fill the page.
   void loadData(page, booksHost);
 
+  // Wire "Add a book" button to navigate to add-book page
+  const addBtn = page.querySelector('.add-book') as HTMLElement;
+  addBtn.addEventListener('click', () => { window.location.hash = '#/add-book'; });
+
   return page;
 }
 

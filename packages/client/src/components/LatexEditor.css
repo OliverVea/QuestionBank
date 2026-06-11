@@ -1,0 +1,28 @@
+.le-rendered {
+  min-height: 1.6rem;
+  padding: 0.35rem 0.4rem;
+  border-radius: 7px;
+  cursor: text;
+  overflow-x: auto;
+  line-height: 1.5;
+  transition: background 0.12s ease;
+}
+.le-rendered:active { background: var(--surface); }
+@media (hover: hover) { .le-rendered:hover { background: var(--surface); } }
+.le-rendered .pr-empty { color: var(--muted); font-style: italic; }
+
+.le-editor {
+  width: 100%;
+  border: 1px solid var(--revisit);
+  border-radius: 7px;
+  background: var(--bg);
+  font: inherit;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.88rem;
+  color: var(--fg);
+  padding: 0.4rem 0.5rem;
+  outline: none;
+  resize: vertical;
+  line-height: 1.4;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--revisit) 16%, transparent);
+}

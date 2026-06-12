@@ -22,6 +22,9 @@ export interface Book {
   createdAt: string;
 }
 
+/** Relevance to the book's learning goal. */
+export type Relevance = 'high' | 'medium' | 'low';
+
 export interface Question {
   id: string;
   /** Owning customer. */
@@ -32,6 +35,8 @@ export interface Question {
   label: string;
   /** LaTeX/markdown — source of truth. */
   canonicalText: string;
+  /** How relevant this question is to the book's learning goal. */
+  relevance?: Relevance;
   source: QuestionSource;
   createdAt: string;
 }

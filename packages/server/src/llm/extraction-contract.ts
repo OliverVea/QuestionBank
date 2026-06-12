@@ -21,6 +21,18 @@ export const extractionPrompt = [
   'Return the questions as a JSON array matching the provided schema.',
 ].join('\n');
 
+/** Additional prompt suffix when a learning goal is available. */
+export function relevanceInstruction(learningGoal: string): string {
+  return [
+    '',
+    `The student's learning goal for this book is: "${learningGoal}"`,
+    'For each question, also assess its `relevance` to this learning goal:',
+    '- "high": directly tests or practices the stated goal',
+    '- "medium": partially related or builds prerequisite skills',
+    '- "low": tangential or unrelated to the goal',
+  ].join('\n');
+}
+
 /** JSON Schema for the extraction result: an array of ExtractedQuestion. */
 export const extractionSchema = {
   type: 'array',
@@ -31,6 +43,21 @@ export const extractionSchema = {
       label: { type: 'string' },
     },
     required: ['canonicalText'],
+    additionalProperties: false,
+  },
+} as const;
+
+/** Schema variant that includes the relevance field (used when learningGoal is provided). */
+export const extractionSchemaWithRelevance = {
+  type: 'array',
+  items: {
+    type: 'object',
+    properties: {
+      canonicalText: { type: 'string' },
+      label: { type: 'string' },
+      relevance: { type: 'string', enum: ['high', 'medium', 'low'] },
+    },
+    required: ['canonicalText', 'relevance'],
     additionalProperties: false,
   },
 } as const;

@@ -6,6 +6,8 @@ export interface ExtractedQuestion {
   canonicalText: string;
   /** Book's own numbering, e.g. "2.4", if the source showed it. */
   label?: string;
+  /** Relevance to the book's learning goal (only present when goal was provided). */
+  relevance?: 'high' | 'medium' | 'low';
 }
 
 export type Role = 'user' | 'assistant';

@@ -1,17 +1,19 @@
-import type { Question } from '../domain/types.js';
+import type { Question, Relevance } from '../domain/types.js';
 
 /** One item in the incoming ordered list: an existing id to update, or no id to create. */
 export interface IncomingQuestion {
   id?: string;
   label: string;
   canonicalText: string;
+  relevance?: Relevance;
 }
 
-/** A field-limited update to an existing question (only label + text are client-editable). */
+/** A field-limited update to an existing question (only label + text + relevance are client-editable). */
 export interface QuestionUpdate {
   id: string;
   label: string;
   canonicalText: string;
+  relevance?: Relevance;
 }
 
 /** The computed effect of a batch save, ready for the route to apply atomically. */
@@ -53,7 +55,7 @@ export function planBatchSave(input: PlanBatchSaveInput): BatchSavePlan {
 
   for (const item of incoming) {
     if (item.id !== undefined && storedById.has(item.id)) {
-      update.push({ id: item.id, label: item.label, canonicalText: item.canonicalText });
+      update.push({ id: item.id, label: item.label, canonicalText: item.canonicalText, ...(item.relevance ? { relevance: item.relevance } : {}) });
       questionIds.push(item.id);
       survivingIds.add(item.id);
     } else {
@@ -65,6 +67,7 @@ export function planBatchSave(input: PlanBatchSaveInput): BatchSavePlan {
         bookId,
         label: item.label,
         canonicalText: item.canonicalText,
+        ...(item.relevance ? { relevance: item.relevance } : {}),
         source: { kind: 'text', rawText: item.canonicalText },
         createdAt: nowIso(),
       });

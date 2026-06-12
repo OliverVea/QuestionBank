@@ -3,6 +3,7 @@ import { TopBar } from '@/components/TopBar';
 import { CoverSlot } from '@/components/CoverSlot';
 import { ProblemsList } from '@/components/ProblemsList';
 import { Spinner } from '@/components/Spinner';
+import type { Relevance } from '@/lib/types';
 import './EditBookPage.css';
 
 interface Book {
@@ -17,6 +18,7 @@ interface Question {
   id: string;
   label: string;
   canonicalText: string;
+  relevance?: string;
 }
 
 export function EditBookPage(): HTMLElement {
@@ -48,7 +50,7 @@ export function EditBookPage(): HTMLElement {
   const lookupStatus = html`<div class="lookup-status" hidden></div>`;
   const saveBtn = html`<button class="primary-btn" type="button" disabled>Save changes</button>`;
 
-  const problemsList = ProblemsList({ onChange: markDirty });
+  const problemsList = ProblemsList({ onChange: markDirty, getLearningGoal: () => goalInput.value.trim() });
 
   function markDirty() {
     dirty = true;
@@ -122,6 +124,7 @@ export function EditBookPage(): HTMLElement {
             ...(p.id ? { id: p.id } : {}),
             label: p.label,
             canonicalText: p.latex,
+            relevance: p.relevance,
           })),
         }),
       });
@@ -215,8 +218,10 @@ export function EditBookPage(): HTMLElement {
       coverSlot = newCover;
 
       // Populate problems list.
+      const validRelevance = new Set<string>(['high', 'medium', 'low']);
       for (const q of questions) {
-        problemsList.addRow({ id: q.id, label: q.label, latex: q.canonicalText });
+        const rel = validRelevance.has(q.relevance ?? '') ? q.relevance as Relevance : undefined;
+        problemsList.addRow({ id: q.id, label: q.label, latex: q.canonicalText, ...(rel ? { relevance: rel } : {}) });
       }
 
       updateSaveState();

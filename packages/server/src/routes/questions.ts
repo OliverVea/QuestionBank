@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { newId, nowIso } from '../domain/ids.js';
-import type { Question } from '../domain/types.js';
+import type { Question, Relevance } from '../domain/types.js';
 import { requireCustomerId } from '../middleware/resolve-customer.js';
 import { planBatchSave, type IncomingQuestion } from '../services/batch-save.js';
 import { reconcileQuestionIds } from '../services/reconcile.js';
@@ -12,20 +12,24 @@ function orderByIds(ids: string[], questions: Question[]): Question[] {
   return ids.map((id) => byId.get(id)).filter((q): q is Question => q !== undefined);
 }
 
+const VALID_RELEVANCE = new Set<Relevance>(['high', 'medium', 'low']);
+
 /** Validate the PUT body into IncomingQuestion[]; returns undefined on any malformed item. */
 function parseIncoming(raw: unknown): IncomingQuestion[] | undefined {
   if (!Array.isArray(raw)) return undefined;
   const out: IncomingQuestion[] = [];
   for (const item of raw) {
     if (typeof item !== 'object' || item === null) return undefined;
-    const { id, label, canonicalText } = item as Record<string, unknown>;
+    const { id, label, canonicalText, relevance } = item as Record<string, unknown>;
     if (typeof canonicalText !== 'string' || canonicalText.trim() === '') return undefined;
     if (typeof label !== 'string' || label.trim() === '') return undefined;
     if (id !== undefined && typeof id !== 'string') return undefined;
+    if (relevance !== undefined && !VALID_RELEVANCE.has(relevance as Relevance)) return undefined;
     out.push({
       label: label.trim(),
       canonicalText: canonicalText.trim(),
       ...(typeof id === 'string' ? { id } : {}),
+      ...(relevance ? { relevance: relevance as Relevance } : {}),
     });
   }
   return out;
@@ -83,10 +87,16 @@ export function bookQuestionsRouter(store: Store): Router {
     }
     for (const q of plan.create) await store.questions.create(customerId, q);
     for (const u of plan.update) {
-      await store.questions.update(customerId, u.id, {
+      const patch: Record<string, unknown> = {
         label: u.label,
         canonicalText: u.canonicalText,
-      });
+      };
+      if (u.relevance) {
+        patch.relevance = u.relevance;
+      } else {
+        patch.relevance = undefined; // Clears via JSON serialization
+      }
+      await store.questions.update(customerId, u.id, patch as Partial<Omit<Question, 'id' | 'customerId'>>);
     }
     await store.books.update(customerId, bookId, { questionIds: plan.questionIds });
 

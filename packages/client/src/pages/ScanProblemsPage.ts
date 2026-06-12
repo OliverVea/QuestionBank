@@ -6,6 +6,7 @@ import { ChatBubble } from '@/components/ChatBubble';
 import { ReplyRow } from '@/components/ReplyRow';
 import { ThinkingBubble } from '@/components/ThinkingBubble';
 import { unstashPhotos } from '@/lib/photo-transfer';
+import type { Relevance } from '@/lib/types';
 import './ScanProblemsPage.css';
 
 const SCAN_ACCEPTED_KEY = 'qb-scan-accepted';
@@ -14,6 +15,7 @@ interface DeltaItem {
   kind: 'add' | 'edit';
   label?: string | undefined;
   canonicalText: string;
+  relevance?: Relevance;
   before?: string;
 }
 
@@ -27,6 +29,7 @@ export function ScanProblemsPage(): HTMLElement {
   // Pull the photo passed in-memory from the problems list (cleared on read).
   const transfer = unstashPhotos();
   const photoFile = transfer?.files[0] ?? null;
+  const learningGoal = transfer?.learningGoal;
 
   // Guard: redirect if no photo context available.
   if (!photoFile) {
@@ -197,17 +200,19 @@ export function ScanProblemsPage(): HTMLElement {
     form.append('image', imageFile);
     form.append('currentExtraction', JSON.stringify(currentExtraction));
     form.append('note', text);
+    if (learningGoal) form.append('learningGoal', learningGoal);
 
     try {
       const res = await fetch('/api/extract/refine', { method: 'POST', body: form });
       if (!res.ok) throw new Error('refinement failed');
-      const data: { questions: { canonicalText: string; label?: string }[] } = await res.json();
+      const data: { questions: { canonicalText: string; label?: string; relevance?: Relevance }[] } = await res.json();
       thinking.remove();
       currentExtraction = data.questions;
       const delta: DeltaItem[] = data.questions.map((q) => ({
         kind: 'add' as const,
         label: q.label,
         canonicalText: q.canonicalText,
+        ...(q.relevance ? { relevance: q.relevance } : {}),
       }));
       addAgentReply(delta, 'Here\'s the updated set:');
     } catch {
@@ -223,7 +228,11 @@ export function ScanProblemsPage(): HTMLElement {
   applyBtn.addEventListener('click', () => {
     const accepted = cards
       .filter((c) => c.accepted)
-      .map((c) => ({ label: c.item.label || '', latex: c.item.canonicalText }));
+      .map((c) => ({
+        label: c.item.label || '',
+        latex: c.item.canonicalText,
+        ...(c.item.relevance ? { relevance: c.item.relevance } : {}),
+      }));
     sessionStorage.setItem(SCAN_ACCEPTED_KEY, JSON.stringify(accepted));
     window.history.back();
   });
@@ -240,17 +249,19 @@ export function ScanProblemsPage(): HTMLElement {
 
     const form = new FormData();
     form.append('image', imageFile);
+    if (learningGoal) form.append('learningGoal', learningGoal);
 
     try {
       const res = await fetch('/api/extract', { method: 'POST', body: form });
       if (!res.ok) throw new Error('extraction failed');
-      const data: { questions: { canonicalText: string; label?: string }[] } = await res.json();
+      const data: { questions: { canonicalText: string; label?: string; relevance?: Relevance }[] } = await res.json();
       thinking.remove();
       currentExtraction = data.questions;
       const delta: DeltaItem[] = data.questions.map((q) => ({
         kind: 'add' as const,
         label: q.label,
         canonicalText: q.canonicalText,
+        ...(q.relevance ? { relevance: q.relevance } : {}),
       }));
       addAgentReply(delta);
     } catch {

@@ -1,11 +1,15 @@
 import { html } from '@/lib/html';
 import { LatexEditor } from '@/components/LatexEditor';
+import type { Relevance } from '@/lib/types';
 import './ProblemRow.css';
+
+export type { Relevance } from '@/lib/types';
 
 export interface ProblemRowProps {
   label: string;
   latex: string;
-  /** Called when label or latex changes. */
+  relevance?: Relevance;
+  /** Called when label, latex, or relevance changes. */
   onChange: () => void;
   /** Called when the user clicks the trash button. */
   onDelete: () => void;
@@ -15,14 +19,16 @@ export interface ProblemRowHandle {
   el: HTMLElement;
   getLabel: () => string;
   getLatex: () => string;
+  getRelevance: () => Relevance | undefined;
   setAutoLabel: (index: number) => void;
   isCustomLabel: () => boolean;
   enterEdit: () => void;
 }
 
-export function ProblemRow({ label, latex, onChange, onDelete }: ProblemRowProps): ProblemRowHandle {
+export function ProblemRow({ label, latex, relevance, onChange, onDelete }: ProblemRowProps): ProblemRowHandle {
   let customLabel: string | null = label || null;
   let currentLatex = latex;
+  let currentRelevance: Relevance | undefined = relevance;
 
   const labelInput = document.createElement('input');
   labelInput.className = 'pr-label';
@@ -34,6 +40,25 @@ export function ProblemRow({ label, latex, onChange, onDelete }: ProblemRowProps
     onCommit: (newLatex) => { currentLatex = newLatex; onChange(); },
     placeholder: 'Tap to write the problem (LaTeX)…',
   });
+
+  // Relevance dropdown
+  const relevanceSelect = document.createElement('select');
+  relevanceSelect.className = 'pr-relevance';
+  relevanceSelect.setAttribute('aria-label', 'Relevance to learning goal');
+  relevanceSelect.innerHTML = `<option value="">—</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option>`;
+  relevanceSelect.value = relevance ?? '';
+  syncRelevanceClass();
+
+  relevanceSelect.addEventListener('change', () => {
+    currentRelevance = (relevanceSelect.value as Relevance) || undefined;
+    syncRelevanceClass();
+    onChange();
+  });
+
+  function syncRelevanceClass() {
+    relevanceSelect.classList.remove('rel-high', 'rel-medium', 'rel-low');
+    if (relevanceSelect.value) relevanceSelect.classList.add(`rel-${relevanceSelect.value}`);
+  }
 
   const handle = html`<span class="pr-handle" aria-label="Drag to reorder">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
@@ -55,6 +80,7 @@ export function ProblemRow({ label, latex, onChange, onDelete }: ProblemRowProps
     ${handle}
     ${labelInput}
     ${latexEditor}
+    ${relevanceSelect}
     ${del}
   </li>`;
 
@@ -70,6 +96,7 @@ export function ProblemRow({ label, latex, onChange, onDelete }: ProblemRowProps
     el: row,
     getLabel: () => labelInput.value.trim(),
     getLatex: () => currentLatex,
+    getRelevance: () => currentRelevance,
     setAutoLabel: (index: number) => {
       if (customLabel == null) {
         labelInput.value = String(index);

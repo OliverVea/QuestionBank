@@ -1,5 +1,6 @@
 import { html } from '@/lib/html';
 import { ProblemRow, type ProblemRowHandle } from '@/components/ProblemRow';
+import type { Relevance } from '@/lib/types';
 import { PhotoReviewModal } from '@/components/PhotoReviewModal';
 import { stashPhotos } from '@/lib/photo-transfer';
 import './ProblemsList.css';
@@ -10,11 +11,14 @@ export interface Problem {
   id?: string;
   label: string;
   latex: string;
+  relevance?: Relevance;
 }
 
 export interface ProblemsListProps {
   problems?: Problem[];
   onChange?: () => void;
+  /** Supplier for the current learning goal (may change after mount). */
+  getLearningGoal?: () => string;
 }
 
 export interface ProblemsListHandle {
@@ -23,7 +27,7 @@ export interface ProblemsListHandle {
   addRow: (problem?: Problem, focus?: boolean) => void;
 }
 
-export function ProblemsList({ problems = [], onChange }: ProblemsListProps = {}): ProblemsListHandle {
+export function ProblemsList({ problems = [], onChange, getLearningGoal }: ProblemsListProps = {}): ProblemsListHandle {
   const rows: ProblemRowHandle[] = [];
   const rowIds: (string | undefined)[] = [];
   const list = document.createElement('ol');
@@ -39,6 +43,7 @@ export function ProblemsList({ problems = [], onChange }: ProblemsListProps = {}
     const handle = ProblemRow({
       label: problem.label,
       latex: problem.latex,
+      relevance: (problem.relevance ?? '') as Relevance,
       onChange: notify,
       onDelete: () => {
         const i = rows.indexOf(handle);
@@ -151,7 +156,8 @@ export function ProblemsList({ problems = [], onChange }: ProblemsListProps = {}
       initialFiles: selected,
       onPost({ files: posted, notes }) {
         if (!posted.length) return;
-        stashPhotos({ files: posted, notes });
+        const goal = getLearningGoal?.();
+        stashPhotos({ files: posted, notes, ...(goal ? { learningGoal: goal } : {}) });
         window.location.hash = '#/scan-problems';
       },
       onCancel() { /* stay on page */ },
@@ -201,6 +207,8 @@ export function ProblemsList({ problems = [], onChange }: ProblemsListProps = {}
     getProblems: () => rows.map((r, i) => {
       const p: Problem = { label: r.getLabel(), latex: r.getLatex() };
       if (rowIds[i]) p.id = rowIds[i];
+      const rel = r.getRelevance();
+      if (rel) p.relevance = rel;
       return p;
     }),
     addRow,

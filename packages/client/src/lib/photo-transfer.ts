@@ -7,6 +7,8 @@
 export interface PhotoTransfer {
   files: File[];
   notes: string;
+  /** The book's learning goal, if set — used for auto-relevance scoring at extraction. */
+  learningGoal?: string;
 }
 
 let pending: PhotoTransfer | null = null;

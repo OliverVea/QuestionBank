@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#f9ae60" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Question Bank — Relevance Scoring Mock</title>
+  <link rel="stylesheet" href="mocks.css" />
+  <link rel="stylesheet" href="vendor/katex/katex.min.css" />
+  <script src="vendor/katex/katex.min.js"></script>
+  <style>
+    /* ---- App shell ---- */
+    .app {
+      min-height: 100dvh;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      max-width: 760px;
+      margin: 0 auto;
+    }
+    .content {
+      padding: 0.5rem 1.1rem 2rem;
+      overflow-y: auto;
+    }
+    .page-title {
+      margin: 0.4rem 0 0.3rem;
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+    .goal-text {
+      margin: 0 0 1.2rem;
+      font-size: 0.88rem;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+    .goal-text strong { color: var(--fg); font-weight: 600; }
+
+    /* ---- Problem rows ---- */
+    .problem-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .pr-row {
+      display: grid;
+      grid-template-columns: 3.2rem 1fr auto;
+      grid-template-rows: auto auto;
+      grid-template-areas:
+        "label body body"
+        "label rel  rel";
+      align-items: start;
+      column-gap: 0.5rem;
+      row-gap: 0.3rem;
+      padding: 0.55rem 0.6rem;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--bg);
+    }
+
+    .pr-label {
+      grid-area: label;
+      align-self: center;
+      width: 100%;
+      border: none;
+      border-radius: 7px;
+      background: var(--surface);
+      font: inherit;
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-align: center;
+      color: var(--muted);
+      padding: 0.35rem 0.25rem;
+    }
+    .pr-body {
+      grid-area: body;
+      min-width: 0;
+      line-height: 1.5;
+      padding: 0.2rem 0;
+    }
+
+    /* ---- Relevance dropdown ---- */
+    .pr-relevance {
+      grid-area: rel;
+      justify-self: start;
+    }
+    .rel-select {
+      appearance: none;
+      -webkit-appearance: none;
+      border: none;
+      border-radius: 5px;
+      font: inherit;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 0.25rem 1.4rem 0.25rem 0.5rem;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: filter 0.12s ease, transform 0.08s ease;
+      /* chevron */
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23595f61' stroke-width='1.3' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.4rem center;
+    }
+    .rel-select:active { transform: scale(0.97); }
+
+    /* Color coding */
+    .rel-select[data-level="high"] {
+      background-color: color-mix(in srgb, var(--green-100) 25%, var(--bg));
+      color: var(--green-300);
+    }
+    .rel-select[data-level="medium"] {
+      background-color: color-mix(in srgb, var(--orange-100) 25%, var(--bg));
+      color: var(--orange-400);
+    }
+    .rel-select[data-level="low"] {
+      background-color: color-mix(in srgb, var(--grey-100) 40%, var(--bg));
+      color: var(--grey-400);
+    }
+    .rel-select[data-level="none"] {
+      background-color: var(--surface);
+      color: var(--grey-300);
+      font-style: italic;
+      font-weight: 600;
+    }
+
+    /* ---- Section heading ---- */
+    .section-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 0.5rem;
+    }
+    .section-head h2 {
+      margin: 0;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+    }
+    .section-head .note {
+      font-size: 0.72rem;
+      color: var(--grey-300);
+    }
+
+    /* ---- Legend ---- */
+    .legend {
+      display: flex;
+      gap: 0.7rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--muted);
+    }
+    .legend-dot {
+      width: 0.6rem;
+      height: 0.6rem;
+      border-radius: 50%;
+    }
+    .legend-dot.high { background: var(--green-100); }
+    .legend-dot.medium { background: var(--orange-100); }
+    .legend-dot.low { background: var(--grey-200); }
+  </style>
+</head>
+<body class="anim-cascade">
+  <div class="app">
+    <header class="topbar">
+      <button class="topbar-btn" onclick="window.location.href='edit-book.html'">
+        <span aria-hidden="true">←</span> Back
+      </button>
+    </header>
+
+    <div class="content">
+      <h1 class="page-title animate-in" style="--i: 0">Introduction to Quantum Mechanics</h1>
+      <p class="goal-text animate-in" style="--i: 1">
+        <strong>Learning goal:</strong> Build intuition for the formalism and solve the standard problems.
+      </p>
+
+      <div class="animate-in" style="--i: 2">
+        <div class="section-head">
+          <h2>Problems</h2>
+          <span class="note">Relevance to goal</span>
+        </div>
+        <div class="legend">
+          <span class="legend-item"><span class="legend-dot high"></span> High</span>
+          <span class="legend-item"><span class="legend-dot medium"></span> Medium</span>
+          <span class="legend-item"><span class="legend-dot low"></span> Low</span>
+        </div>
+      </div>
+
+      <ol class="problem-list" id="problem-list">
+        <!-- Rows injected by script -->
+      </ol>
+    </div>
+  </div>
+
+  <script>
+    // ---- LaTeX rendering (same parser as problems-list.js) ----
+    function findClosingDollar(source, from, display) {
+      for (let j = from; j < source.length; j++) {
+        if (source[j] === '\\') { j++; continue; }
+        if (source[j] === '$') {
+          if (display) { if (source[j + 1] === '$') return j; continue; }
+          return j;
+        }
+      }
+      return -1;
+    }
+    function splitMath(source) {
+      const segments = []; let text = '';
+      const pushText = () => { if (text) segments.push({ kind: 'text', value: text }); text = ''; };
+      let i = 0;
+      while (i < source.length) {
+        if (source[i] === '\\' && source[i+1] === '$') { text += '$'; i += 2; continue; }
+        if (source[i] === '$') {
+          const display = source[i+1] === '$';
+          const open = display ? i+2 : i+1;
+          const close = findClosingDollar(source, open, display);
+          if (close === -1) { text += source[i]; i++; continue; }
+          pushText();
+          segments.push({ kind: 'math', value: source.slice(open, close), display });
+          i = display ? close+2 : close+1;
+          continue;
+        }
+        text += source[i]; i++;
+      }
+      pushText();
+      return segments;
+    }
+    function renderLatex(host, source) {
+      host.innerHTML = '';
+      for (const seg of splitMath(source)) {
+        if (seg.kind === 'text') {
+          const span = document.createElement('span');
+          span.textContent = seg.value;
+          host.appendChild(span);
+        } else {
+          const el = seg.display ? document.createElement('div') : document.createElement('span');
+          katex.render(seg.value, el, { displayMode: seg.display, throwOnError: false });
+          host.appendChild(el);
+        }
+      }
+    }
+
+    // ---- Demo data ----
+    const PROBLEMS = [
+      { label: '1.A.1', latex: 'Normalize the wave function $\\Psi(x,0)=A\\,e^{-\\lambda|x|}$ and find $A$.', relevance: 'high' },
+      { label: '1.A.2', latex: 'For $\\Psi(x,t)$, show that $\\frac{d\\langle x\\rangle}{dt}=\\frac{\\langle p\\rangle}{m}$.', relevance: 'high' },
+      { label: '1.B.1', latex: 'Solve the time-independent Schrödinger equation for the infinite square well: $$-\\frac{\\hbar^2}{2m}\\psi\'\' = E\\psi.$$', relevance: 'high' },
+      { label: '4', latex: 'State the uncertainty principle for position and momentum.', relevance: 'medium' },
+      { label: '5', latex: 'Derive the commutation relation $[\\hat{x}, \\hat{p}] = i\\hbar$.', relevance: 'high' },
+      { label: '6', latex: 'Calculate the expectation value $\\langle T \\rangle$ for a particle in a box.', relevance: 'medium' },
+      { label: '7', latex: 'Prove that eigenfunctions of a Hermitian operator are orthogonal.', relevance: 'low' },
+      { label: '8', latex: 'Find the energy levels of the quantum harmonic oscillator using ladder operators.', relevance: 'high' },
+      { label: '9', latex: 'State and prove Ehrenfest\'s theorem.', relevance: 'medium' },
+      { label: '10', latex: 'Sketch the probability density for the first three stationary states of the infinite well.', relevance: 'low' },
+    ];
+
+    // ---- Render ----
+    const list = document.getElementById('problem-list');
+
+    PROBLEMS.forEach((p) => {
+      const row = document.createElement('li');
+      row.className = 'pr-row';
+
+      const label = document.createElement('span');
+      label.className = 'pr-label';
+      label.textContent = p.label;
+
+      const body = document.createElement('div');
+      body.className = 'pr-body';
+      renderLatex(body, p.latex);
+
+      const relWrap = document.createElement('div');
+      relWrap.className = 'pr-relevance';
+
+      const select = document.createElement('select');
+      select.className = 'rel-select';
+      select.setAttribute('data-level', p.relevance);
+      select.innerHTML = `
+        <option value="none">—</option>
+        <option value="high"${p.relevance === 'high' ? ' selected' : ''}>High</option>
+        <option value="medium"${p.relevance === 'medium' ? ' selected' : ''}>Medium</option>
+        <option value="low"${p.relevance === 'low' ? ' selected' : ''}>Low</option>
+      `;
+      select.addEventListener('change', () => {
+        select.setAttribute('data-level', select.value);
+      });
+
+      relWrap.appendChild(select);
+      row.append(label, body, relWrap);
+      list.appendChild(row);
+    });
+  </script>
+  <script src="footer.js" defer></script>
+</body>
+</html>

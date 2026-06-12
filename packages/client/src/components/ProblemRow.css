@@ -56,6 +56,39 @@
   font-weight: 400;
 }
 
+/* Relevance dropdown */
+.pr-relevance {
+  flex: none;
+  font: inherit;
+  font-size: 0.78rem;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 0.2rem 0.35rem;
+  background: var(--bg);
+  color: var(--muted);
+  cursor: pointer;
+  transition: border-color 0.12s ease, color 0.12s ease;
+}
+
+.pr-relevance:focus { outline: none; border-color: var(--fg); }
+
+.pr-relevance.rel-high {
+  color: var(--green-200);
+  font-weight: 700;
+  border-color: var(--green-200);
+}
+
+.pr-relevance.rel-medium {
+  color: var(--orange-200);
+  border-color: var(--orange-100);
+}
+
+.pr-relevance.rel-low {
+  color: var(--grey-300);
+  font-style: italic;
+  border-color: var(--grey-100);
+}
+
 .pr-del {
   flex: none;
   display: inline-flex;

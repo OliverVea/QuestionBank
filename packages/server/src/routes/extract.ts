@@ -3,7 +3,7 @@ import multer from 'multer';
 import { bufferImage, type ImageMimeType } from '../llm/image-ref.js';
 import { LlmError, type LlmProvider, type Message } from '../llm/provider.js';
 import { extractQuestions, parseExtractionResult } from '../llm/extract.js';
-import { extractionPrompt, extractionSchema } from '../llm/extraction-contract.js';
+import { extractionPrompt, extractionSchema, extractionSchemaWithRelevance, relevanceInstruction } from '../llm/extraction-contract.js';
 import { log } from '../logging/logger.js';
 
 const VALID_MIME: Record<string, ImageMimeType> = {
@@ -14,7 +14,7 @@ const VALID_MIME: Record<string, ImageMimeType> = {
 };
 
 /**
- * POST /api/extract — accepts a single image, returns extracted questions.
+ * POST /api/extract — accepts a single image (+ optional learningGoal), returns extracted questions.
  * POST /api/extract/refine — accepts image + current extraction + user note, re-extracts.
  * Stateless: nothing is persisted; the client decides what to keep.
  */
@@ -36,11 +36,15 @@ export function extractRouter(provider: LlmProvider): Router {
       return;
     }
 
+    const learningGoal = typeof req.body?.learningGoal === 'string' && req.body.learningGoal.trim()
+      ? req.body.learningGoal.trim()
+      : undefined;
+
     const image = bufferImage(file.buffer, file.mimetype as ImageMimeType);
-    log.info('extracting problems from image', { size: file.size });
+    log.info('extracting problems from image', { size: file.size, hasGoal: !!learningGoal });
 
     try {
-      const questions = await extractQuestions(provider, image);
+      const questions = await extractQuestions(provider, image, learningGoal);
       res.json({ questions });
     } catch (err) {
       if (err instanceof LlmError) {
@@ -64,11 +68,13 @@ export function extractRouter(provider: LlmProvider): Router {
       return;
     }
 
-    const { currentExtraction: rawExtraction, note } = req.body ?? {};
+    const { currentExtraction: rawExtraction, note, learningGoal: rawGoal } = req.body ?? {};
     if (typeof note !== 'string' || !note.trim()) {
       res.status(400).json({ error: 'note is required' });
       return;
     }
+
+    const learningGoal = typeof rawGoal === 'string' && rawGoal.trim() ? rawGoal.trim() : undefined;
 
     let currentExtraction: unknown[] = [];
     if (typeof rawExtraction === 'string') {
@@ -81,15 +87,20 @@ export function extractRouter(provider: LlmProvider): Router {
     log.info('refining extraction', { size: file.size, note: note.slice(0, 80) });
 
     // Build conversation: original extraction prompt + image → assistant's prior answer → user's note.
+    const prompt = learningGoal
+      ? extractionPrompt + relevanceInstruction(learningGoal)
+      : extractionPrompt;
+    const schema = learningGoal ? extractionSchemaWithRelevance : extractionSchema;
+
     const messages: Message[] = [
-      { role: 'user', text: extractionPrompt, images: [image] },
+      { role: 'user', text: prompt, images: [image] },
       { role: 'assistant', text: JSON.stringify({ questions: currentExtraction }) },
       { role: 'user', text: `The user wants changes to the extraction above. Apply the following correction and return the updated full questions array:\n\n${note}` },
     ];
 
     const envelopeSchema = {
       type: 'object',
-      properties: { questions: extractionSchema },
+      properties: { questions: schema },
       required: ['questions'],
       additionalProperties: false,
     } as const;

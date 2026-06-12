@@ -8,3 +8,8 @@
   gap: 0.85rem;
   padding: 1rem 0.9rem 1.2rem;
 }
+
+/* When gridpad is applied for the background, restore vertical scrolling. */
+.chat-container.gridpad {
+  overflow-y: auto;
+}

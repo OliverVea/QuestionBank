@@ -12,19 +12,20 @@ service:
 container:
   port: 3001
 
-# Ingress is Tailscale-only by default; switch externalDnsTarget to the
-# cloudflared tunnel CNAME to expose publicly.
+# Public via Cloudflare Tunnel. Cloudflare terminates TLS at the edge; the
+# in-cluster Ingress speaks HTTP to cloudflared and skips cert-manager.
 ingress:
   enabled: true
-  host: questionbank-private.ovea.pro
-  externalDnsTarget: "100.100.117.17"
-  clusterIssuer: letsencrypt-prod
+  host: questionbank.ovea.pro
+  externalDnsTarget: "44a106ce-fecc-4ff0-abed-ea64dfbb8703.cfargotunnel.com"
+  clusterIssuer: ""
   tls:
-    enabled: true
+    enabled: false
     secretName: ""
   # Authentik forwardAuth; switch to infra-beta-authentik-forward-auth for beta.
   forwardAuthMiddleware: "infra-authentik-forward-auth@kubernetescrd"
-  annotations: {}
+  annotations:
+    external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
 
 persistence:
   enabled: true

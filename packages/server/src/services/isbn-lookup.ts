@@ -46,12 +46,16 @@ export function parseOpenLibrary(raw: unknown): BookMetadata | undefined {
   };
 }
 
+/** How long to wait on Open Library before giving up; an unreachable upstream (outage, VPN
+ * routing, or a network that blocks Internet Archive) must fail fast, not hang the request. */
+const OPEN_LIBRARY_TIMEOUT_MS = 5000;
+
 /** Default fetcher: Open Library's jscmd=data endpoint, which returns one record per ISBN. */
 export const openLibraryFetcher: IsbnFetcher = async (isbn: string): Promise<unknown> => {
   const url = `https://openlibrary.org/api/books?bibkeys=ISBN:${encodeURIComponent(
     isbn,
   )}&format=json&jscmd=data`;
-  const res = await fetch(url);
+  const res = await fetch(url, { signal: AbortSignal.timeout(OPEN_LIBRARY_TIMEOUT_MS) });
   if (!res.ok) throw new Error(`open library ${res.status}`);
   const body = (await res.json()) as Record<string, unknown>;
   return body[`ISBN:${isbn}`];

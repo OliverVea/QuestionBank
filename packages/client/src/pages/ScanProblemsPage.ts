@@ -5,9 +5,9 @@ import { ChatContainer } from '@/components/ChatContainer';
 import { ChatBubble } from '@/components/ChatBubble';
 import { ReplyRow } from '@/components/ReplyRow';
 import { ThinkingBubble } from '@/components/ThinkingBubble';
+import { unstashPhotos } from '@/lib/photo-transfer';
 import './ScanProblemsPage.css';
 
-const SCAN_PHOTO_KEY = 'qb-scan-photo';
 const SCAN_ACCEPTED_KEY = 'qb-scan-accepted';
 
 interface DeltaItem {
@@ -24,8 +24,12 @@ interface CardRecord {
 }
 
 export function ScanProblemsPage(): HTMLElement {
+  // Pull the photo passed in-memory from the problems list (cleared on read).
+  const transfer = unstashPhotos();
+  const photoFile = transfer?.files[0] ?? null;
+
   // Guard: redirect if no photo context available.
-  if (!sessionStorage.getItem(SCAN_PHOTO_KEY)) {
+  if (!photoFile) {
     window.location.hash = '#/manage-books';
     return html`<div></div>`;
   }
@@ -224,28 +228,10 @@ export function ScanProblemsPage(): HTMLElement {
     window.history.back();
   });
 
-  // ---- Boot: read stashed photo, start extraction ----
-  let photoDataUrl: string | null = null;
-  try {
-    photoDataUrl = sessionStorage.getItem(SCAN_PHOTO_KEY);
-    sessionStorage.removeItem(SCAN_PHOTO_KEY);
-  } catch { /* ignore */ }
-
-  addPhotoBubble(photoDataUrl);
-
-  if (photoDataUrl) {
-    fetch(photoDataUrl)
-      .then((r) => r.blob())
-      .then((blob) => {
-        imageFile = new File([blob], 'scan.jpg', { type: blob.type || 'image/jpeg' });
-        startExtraction();
-      })
-      .catch(() => {
-        addAgentReply([], 'Failed to load the photo. Go back and try again.');
-      });
-  } else {
-    addAgentReply([], 'No photo found. Go back and take a picture first.');
-  }
+  // ---- Boot: use the stashed photo File, start extraction ----
+  imageFile = photoFile;
+  addPhotoBubble(URL.createObjectURL(photoFile));
+  startExtraction();
 
   async function startExtraction() {
     if (!imageFile) return;

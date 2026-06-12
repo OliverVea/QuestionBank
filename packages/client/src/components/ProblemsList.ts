@@ -1,9 +1,9 @@
 import { html } from '@/lib/html';
 import { ProblemRow, type ProblemRowHandle } from '@/components/ProblemRow';
 import { PhotoReviewModal } from '@/components/PhotoReviewModal';
+import { stashPhotos } from '@/lib/photo-transfer';
 import './ProblemsList.css';
 
-const SCAN_PHOTO_KEY = 'qb-scan-photo';
 const SCAN_ACCEPTED_KEY = 'qb-scan-accepted';
 
 export interface Problem {
@@ -149,14 +149,10 @@ export function ProblemsList({ problems = [], onChange }: ProblemsListProps = {}
 
     const modal = PhotoReviewModal({
       initialFiles: selected,
-      onPost({ files: posted }) {
+      onPost({ files: posted, notes }) {
         if (!posted.length) return;
-        const reader = new FileReader();
-        reader.onload = () => {
-          sessionStorage.setItem(SCAN_PHOTO_KEY, reader.result as string);
-          window.location.hash = '#/scan-problems';
-        };
-        reader.readAsDataURL(posted[0]!);
+        stashPhotos({ files: posted, notes });
+        window.location.hash = '#/scan-problems';
       },
       onCancel() { /* stay on page */ },
     });

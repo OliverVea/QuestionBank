@@ -102,6 +102,10 @@ textarea.field-in {
   color: var(--muted);
 }
 
+/* The `hidden` attribute must win over the class's `display: flex`; the UA
+   `[hidden] { display: none }` rule loses on specificity, so restate it. */
+.lookup-status[hidden] { display: none; }
+
 .lookup-status.warn { color: var(--orange-300); }
 
 .lookup-status .spinner {

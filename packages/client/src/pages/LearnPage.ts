@@ -38,8 +38,9 @@ export function LearnPage(): HTMLElement {
   fileInput.addEventListener('change', () => {
     const files = fileInput.files;
     if (!files?.length || !currentQuestion) return;
+    const selected = [...files];
     fileInput.value = '';
-    showPhotoModal([...files]);
+    showPhotoModal(selected);
   });
 
   function showPhotoModal(initialFiles: File[]) {

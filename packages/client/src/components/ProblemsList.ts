@@ -144,18 +144,19 @@ export function ProblemsList({ problems = [], onChange }: ProblemsListProps = {}
   fileInput.addEventListener('change', () => {
     const files = fileInput.files;
     if (!files?.length) return;
+    const selected = [...files];
     fileInput.value = '';
 
     const modal = PhotoReviewModal({
-      initialFiles: [...files],
-      onPost({ files: selected }) {
-        if (!selected.length) return;
+      initialFiles: selected,
+      onPost({ files: posted }) {
+        if (!posted.length) return;
         const reader = new FileReader();
         reader.onload = () => {
           sessionStorage.setItem(SCAN_PHOTO_KEY, reader.result as string);
           window.location.hash = '#/scan-problems';
         };
-        reader.readAsDataURL(selected[0]!);
+        reader.readAsDataURL(posted[0]!);
       },
       onCancel() { /* stay on page */ },
     });

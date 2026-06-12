@@ -199,7 +199,28 @@ export function GradePage(): HTMLElement {
     }
   }
 
-  // ---- Photo mode: file input for camera capture ----
+  // ---- Photo mode: read stashed photo from sessionStorage ----
+  function startPhotoFlow() {
+    const dataUrl = sessionStorage.getItem('qb-grade-photo');
+    sessionStorage.removeItem('qb-grade-photo');
+    if (dataUrl) {
+      fetch(dataUrl)
+        .then((r) => r.blob())
+        .then((blob) => {
+          const file = new File([blob], 'solution.jpg', { type: blob.type || 'image/jpeg' });
+          void transcribePhoto(file);
+        })
+        .catch(() => {
+          const err = ChatBubble('agent');
+          err.textContent = 'Failed to load photo. Try typing your answer instead.';
+          chat.append(err);
+          reply.enable();
+        });
+    } else {
+      showPhotoCapture();
+    }
+  }
+
   function showPhotoCapture() {
     const wrapper = document.createElement('div');
     wrapper.className = 'photo-capture';
@@ -207,12 +228,13 @@ export function GradePage(): HTMLElement {
     input.type = 'file';
     input.accept = 'image/*';
     input.capture = 'environment';
+    input.hidden = true;
     const label = html`<button class="solution-btn" type="button">
       <span class="sb-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8a2 2 0 0 1 2-2h2l1.2-1.6A2 2 0 0 1 11.8 4h.4a2 2 0 0 1 1.6.8L15 6h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><circle cx="12" cy="12.5" r="3.2"/></svg></span>
       Take a photo of your solution
     </button>`;
     label.addEventListener('click', () => input.click());
-    wrapper.append(label);
+    wrapper.append(input, label);
     chat.append(wrapper);
 
     input.addEventListener('change', () => {
@@ -289,7 +311,7 @@ export function GradePage(): HTMLElement {
 
       // Start the appropriate flow
       if (mode === 'photo') {
-        showPhotoCapture();
+        startPhotoFlow();
       } else {
         reply.focus();
       }

@@ -1,0 +1,10 @@
+/* Edit Book page reuses the same form layout as Add Book.
+   The shared .add-stage, .field, .isbn-row, etc. classes come from AddBookPage.css
+   which Vite bundles globally (no CSS modules). This file only adds the page shell. */
+.edit-book-page {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  max-width: 760px;
+  margin: 0 auto;
+}

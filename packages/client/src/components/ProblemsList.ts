@@ -2,7 +2,11 @@ import { html } from '@/lib/html';
 import { ProblemRow, type ProblemRowHandle } from '@/components/ProblemRow';
 import './ProblemsList.css';
 
+const SCAN_PHOTO_KEY = 'qb-scan-photo';
+const SCAN_ACCEPTED_KEY = 'qb-scan-accepted';
+
 export interface Problem {
+  id?: string;
   label: string;
   latex: string;
 }
@@ -15,10 +19,12 @@ export interface ProblemsListProps {
 export interface ProblemsListHandle {
   el: HTMLElement;
   getProblems: () => Problem[];
+  addRow: (problem?: Problem, focus?: boolean) => void;
 }
 
 export function ProblemsList({ problems = [], onChange }: ProblemsListProps = {}): ProblemsListHandle {
   const rows: ProblemRowHandle[] = [];
+  const rowIds: (string | undefined)[] = [];
   const list = document.createElement('ol');
   list.className = 'problem-list';
 
@@ -35,12 +41,13 @@ export function ProblemsList({ problems = [], onChange }: ProblemsListProps = {}
       onChange: notify,
       onDelete: () => {
         const i = rows.indexOf(handle);
-        if (i >= 0) rows.splice(i, 1);
+        if (i >= 0) { rows.splice(i, 1); rowIds.splice(i, 1); }
         handle.el.remove();
         notify();
       },
     });
     rows.push(handle);
+    rowIds.push(problem.id);
     list.appendChild(handle.el);
     makeDraggable(handle);
     renumber();
@@ -93,11 +100,14 @@ export function ProblemsList({ problems = [], onChange }: ProblemsListProps = {}
         row.el.style.width = '';
         row.el.style.left = '';
         row.el.style.top = '';
-        // Sync rows array to DOM order.
-        rows.sort((a, b) => {
-          const children = [...list.children];
-          return children.indexOf(a.el) - children.indexOf(b.el);
-        });
+        // Sync rows and rowIds arrays to match the new DOM order.
+        const children = [...list.children];
+        const order = rows.map((r) => children.indexOf(r.el));
+        const sortedRows = rows.map((_, i) => ({ row: rows[i]!, id: rowIds[i], order: order[i]! }));
+        sortedRows.sort((a, b) => a.order - b.order);
+        rows.length = 0;
+        rowIds.length = 0;
+        for (const s of sortedRows) { rows.push(s.row); rowIds.push(s.id); }
         if (moved) notify();
         dragHandle.removeEventListener('pointermove', onMove);
         dragHandle.removeEventListener('pointerup', onUp);
@@ -110,8 +120,56 @@ export function ProblemsList({ problems = [], onChange }: ProblemsListProps = {}
     });
   }
 
+  // --- Scan problems: navigate to the scan page ---
+  const fileInput = document.createElement('input');
+  fileInput.type = 'file';
+  fileInput.accept = 'image/*';
+  fileInput.hidden = true;
+
+  const scanBtn = html`<button class="scan-problems" type="button">
+    <span class="cam" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+           stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 8a2 2 0 0 1 2-2h2l1.2-1.6A2 2 0 0 1 11.8 4h.4a2 2 0 0 1 1.6.8L15 6h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />
+        <circle cx="12" cy="12.5" r="3.2" />
+      </svg>
+    </span>
+    Scan a problems page
+  </button>`;
+
+  scanBtn.addEventListener('click', () => fileInput.click());
+
+  fileInput.addEventListener('change', () => {
+    const file = fileInput.files?.[0];
+    if (!file) return;
+    fileInput.value = '';
+
+    // Read as dataURL, stash in sessionStorage, navigate to scan page.
+    const reader = new FileReader();
+    reader.onload = () => {
+      sessionStorage.setItem(SCAN_PHOTO_KEY, reader.result as string);
+      window.location.hash = '#/scan-problems';
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // Check for returned problems from scan page.
+  function checkForReturnedProblems() {
+    const raw = sessionStorage.getItem(SCAN_ACCEPTED_KEY);
+    if (!raw) return;
+    sessionStorage.removeItem(SCAN_ACCEPTED_KEY);
+    try {
+      const accepted: Problem[] = JSON.parse(raw);
+      for (const p of accepted) addRow(p);
+      notify();
+    } catch { /* ignore malformed */ }
+  }
+
   // Seed initial problems.
   for (const p of problems) addRow(p);
+
+  // Check on mount for returned scan results.
+  checkForReturnedProblems();
 
   const addBtn = html`<button class="add-problem" type="button">
     <span class="plus" aria-hidden="true">
@@ -126,12 +184,19 @@ export function ProblemsList({ problems = [], onChange }: ProblemsListProps = {}
 
   const wrapper = html`<div class="problems">
     <div class="problems-head"><h2>Problems</h2></div>
+    ${scanBtn}
+    ${fileInput}
     ${list}
     ${addBtn}
   </div>`;
 
   return {
     el: wrapper,
-    getProblems: () => rows.map(r => ({ label: r.getLabel(), latex: r.getLatex() })),
+    getProblems: () => rows.map((r, i) => {
+      const p: Problem = { label: r.getLabel(), latex: r.getLatex() };
+      if (rowIds[i]) p.id = rowIds[i];
+      return p;
+    }),
+    addRow,
   };
 }

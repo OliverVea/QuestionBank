@@ -10,6 +10,7 @@ import { LandingPage } from '@/pages/LandingPage';
 import { AddBookPage } from '@/pages/AddBookPage';
 import { ScanProblemsPage } from '@/pages/ScanProblemsPage';
 import { ManageBooksPage } from '@/pages/ManageBooksPage';
+import { EditBookPage } from '@/pages/EditBookPage';
 
 const app = document.getElementById('app')!;
 const router = new Navigo('/', { hash: true });
@@ -23,4 +24,5 @@ router
   .on('/add-book', () => mount(AddBookPage))
   .on('/scan-problems', () => mount(ScanProblemsPage))
   .on('/manage-books', () => mount(ManageBooksPage))
+  .on('/edit-book', () => mount(EditBookPage))
   .resolve();

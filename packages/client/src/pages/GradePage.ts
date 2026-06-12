@@ -200,6 +200,15 @@ export function GradePage(): HTMLElement {
   }
 
   // ---- Photo mode: read stashed photos from sessionStorage ----
+  function dataUrlToFile(dataUrl: string, name: string): File {
+    const [header, b64] = dataUrl.split(',');
+    const mime = header?.match(/:(.*?);/)?.[1] ?? 'image/jpeg';
+    const binary = atob(b64 ?? '');
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return new File([bytes], name, { type: mime });
+  }
+
   function startPhotoFlow() {
     const raw = sessionStorage.getItem('qb-grade-photos');
     const notes = sessionStorage.getItem('qb-grade-notes') ?? '';
@@ -213,17 +222,8 @@ export function GradePage(): HTMLElement {
     const dataUrls: string[] = raw ? JSON.parse(raw) : legacy ? [legacy] : [];
 
     if (dataUrls.length > 0) {
-      Promise.all(dataUrls.map((url) => fetch(url).then((r) => r.blob())))
-        .then((blobs) => {
-          const files = blobs.map((b, i) => new File([b], `solution-${i + 1}.jpg`, { type: b.type || 'image/jpeg' }));
-          void transcribePhotos(files, notes);
-        })
-        .catch(() => {
-          const err = ChatBubble('agent');
-          err.textContent = 'Failed to load photos. Try typing your answer instead.';
-          chat.append(err);
-          reply.enable();
-        });
+      const files = dataUrls.map((url, i) => dataUrlToFile(url, `solution-${i + 1}.jpg`));
+      void transcribePhotos(files, notes);
     } else {
       showPhotoCapture();
     }

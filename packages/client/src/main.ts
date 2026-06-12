@@ -12,6 +12,7 @@ import { ScanProblemsPage } from '@/pages/ScanProblemsPage';
 import { ManageBooksPage } from '@/pages/ManageBooksPage';
 import { EditBookPage } from '@/pages/EditBookPage';
 import { LearnPage } from '@/pages/LearnPage';
+import { RevisitPage } from '@/pages/RevisitPage';
 import { GradePage } from '@/pages/GradePage';
 
 const app = document.getElementById('app')!;
@@ -28,5 +29,6 @@ router
   .on('/manage-books', () => mount(ManageBooksPage))
   .on('/edit-book', () => mount(EditBookPage))
   .on('/learn', () => mount(LearnPage))
+  .on('/revisit', () => mount(RevisitPage))
   .on('/grade', () => mount(GradePage))
   .resolve();

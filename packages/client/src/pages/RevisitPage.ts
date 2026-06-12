@@ -9,9 +9,9 @@ import './LearnPage.css';
 
 interface Question { id: string; bookId: string; label: string; canonicalText: string }
 interface Book { title: string }
-interface LearnNextResponse { question: Question | null; book?: Book }
+interface DueItem { question: Question; book: Book }
 
-export function LearnPage(): HTMLElement {
+export function RevisitPage(): HTMLElement {
   const skipped = new Set<string>();
   let currentQuestion: Question | null = null;
 
@@ -51,7 +51,7 @@ export function LearnPage(): HTMLElement {
         stashPhotos({ files, notes });
         window.location.hash = `#/grade?questionId=${currentQuestion!.id}&mode=photo`;
       },
-      onCancel() { /* nothing — user stays on learn page */ },
+      onCancel() {},
     });
     document.body.appendChild(modal);
   }
@@ -71,18 +71,18 @@ export function LearnPage(): HTMLElement {
 
   const page = html`<div class="learn-page anim-cascade">${topBar}${stage}${footer}</div>`;
 
-  function render(data: LearnNextResponse) {
-    if (!data.question || !data.book) {
+  function render(item: DueItem | null) {
+    if (!item) {
       currentQuestion = null;
       eyebrow.querySelector('span')!.textContent = '';
-      qscroll.replaceChildren(html`<div class="learn-empty animate-in" style="--i: 0">All caught up! No new questions to learn.</div>`);
+      qscroll.replaceChildren(html`<div class="learn-empty animate-in" style="--i: 0">All caught up! Nothing to revisit.</div>`);
       footer.hidden = true;
       skipBtn.hidden = true;
       return;
     }
-    currentQuestion = data.question;
-    eyebrow.querySelector('span')!.textContent = `${data.book.title} · ${data.question.label}`;
-    const card = QuestionCard({ canonicalText: data.question.canonicalText });
+    currentQuestion = item.question;
+    eyebrow.querySelector('span')!.textContent = `${item.book.title} · ${item.question.label}`;
+    const card = QuestionCard({ canonicalText: item.question.canonicalText });
     card.classList.add('animate-in');
     card.style.setProperty('--i', '0');
     qscroll.replaceChildren(card);
@@ -100,11 +100,12 @@ export function LearnPage(): HTMLElement {
   }
 
   async function loadNext() {
-    const excludeParam = skipped.size > 0 ? `?exclude=${[...skipped].join(',')}` : '';
     try {
-      const res = await fetch(`/api/learn/next${excludeParam}`);
+      const res = await fetch('/api/practice/due');
       if (!res.ok) { renderError(); return; }
-      render(await res.json() as LearnNextResponse);
+      const items = await res.json() as DueItem[];
+      const eligible = items.find((d) => !skipped.has(d.question.id));
+      render(eligible ?? null);
     } catch {
       renderError();
     }

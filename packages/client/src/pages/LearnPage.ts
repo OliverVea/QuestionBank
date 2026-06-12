@@ -102,9 +102,22 @@ export function LearnPage(): HTMLElement {
   async function loadNext() {
     const excludeParam = skipped.size > 0 ? `?exclude=${[...skipped].join(',')}` : '';
     try {
+      // Try new questions first
       const res = await fetch(`/api/learn/next${excludeParam}`);
       if (!res.ok) { renderError(); return; }
-      render(await res.json() as LearnNextResponse);
+      const data = await res.json() as LearnNextResponse;
+      if (data.question) { render(data); return; }
+
+      // No new questions — check for due reviews
+      const dueRes = await fetch('/api/practice/due');
+      if (!dueRes.ok) { render(data); return; }
+      const dueItems = await dueRes.json() as { question: Question; book: { title: string } }[];
+      const eligible = dueItems.find((d) => !skipped.has(d.question.id));
+      if (eligible) {
+        render({ question: eligible.question, book: eligible.book });
+      } else {
+        render(data); // shows "all caught up"
+      }
     } catch {
       renderError();
     }

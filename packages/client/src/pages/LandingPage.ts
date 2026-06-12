@@ -127,6 +127,7 @@ async function loadData(page: HTMLElement, booksHost: HTMLElement): Promise<void
       icon: revisitIcon(),
       eyebrow: `Revisit: ${n} problem${n === 1 ? '' : 's'} waiting`,
       cta: 'Make it stick',
+      onClick: () => { window.location.hash = '#/learn'; },
     });
     replacement.classList.add('animate-in');
     replacement.style.setProperty('--i', '0');

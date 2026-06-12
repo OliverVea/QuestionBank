@@ -99,6 +99,9 @@ export function LandingPage(): HTMLElement {
   page.querySelector('.add-book')!.addEventListener('click', () => {
     window.location.hash = '#/add-book';
   });
+  page.querySelector('.edit-btn')!.addEventListener('click', () => {
+    window.location.hash = '#/manage-books';
+  });
 
   // Fetch data and fill the page.
   void loadData(page, booksHost);

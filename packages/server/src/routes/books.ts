@@ -43,6 +43,20 @@ export function booksRouter(store: Store): Router {
     res.status(201).json(await store.books.create(customerId, book));
   });
 
+  router.put('/order', async (req, res) => {
+    const customerId = requireCustomerId(req);
+    const { bookIds } = req.body ?? {};
+    if (!Array.isArray(bookIds) || !bookIds.every((id: unknown) => typeof id === 'string')) {
+      res.status(400).json({ error: 'bookIds must be a string array' });
+      return;
+    }
+    // Deduplicate and validate: only keep IDs that belong to this customer.
+    const owned = new Set((await store.books.getAll(customerId)).map((b) => b.id));
+    const valid = [...new Set(bookIds as string[])].filter((id) => owned.has(id));
+    await store.books.reorder(customerId, valid);
+    res.status(204).end();
+  });
+
   router.get('/:id', async (req, res) => {
     const book = await store.books.getById(requireCustomerId(req), req.params.id);
     if (!book) {

@@ -79,6 +79,21 @@ export class JsonCollection<T extends { id: string; customerId: string }>
     if (this.items.length !== before) this.flush();
   }
 
+  async reorder(customerId: string, orderedIds: string[]): Promise<void> {
+    const owned = this.items.filter((it) => it.customerId === customerId);
+    const others = this.items.filter((it) => it.customerId !== customerId);
+    const byId = new Map(owned.map((it) => [it.id, it]));
+    const sorted: T[] = [];
+    for (const id of orderedIds) {
+      const item = byId.get(id);
+      if (item) { sorted.push(item); byId.delete(id); }
+    }
+    // Append any owned items not mentioned in orderedIds.
+    for (const remaining of byId.values()) sorted.push(remaining);
+    this.items = [...others, ...sorted];
+    this.flush();
+  }
+
   // Synchronous write-through: the mutation does not return until the whole
   // array is on disk, so a reopen always sees the latest state. The architecture
   // assumes a single server instance with no concurrent writers, so a blocking

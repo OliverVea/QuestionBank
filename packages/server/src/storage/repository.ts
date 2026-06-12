@@ -23,4 +23,6 @@ export interface Repository<T extends { id: string; customerId: string }> {
   ): Promise<T>;
   /** Remove the entity; no-op if id is unknown or owned by another customer. */
   delete(customerId: string, id: string): Promise<void>;
+  /** Reorder the customer's entities to match the given id array. Ids not in the list are appended. */
+  reorder(customerId: string, orderedIds: string[]): Promise<void>;
 }

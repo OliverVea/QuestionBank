@@ -1,0 +1,96 @@
+.m-book {
+  display: grid;
+  grid-template-columns: auto 64px 1fr auto;
+  grid-template-areas:
+    "handle icon title  del"
+    "handle icon author del";
+  column-gap: 1rem;
+  padding: 0.85rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  align-items: center;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s ease;
+}
+.m-book .b-title2 { grid-area: title; font-size: 1.05rem; font-weight: 600; transition: color 0.2s ease; }
+.m-book .b-author { grid-area: author; font-size: 0.85rem; color: var(--muted); margin-top: 0.15rem; }
+.m-book:active { background: var(--surface); }
+.m-book:active .b-title2 { color: var(--orange-200); }
+@media (hover: hover) {
+  .m-book:hover { background: var(--surface); }
+  .m-book:hover .b-title2 { color: var(--orange-200); }
+}
+
+/* Cover slot sizing inside m-book */
+.m-book .cover-slot {
+  grid-area: icon;
+  align-self: center;
+  justify-self: center;
+  width: 48px;
+  height: 68px;
+  border-radius: 3px;
+  box-shadow: 3px 4px 7px rgba(0, 0, 0, 0.3);
+}
+
+/* Drag handle */
+.m-handle {
+  grid-area: handle;
+  align-self: center;
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  color: var(--grey-200);
+  cursor: grab;
+  border-radius: 8px;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.m-handle svg { width: 1.3rem; height: 1.3rem; display: block; }
+.m-handle:active { background: var(--surface); color: var(--fg); cursor: grabbing; }
+@media (hover: hover) { .m-handle:hover { color: var(--fg); } }
+
+/* Delete button */
+.m-del {
+  grid-area: del;
+  align-self: center;
+  justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  border: none;
+  background: none;
+  color: var(--grey-200);
+  border-radius: 8px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.m-del svg { width: 1.25rem; height: 1.25rem; display: block; }
+.m-del:active { background: var(--surface); color: var(--orange-200); }
+@media (hover: hover) { .m-del:hover { background: var(--surface); color: var(--orange-200); } }
+
+/* Dragging state */
+.m-book.dragging {
+  position: fixed;
+  z-index: 10;
+  margin: 0;
+  background: var(--bg);
+  border-bottom: none;
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  cursor: grabbing;
+  pointer-events: none;
+}
+
+/* Spacer (drop target gap) */
+.m-book-spacer {
+  border-bottom: 1px solid var(--border);
+  transition: height 0.15s ease;
+}
+@media (prefers-reduced-motion: reduce) { .m-book-spacer { transition: none; } }

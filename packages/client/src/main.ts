@@ -8,6 +8,8 @@ import 'katex/dist/katex.min.css';
 import Navigo from 'navigo';
 import { LandingPage } from '@/pages/LandingPage';
 import { AddBookPage } from '@/pages/AddBookPage';
+import { ScanProblemsPage } from '@/pages/ScanProblemsPage';
+import { ManageBooksPage } from '@/pages/ManageBooksPage';
 
 const app = document.getElementById('app')!;
 const router = new Navigo('/', { hash: true });
@@ -19,4 +21,6 @@ function mount(page: () => HTMLElement) {
 router
   .on('/', () => mount(LandingPage))
   .on('/add-book', () => mount(AddBookPage))
+  .on('/scan-problems', () => mount(ScanProblemsPage))
+  .on('/manage-books', () => mount(ManageBooksPage))
   .resolve();

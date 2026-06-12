@@ -1,6 +1,7 @@
 import express, { type Express } from 'express';
+import { existsSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { argv } from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { booksRouter } from './routes/books.js';
@@ -59,6 +60,14 @@ export function createApp(
   app.use('/api/extract', extractRouter(provider));
 
   app.use(errorLogger);
+
+  // In production, serve the client SPA from the sibling dist directory.
+  // Skipped when the directory doesn't exist (e.g. during dev or tests).
+  const clientDist = resolve(fileURLToPath(import.meta.url), '../../../client/dist');
+  if (existsSync(clientDist)) {
+    app.use(express.static(clientDist));
+    app.use((_req, res) => { res.sendFile(join(clientDist, 'index.html')); });
+  }
 
   return app;
 }

@@ -1,0 +1,13 @@
+services:
+  question-bank:
+    build: .
+    ports:
+      - "3001:3001"
+    volumes:
+      - qb-data:/data
+    env_file:
+      - .env
+    restart: unless-stopped
+
+volumes:
+  qb-data:

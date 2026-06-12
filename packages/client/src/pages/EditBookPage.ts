@@ -2,6 +2,7 @@ import { html } from '@/lib/html';
 import { TopBar } from '@/components/TopBar';
 import { CoverSlot } from '@/components/CoverSlot';
 import { ProblemsList } from '@/components/ProblemsList';
+import { Spinner } from '@/components/Spinner';
 import './EditBookPage.css';
 
 interface Book {
@@ -137,9 +138,8 @@ export function EditBookPage(): HTMLElement {
   const beforeUnload = (e: BeforeUnloadEvent) => { if (dirty) e.preventDefault(); };
   window.addEventListener('beforeunload', beforeUnload);
 
-  const page = html`<div class="edit-book-page">
-    ${TopBar({ onBack: () => { window.location.hash = '#/manage-books'; } })}
-    <form class="add-stage" autocomplete="off">
+  const spinner = Spinner();
+  const form = html`<form class="add-stage" autocomplete="off" hidden>
       <h1 class="add-title">Edit book</h1>
 
       <label class="field">
@@ -172,11 +172,15 @@ export function EditBookPage(): HTMLElement {
       </label>
 
       ${problemsList.el}
-    </form>
+    </form>`;
 
-    <footer class="add-actions">
-      ${saveBtn}
-    </footer>
+  const footerEl = html`<footer class="add-actions" hidden>${saveBtn}</footer>`;
+
+  const page = html`<div class="edit-book-page">
+    ${TopBar({ onBack: () => { window.location.hash = '#/manage-books'; } })}
+    ${spinner}
+    ${form}
+    ${footerEl}
   </div>`;
 
   // Clean up beforeunload when the page is unmounted.
@@ -193,7 +197,7 @@ export function EditBookPage(): HTMLElement {
   return page;
 
   async function loadBook() {
-    if (!bookId) return;
+    if (!bookId) { showForm(); return; }
     try {
       const [book, questions]: [Book, Question[]] = await Promise.all([
         fetch(`/api/books/${bookId}`).then((r) => r.json()),
@@ -220,5 +224,12 @@ export function EditBookPage(): HTMLElement {
     } catch {
       // If load fails, leave the form empty — user can fill manually.
     }
+    showForm();
+  }
+
+  function showForm() {
+    spinner.remove();
+    form.hidden = false;
+    footerEl.hidden = false;
   }
 }

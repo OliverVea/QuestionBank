@@ -2,6 +2,7 @@ import { html } from '@/lib/html';
 import { TopBar } from '@/components/TopBar';
 import { ManageBookRow } from '@/components/ManageBookRow';
 import { UndoToast } from '@/components/UndoToast';
+import { Spinner } from '@/components/Spinner';
 import './ManageBooksPage.css';
 
 interface Book {
@@ -14,7 +15,9 @@ interface Book {
 
 export function ManageBooksPage(): HTMLElement {
   const booksHost = html`<div class="manage-list"></div>`;
-  const emptyState = html`<p class="manage-empty">No books yet.</p>`;
+  const spinner = Spinner();
+  booksHost.appendChild(spinner);
+  const emptyState = html`<p class="manage-empty" hidden>No books yet.</p>`;
   const toast = UndoToast();
 
   // Track pending delete so we can serialize vs reorder.
@@ -49,6 +52,7 @@ export function ManageBooksPage(): HTMLElement {
 
   async function loadBooks() {
     const books: Book[] = await fetch('/api/books').then((r) => r.json()).catch(() => []);
+    spinner.remove();
     if (books.length === 0) {
       emptyState.hidden = false;
       booksHost.hidden = true;

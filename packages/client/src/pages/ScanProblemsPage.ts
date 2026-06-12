@@ -24,6 +24,12 @@ interface CardRecord {
 }
 
 export function ScanProblemsPage(): HTMLElement {
+  // Guard: redirect if no photo context available.
+  if (!sessionStorage.getItem(SCAN_PHOTO_KEY)) {
+    window.location.hash = '#/manage-books';
+    return html`<div></div>`;
+  }
+
   const cards: CardRecord[] = [];
   let liveProposalEl: HTMLElement | null = null;
   let imageFile: File | null = null;

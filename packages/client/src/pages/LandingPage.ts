@@ -1,6 +1,7 @@
 import { html } from '@/lib/html';
 import { Banner } from '@/components/Banner';
 import { BookRow } from '@/components/BookRow';
+import { Spinner } from '@/components/Spinner';
 import './LandingPage.css';
 
 /** Create an SVG icon element. Uses innerHTML directly because the html helper
@@ -46,6 +47,7 @@ interface LearnNext { question: { id: string; bookId: string } | null; book?: { 
 
 export function LandingPage(): HTMLElement {
   const booksHost = html`<div></div>`;
+  booksHost.appendChild(Spinner());
 
   const revisitBanner = Banner({
     colorClass: 'revisit',
@@ -147,6 +149,7 @@ async function loadData(page: HTMLElement, booksHost: HTMLElement): Promise<void
   }
 
   // Populate book rows with staggered animation.
+  booksHost.replaceChildren();
   const ROW_INDEX_OFFSET = 3;
   books.forEach((book, i) => {
     const row = BookRow({

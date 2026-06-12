@@ -1,6 +1,7 @@
 import { html } from '@/lib/html';
 import { TopBar } from '@/components/TopBar';
 import { QuestionCard } from '@/components/QuestionCard';
+import { Spinner } from '@/components/Spinner';
 import '@/styles/gridpad.css';
 import './LearnPage.css';
 
@@ -14,6 +15,7 @@ export function LearnPage(): HTMLElement {
 
   const eyebrow = html`<div class="qcard-eyebrow"><span></span></div>`;
   const qscroll = html`<div class="qscroll"></div>`;
+  qscroll.appendChild(Spinner());
   const stage = html`<main class="learn-stage gridpad">${eyebrow}${qscroll}</main>`;
 
   const uploadBtn = html`<button class="solution-btn">

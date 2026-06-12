@@ -1,3 +1,11 @@
 ingress:
   host: questionbank-beta.ovea.pro
   forwardAuthMiddleware: "infra-beta-authentik-forward-auth@kubernetescrd"
+  # Beta stays Tailscale-only; override the public-via-Cloudflare defaults
+  # inherited from values.yaml.
+  externalDnsTarget: "100.100.117.17"
+  clusterIssuer: letsencrypt-prod
+  tls:
+    enabled: true
+    secretName: ""
+  annotations: {}

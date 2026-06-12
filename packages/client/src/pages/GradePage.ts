@@ -199,20 +199,28 @@ export function GradePage(): HTMLElement {
     }
   }
 
-  // ---- Photo mode: read stashed photo from sessionStorage ----
+  // ---- Photo mode: read stashed photos from sessionStorage ----
   function startPhotoFlow() {
-    const dataUrl = sessionStorage.getItem('qb-grade-photo');
+    const raw = sessionStorage.getItem('qb-grade-photos');
+    const notes = sessionStorage.getItem('qb-grade-notes') ?? '';
+    sessionStorage.removeItem('qb-grade-photos');
+    sessionStorage.removeItem('qb-grade-notes');
+
+    // Also check legacy single-photo key
+    const legacy = sessionStorage.getItem('qb-grade-photo');
     sessionStorage.removeItem('qb-grade-photo');
-    if (dataUrl) {
-      fetch(dataUrl)
-        .then((r) => r.blob())
-        .then((blob) => {
-          const file = new File([blob], 'solution.jpg', { type: blob.type || 'image/jpeg' });
-          void transcribePhoto(file);
+
+    const dataUrls: string[] = raw ? JSON.parse(raw) : legacy ? [legacy] : [];
+
+    if (dataUrls.length > 0) {
+      Promise.all(dataUrls.map((url) => fetch(url).then((r) => r.blob())))
+        .then((blobs) => {
+          const files = blobs.map((b, i) => new File([b], `solution-${i + 1}.jpg`, { type: b.type || 'image/jpeg' }));
+          void transcribePhotos(files, notes);
         })
         .catch(() => {
           const err = ChatBubble('agent');
-          err.textContent = 'Failed to load photo. Try typing your answer instead.';
+          err.textContent = 'Failed to load photos. Try typing your answer instead.';
           chat.append(err);
           reply.enable();
         });
@@ -227,7 +235,7 @@ export function GradePage(): HTMLElement {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
-    input.capture = 'environment';
+    input.multiple = true;
     input.hidden = true;
     const label = html`<button class="solution-btn" type="button">
       <span class="sb-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8a2 2 0 0 1 2-2h2l1.2-1.6A2 2 0 0 1 11.8 4h.4a2 2 0 0 1 1.6.8L15 6h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><circle cx="12" cy="12.5" r="3.2"/></svg></span>
@@ -238,23 +246,30 @@ export function GradePage(): HTMLElement {
     chat.append(wrapper);
 
     input.addEventListener('change', () => {
-      const file = input.files?.[0];
-      if (!file) return;
+      const files = input.files;
+      if (!files?.length) return;
       wrapper.remove();
-      void transcribePhoto(file);
+      void transcribePhotos([...files], '');
     });
   }
 
-  async function transcribePhoto(file: File) {
-    // Show photo thumbnail as user bubble
-    const imgUrl = URL.createObjectURL(file);
+  async function transcribePhotos(files: File[], notes: string) {
+    // Show photo thumbnails as user bubble
     const bubble = ChatBubble('user');
     bubble.classList.add('photo-bubble');
-    const img = document.createElement('img');
-    img.className = 'photo-thumb';
-    img.src = imgUrl;
-    img.alt = 'Your solution';
-    bubble.appendChild(img);
+    for (const file of files) {
+      const img = document.createElement('img');
+      img.className = 'photo-thumb';
+      img.src = URL.createObjectURL(file);
+      img.alt = 'Your solution';
+      bubble.appendChild(img);
+    }
+    if (notes) {
+      const noteEl = document.createElement('div');
+      noteEl.className = 'photo-notes-text';
+      noteEl.textContent = notes;
+      bubble.appendChild(noteEl);
+    }
     chat.append(bubble);
 
     const thinking = ThinkingBubble('Transcribing…');
@@ -262,7 +277,8 @@ export function GradePage(): HTMLElement {
     reply.disable();
 
     const form = new FormData();
-    form.append('images', file);
+    for (const file of files) form.append('images', file);
+    if (notes) form.append('notes', notes);
 
     try {
       const res = await fetch(`/api/questions/${questionId}/transcribe`, {
@@ -272,7 +288,6 @@ export function GradePage(): HTMLElement {
       thinking.remove();
       if (!res.ok) throw new Error('transcribe failed');
       const { transcription } = await res.json() as { transcription: string };
-      // Show transcription and auto-submit as first answer
       await handleUserMessage(transcription);
     } catch {
       thinking.remove();

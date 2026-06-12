@@ -1,5 +1,6 @@
 import { html } from '@/lib/html';
 import { ProblemRow, type ProblemRowHandle } from '@/components/ProblemRow';
+import { PhotoReviewModal } from '@/components/PhotoReviewModal';
 import './ProblemsList.css';
 
 const SCAN_PHOTO_KEY = 'qb-scan-photo';
@@ -124,6 +125,7 @@ export function ProblemsList({ problems = [], onChange }: ProblemsListProps = {}
   const fileInput = document.createElement('input');
   fileInput.type = 'file';
   fileInput.accept = 'image/*';
+  fileInput.multiple = true;
   fileInput.hidden = true;
 
   const scanBtn = html`<button class="scan-problems" type="button">
@@ -140,17 +142,24 @@ export function ProblemsList({ problems = [], onChange }: ProblemsListProps = {}
   scanBtn.addEventListener('click', () => fileInput.click());
 
   fileInput.addEventListener('change', () => {
-    const file = fileInput.files?.[0];
-    if (!file) return;
+    const files = fileInput.files;
+    if (!files?.length) return;
     fileInput.value = '';
 
-    // Read as dataURL, stash in sessionStorage, navigate to scan page.
-    const reader = new FileReader();
-    reader.onload = () => {
-      sessionStorage.setItem(SCAN_PHOTO_KEY, reader.result as string);
-      window.location.hash = '#/scan-problems';
-    };
-    reader.readAsDataURL(file);
+    const modal = PhotoReviewModal({
+      initialFiles: [...files],
+      onPost({ files: selected }) {
+        if (!selected.length) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          sessionStorage.setItem(SCAN_PHOTO_KEY, reader.result as string);
+          window.location.hash = '#/scan-problems';
+        };
+        reader.readAsDataURL(selected[0]!);
+      },
+      onCancel() { /* stay on page */ },
+    });
+    document.body.appendChild(modal);
   });
 
   // Check for returned problems from scan page.

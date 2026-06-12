@@ -179,13 +179,21 @@
 .sb-icon svg { width: 100%; height: 100%; }
 
 /* Photo thumbnail in user bubble */
-.photo-bubble { padding: 0.4rem; }
+.photo-bubble { padding: 0.4rem; display: flex; flex-wrap: wrap; gap: 0.4rem; }
 .photo-thumb {
   display: block;
   width: 100%;
+  max-width: 140px;
   max-height: 200px;
   object-fit: cover;
   border-radius: 11px;
+}
+.photo-notes-text {
+  width: 100%;
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-style: italic;
+  margin-top: 0.3rem;
 }
 
 /* LaTeX inside chat bubbles */

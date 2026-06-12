@@ -2,6 +2,7 @@ import { html } from '@/lib/html';
 import { TopBar } from '@/components/TopBar';
 import { QuestionCard } from '@/components/QuestionCard';
 import { Spinner } from '@/components/Spinner';
+import { PhotoReviewModal } from '@/components/PhotoReviewModal';
 import '@/styles/gridpad.css';
 import './LearnPage.css';
 
@@ -21,7 +22,7 @@ export function LearnPage(): HTMLElement {
   const fileInput = document.createElement('input');
   fileInput.type = 'file';
   fileInput.accept = 'image/*';
-  fileInput.capture = 'environment';
+  fileInput.multiple = true;
   fileInput.hidden = true;
 
   const uploadBtn = html`<button class="solution-btn">
@@ -35,16 +36,37 @@ export function LearnPage(): HTMLElement {
     if (currentQuestion) fileInput.click();
   });
   fileInput.addEventListener('change', () => {
-    const file = fileInput.files?.[0];
-    if (!file || !currentQuestion) return;
+    const files = fileInput.files;
+    if (!files?.length || !currentQuestion) return;
     fileInput.value = '';
-    const reader = new FileReader();
-    reader.onload = () => {
-      sessionStorage.setItem('qb-grade-photo', reader.result as string);
-      window.location.hash = `#/grade?questionId=${currentQuestion!.id}&mode=photo`;
-    };
-    reader.readAsDataURL(file);
+    showPhotoModal([...files]);
   });
+
+  function showPhotoModal(initialFiles: File[]) {
+    const modal = PhotoReviewModal({
+      initialFiles,
+      onPost({ files, notes }) {
+        // Stash photos as data URLs in sessionStorage
+        let pending = files.length;
+        const dataUrls: string[] = [];
+        files.forEach((file, i) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            dataUrls[i] = reader.result as string;
+            if (--pending === 0) {
+              sessionStorage.setItem('qb-grade-photos', JSON.stringify(dataUrls));
+              if (notes) sessionStorage.setItem('qb-grade-notes', notes);
+              window.location.hash = `#/grade?questionId=${currentQuestion!.id}&mode=photo`;
+            }
+          };
+          reader.readAsDataURL(file);
+        });
+      },
+      onCancel() { /* nothing — user stays on learn page */ },
+    });
+    document.body.appendChild(modal);
+  }
+
   typeBtn.addEventListener('click', () => {
     if (currentQuestion) window.location.hash = `#/grade?questionId=${currentQuestion.id}&mode=type`;
   });

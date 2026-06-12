@@ -1,11 +1,9 @@
 import { html } from '@/lib/html';
 import { TopBar } from '@/components/TopBar';
 import { CoverSlot } from '@/components/CoverSlot';
-import { ProblemsList } from '@/components/ProblemsList';
 import './AddBookPage.css';
 
 export function AddBookPage(): HTMLElement {
-  let dirty = false;
   let coverSlot = CoverSlot({});
 
   const titleInput = document.createElement('input');
@@ -33,16 +31,8 @@ export function AddBookPage(): HTMLElement {
   const lookupStatus = html`<div class="lookup-status" hidden></div>`;
   const saveBtn = html`<button class="primary-btn" type="button" disabled>Add to library</button>`;
 
-  const problemsList = ProblemsList({ onChange: markDirty });
-
-  function markDirty() {
-    dirty = true;
-    updateSaveState();
-  }
-
   function updateSaveState() {
-    const hasTitle = titleInput.value.trim() !== '';
-    (saveBtn as HTMLButtonElement).disabled = !hasTitle;
+    (saveBtn as HTMLButtonElement).disabled = titleInput.value.trim() === '';
   }
 
   // ISBN lookup.
@@ -60,9 +50,8 @@ export function AddBookPage(): HTMLElement {
         return;
       }
       const data = await res.json();
-      if (data.title) { titleInput.value = data.title; markDirty(); }
-      if (data.author) { authorInput.value = data.author; markDirty(); }
-      // Replace cover with one that has the ISBN.
+      if (data.title) { titleInput.value = data.title; updateSaveState(); }
+      if (data.author) { authorInput.value = data.author; }
       const newCover = CoverSlot({ title: data.title, isbn });
       coverSlot.replaceWith(newCover);
       coverSlot = newCover;
@@ -77,20 +66,17 @@ export function AddBookPage(): HTMLElement {
   const lookupBtn = html`<button class="isbn-go" type="button">Look up</button>`;
   lookupBtn.addEventListener('click', doLookup);
   isbnInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') doLookup(); });
-  titleInput.addEventListener('input', () => { markDirty(); updateSaveState(); });
-  authorInput.addEventListener('input', markDirty);
-  goalInput.addEventListener('input', markDirty);
+  titleInput.addEventListener('input', updateSaveState);
 
-  // Save action.
+  // Save: create book, then redirect to edit-book page.
   saveBtn.addEventListener('click', async () => {
     const title = titleInput.value.trim();
     if (!title) return;
     (saveBtn as HTMLButtonElement).disabled = true;
     saveBtn.textContent = 'Saving…';
 
-    const problems = problemsList.getProblems();
     try {
-      const bookRes = await fetch('/api/books', {
+      const res = await fetch('/api/books', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -100,32 +86,16 @@ export function AddBookPage(): HTMLElement {
           isbn: isbnInput.value.trim() || undefined,
         }),
       });
-      if (!bookRes.ok) throw new Error('Failed to create book');
-      const book = await bookRes.json();
-
-      // Create problems and add to book.
-      for (const p of problems) {
-        if (!p.latex.trim()) continue;
-        await fetch('/api/questions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ bookId: book.id, label: p.label, text: p.latex }),
-        });
-      }
-
-      dirty = false;
-      window.location.hash = '#/';
+      if (!res.ok) throw new Error('Failed to create book');
+      const book = await res.json();
+      window.location.hash = `#/edit-book?id=${book.id}`;
     } catch {
       saveBtn.textContent = 'Add to library';
       (saveBtn as HTMLButtonElement).disabled = false;
     }
   });
 
-  // Unsaved changes guard.
-  const beforeUnload = (e: BeforeUnloadEvent) => { if (dirty) e.preventDefault(); };
-  window.addEventListener('beforeunload', beforeUnload);
-
-  const page = html`<div class="add-book-page">
+  return html`<div class="add-book-page">
     ${TopBar({ onBack: () => { window.location.hash = '#/'; } })}
     <form class="add-stage" autocomplete="off">
       <h1 class="add-title">Add a book</h1>
@@ -158,23 +128,10 @@ export function AddBookPage(): HTMLElement {
         <span class="field-lbl">Learning goal <span class="field-opt">(optional)</span></span>
         ${goalInput}
       </label>
-
-      ${problemsList.el}
     </form>
 
     <footer class="add-actions">
       ${saveBtn}
     </footer>
   </div>`;
-
-  // Clean up beforeunload when the page is unmounted.
-  const observer = new MutationObserver(() => {
-    if (!document.contains(page)) {
-      window.removeEventListener('beforeunload', beforeUnload);
-      observer.disconnect();
-    }
-  });
-  observer.observe(document.body, { childList: true, subtree: true });
-
-  return page;
 }

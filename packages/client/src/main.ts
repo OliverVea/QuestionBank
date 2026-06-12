@@ -12,6 +12,7 @@ import { ScanProblemsPage } from '@/pages/ScanProblemsPage';
 import { ManageBooksPage } from '@/pages/ManageBooksPage';
 import { EditBookPage } from '@/pages/EditBookPage';
 import { LearnPage } from '@/pages/LearnPage';
+import { GradePage } from '@/pages/GradePage';
 
 const app = document.getElementById('app')!;
 const router = new Navigo('/', { hash: true });
@@ -27,4 +28,5 @@ router
   .on('/manage-books', () => mount(ManageBooksPage))
   .on('/edit-book', () => mount(EditBookPage))
   .on('/learn', () => mount(LearnPage))
+  .on('/grade', () => mount(GradePage))
   .resolve();

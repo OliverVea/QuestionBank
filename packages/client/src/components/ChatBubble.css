@@ -1,0 +1,23 @@
+/* ChatBubble: base message bubble used in chat-based pages. */
+
+.chat-bubble {
+  max-width: 88%;
+  min-width: 0;
+  border-radius: 16px;
+  padding: 0.8rem 0.95rem;
+  box-shadow: var(--shadow);
+  line-height: 1.45;
+}
+.chat-bubble-user {
+  align-self: flex-end;
+  background: color-mix(in srgb, var(--orange-100) 36%, var(--bg));
+  border: 1px solid var(--orange-200);
+}
+.chat-bubble-agent {
+  align-self: flex-start;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}

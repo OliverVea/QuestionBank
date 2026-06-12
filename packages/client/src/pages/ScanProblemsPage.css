@@ -1,0 +1,161 @@
+/* ScanProblemsPage: page-specific styles only.
+   Chat container, bubble, reply row, and thinking are shared components. */
+
+.scan-page {
+  height: 100dvh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  overflow: hidden;
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+/* ---- Photo bubble ---- */
+.sp-photo { padding: 0.5rem; }
+.sp-thumb {
+  display: block;
+  width: 100%;
+  max-height: 240px;
+  object-fit: cover;
+  border-radius: 11px;
+  background: var(--surface);
+}
+.sp-cap {
+  margin-top: 0.45rem;
+  padding: 0 0.15rem;
+  font-size: 0.92rem;
+  color: var(--fg);
+}
+
+/* ---- Delta cards ---- */
+.sp-delta-intro { font-size: 1rem; line-height: 1.5; }
+.sp-delta-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+.sp-delta-card {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+  padding: 0.6rem 0.7rem;
+  transition: opacity 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+.sp-delta-card.sp-add { border-left: 3px solid var(--learn); }
+.sp-delta-card.sp-edit { border-left: 3px solid var(--revisit); }
+.sp-delta-card.sp-rejected {
+  opacity: 0.5;
+  background: var(--surface);
+  border-left-color: var(--grey-100);
+}
+
+.sp-delta-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+}
+.sp-delta-tag {
+  flex: none;
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #fff;
+  padding: 0.16rem 0.45rem;
+  border-radius: 999px;
+}
+.sp-tag-add { background: var(--learn-dark); }
+.sp-tag-edit { background: var(--revisit); }
+.sp-delta-label {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sp-delta-toggle {
+  flex: none;
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.8rem;
+  padding: 0.32rem 0.7rem;
+  border-radius: 999px;
+  cursor: pointer;
+  border: 1px solid var(--learn);
+  background: var(--bg);
+  color: var(--learn-dark);
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s ease, color 0.12s ease, transform 0.08s ease;
+}
+.sp-delta-toggle.on { background: var(--learn); color: #fff; }
+.sp-delta-toggle:active { transform: scale(0.96); }
+@media (hover: hover) {
+  .sp-delta-toggle:hover { filter: brightness(1.04); }
+}
+
+.sp-delta-body { font-size: 0.98rem; line-height: 1.5; overflow-wrap: anywhere; }
+.sp-delta-body .katex-display { overflow-x: auto; max-width: 100%; }
+
+/* Edit: before (struck) → arrow → after */
+.sp-delta-before {
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: var(--muted);
+  text-decoration: line-through;
+  overflow-wrap: anywhere;
+}
+.sp-delta-arrow {
+  text-align: center;
+  color: var(--revisit);
+  font-size: 1rem;
+  line-height: 1;
+  margin: 0.35rem 0;
+}
+.sp-delta-after {
+  font-size: 0.98rem;
+  line-height: 1.5;
+  color: var(--fg);
+  overflow-wrap: anywhere;
+}
+
+/* Superseded (old proposal after refine) */
+.chat-bubble-agent.sp-superseded { opacity: 0.55; }
+.chat-bubble-agent.sp-superseded .sp-delta-list { pointer-events: none; }
+.chat-bubble-agent.sp-superseded .sp-delta-toggle { visibility: hidden; }
+
+/* ---- Bottom actions ---- */
+.sp-actions {
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+  padding: 0.7rem 0.9rem max(0.8rem, env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+/* Apply button */
+.sp-apply {
+  width: 100%;
+  border: none;
+  background: var(--revisit);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  font-size: 1.05rem;
+  padding: 0.95rem 1rem;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.08s ease, filter 0.12s ease;
+}
+.sp-apply:active { transform: scale(0.99); filter: brightness(0.96); }
+.sp-apply:disabled { background: var(--grey-100); color: var(--bg); cursor: default; box-shadow: none; }
+@media (hover: hover) {
+  .sp-apply:not(:disabled):hover { filter: brightness(1.05); }
+}
+.sp-apply-count { font-weight: 600; opacity: 0.85; font-size: 0.9rem; }

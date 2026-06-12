@@ -11,6 +11,7 @@ import { questionGradeRouter } from './routes/grade.js';
 import { lookupRouter } from './routes/lookup.js';
 import { learnRouter } from './routes/learn.js';
 import { practiceRouter } from './routes/practice.js';
+import { extractRouter } from './routes/extract.js';
 import { AnthropicApiProvider } from './llm/anthropic-api-provider.js';
 import type { LlmProvider } from './llm/provider.js';
 import { errorLogger, requestLogger } from './logging/http.js';
@@ -55,6 +56,7 @@ export function createApp(
   app.use('/api/learn', learnRouter(store));
   app.use('/api/practice', practiceRouter(store));
   app.use('/api/questions', questionsRouter(store));
+  app.use('/api/extract', extractRouter(provider));
 
   app.use(errorLogger);
 

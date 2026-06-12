@@ -1,0 +1,42 @@
+/* ReplyRow: textarea + send button fused as a pill. */
+
+.reply-row {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  overflow: hidden;
+}
+.reply-row:focus-within {
+  border-color: var(--learn);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--learn) 30%, transparent);
+}
+.reply-input {
+  flex: 1;
+  resize: none;
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1.4;
+  color: var(--fg);
+  background: transparent;
+  border: none;
+  padding: 0.6rem 0.8rem;
+  -webkit-tap-highlight-color: transparent;
+}
+.reply-input:focus { outline: none; }
+.reply-send {
+  flex: none;
+  align-self: stretch;
+  width: 3rem;
+  border: none;
+  border-left: 1px solid var(--border);
+  background: var(--learn);
+  color: #fff;
+  font-size: 1.2rem;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: filter 0.12s ease;
+}
+.reply-send:active { filter: brightness(0.92); }
+@media (hover: hover) { .reply-send:hover { filter: brightness(1.05); } }

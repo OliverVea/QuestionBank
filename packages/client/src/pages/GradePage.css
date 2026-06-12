@@ -1,0 +1,192 @@
+/* GradePage: chat-based grading screen.
+   Shared chat container/bubble/reply/thinking come from components. */
+
+.grade-page {
+  height: 100dvh;
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  overflow: hidden;
+  max-width: 760px;
+  margin: 0 auto;
+}
+.grade-page > .topbar { background: var(--bg); }
+
+/* ---- Collapsible question ---- */
+.qfold {
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+.qfold-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.7rem 1rem;
+  cursor: pointer;
+  list-style: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.qfold-summary::-webkit-details-marker { display: none; }
+.qfold-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--fg);
+}
+.qfold-ctx {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.qfold-chev { color: var(--muted); transition: transform 0.15s ease; }
+.qfold[open] .qfold-chev { transform: rotate(180deg); }
+.qfold-body {
+  font-size: 1.05rem;
+  line-height: 1.5;
+  color: var(--fg);
+  padding: 0 1rem 0.9rem;
+}
+
+/* ---- Grade badge ---- */
+.grade-badge {
+  align-self: flex-start;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #fff;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+}
+.grade-correct { background: var(--learn-dark); }
+.grade-partial { background: var(--orange-200); }
+.grade-incorrect { background: var(--purple-400); }
+
+.grade-ok { font-size: 0.95rem; color: var(--learn-dark); font-weight: 600; }
+
+/* ---- Issue list ---- */
+.issue-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.issue { display: grid; grid-template-columns: auto 1fr; gap: 0.5rem; align-items: start; }
+.issue-sev {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.15rem 0.4rem;
+  border-radius: 6px;
+  white-space: nowrap;
+  margin-top: 0.1rem;
+}
+.issue-critical .issue-sev { background: color-mix(in srgb, var(--purple-400) 16%, transparent); color: var(--purple-500); }
+.issue-medium .issue-sev { background: color-mix(in srgb, var(--orange-200) 16%, transparent); color: var(--orange-200); }
+.issue-minor .issue-sev { background: var(--grey-50); color: var(--grey-400); }
+.issue-desc { font-size: 0.95rem; overflow-wrap: anywhere; }
+
+/* ---- Collapsible reasoning ---- */
+.reasoning { font-size: 0.9rem; }
+.reasoning > summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-weight: 600;
+  list-style: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.reasoning > summary::-webkit-details-marker { display: none; }
+.reasoning-body { margin-top: 0.4rem; color: var(--muted); font-size: 0.9rem; }
+
+/* ---- Bottom actions ---- */
+.grade-actions {
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+  padding: 0.7rem 0.9rem max(0.8rem, env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+/* ---- Grade buttons ---- */
+.grade-row { display: flex; align-items: stretch; gap: 0.5rem; }
+.grade-btn {
+  flex: 1;
+  position: relative;
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.95rem;
+  padding: 0.65rem 0.5rem;
+  border-radius: 12px;
+  cursor: pointer;
+  border: none;
+  box-shadow: var(--shadow);
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.08s ease, filter 0.12s ease;
+}
+.grade-btn:active { transform: scale(0.97); filter: brightness(0.96); }
+.gb-incorrect { background: var(--orange-200); color: #fff; }
+.gb-partial { background: var(--bg); color: var(--learn-dark); box-shadow: inset 0 0 0 2px var(--learn), var(--shadow); }
+.gb-correct { background: var(--learn); color: #fff; }
+@media (hover: hover) {
+  .grade-btn:hover { filter: brightness(1.05); }
+  .gb-partial:hover { background: var(--green-50); filter: none; }
+}
+
+.grade-btn.suggested::before {
+  content: 'Suggested';
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translate(-50%, 60%);
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #fff;
+  background: var(--green-100);
+  padding: 0.14rem 0.5rem;
+  border-radius: 999px;
+  white-space: nowrap;
+  box-shadow: var(--shadow);
+}
+
+/* ---- Photo capture ---- */
+.photo-capture { align-self: center; padding: 1rem 0; }
+.solution-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font: inherit;
+  font-weight: 700;
+  font-size: 1rem;
+  padding: 0.9rem 1.2rem;
+  border-radius: 12px;
+  border: none;
+  background: var(--learn);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.08s ease, filter 0.12s ease;
+}
+.solution-btn:active { transform: scale(0.98); filter: brightness(0.94); }
+@media (hover: hover) { .solution-btn:hover { filter: brightness(1.05); } }
+.sb-icon { display: flex; width: 1.4rem; height: 1.4rem; }
+.sb-icon svg { width: 100%; height: 100%; }
+
+/* Photo thumbnail in user bubble */
+.photo-bubble { padding: 0.4rem; }
+.photo-thumb {
+  display: block;
+  width: 100%;
+  max-height: 200px;
+  object-fit: cover;
+  border-radius: 11px;
+}
+
+/* LaTeX inside chat bubbles */
+.chat-bubble .katex-display { overflow-x: auto; max-width: 100%; }

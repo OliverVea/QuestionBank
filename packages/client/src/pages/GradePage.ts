@@ -1,5 +1,6 @@
 import { html } from '@/lib/html';
 import { renderLatex } from '@/lib/latex';
+import { unstashPhotos } from '@/lib/photo-transfer';
 import { TopBar } from '@/components/TopBar';
 import { ChatContainer } from '@/components/ChatContainer';
 import { ChatBubble } from '@/components/ChatBubble';
@@ -199,31 +200,12 @@ export function GradePage(): HTMLElement {
     }
   }
 
-  // ---- Photo mode: read stashed photos from sessionStorage ----
-  function dataUrlToFile(dataUrl: string, name: string): File {
-    const [header, b64] = dataUrl.split(',');
-    const mime = header?.match(/:(.*?);/)?.[1] ?? 'image/jpeg';
-    const binary = atob(b64 ?? '');
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-    return new File([bytes], name, { type: mime });
-  }
-
+  // ---- Photo mode: read stashed photos ----
   function startPhotoFlow() {
-    const raw = sessionStorage.getItem('qb-grade-photos');
-    const notes = sessionStorage.getItem('qb-grade-notes') ?? '';
-    sessionStorage.removeItem('qb-grade-photos');
-    sessionStorage.removeItem('qb-grade-notes');
+    const transfer = unstashPhotos();
 
-    // Also check legacy single-photo key
-    const legacy = sessionStorage.getItem('qb-grade-photo');
-    sessionStorage.removeItem('qb-grade-photo');
-
-    const dataUrls: string[] = raw ? JSON.parse(raw) : legacy ? [legacy] : [];
-
-    if (dataUrls.length > 0) {
-      const files = dataUrls.map((url, i) => dataUrlToFile(url, `solution-${i + 1}.jpg`));
-      void transcribePhotos(files, notes);
+    if (transfer && transfer.files.length > 0) {
+      void transcribePhotos(transfer.files, transfer.notes);
     } else {
       showPhotoCapture();
     }

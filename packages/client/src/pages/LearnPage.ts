@@ -3,6 +3,7 @@ import { TopBar } from '@/components/TopBar';
 import { QuestionCard } from '@/components/QuestionCard';
 import { Spinner } from '@/components/Spinner';
 import { PhotoReviewModal } from '@/components/PhotoReviewModal';
+import { stashPhotos } from '@/lib/photo-transfer';
 import '@/styles/gridpad.css';
 import './LearnPage.css';
 
@@ -47,21 +48,8 @@ export function LearnPage(): HTMLElement {
     const modal = PhotoReviewModal({
       initialFiles,
       onPost({ files, notes }) {
-        // Stash photos as data URLs in sessionStorage
-        let pending = files.length;
-        const dataUrls: string[] = [];
-        files.forEach((file, i) => {
-          const reader = new FileReader();
-          reader.onload = () => {
-            dataUrls[i] = reader.result as string;
-            if (--pending === 0) {
-              sessionStorage.setItem('qb-grade-photos', JSON.stringify(dataUrls));
-              if (notes) sessionStorage.setItem('qb-grade-notes', notes);
-              window.location.hash = `#/grade?questionId=${currentQuestion!.id}&mode=photo`;
-            }
-          };
-          reader.readAsDataURL(file);
-        });
+        stashPhotos({ files, notes });
+        window.location.hash = `#/grade?questionId=${currentQuestion!.id}&mode=photo`;
       },
       onCancel() { /* nothing — user stays on learn page */ },
     });

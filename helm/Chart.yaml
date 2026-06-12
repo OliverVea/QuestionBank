@@ -1,0 +1,6 @@
+apiVersion: v2
+name: questionbank
+description: Self-hosted question bank — Express server + Vite client, single container
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

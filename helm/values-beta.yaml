@@ -1,0 +1,3 @@
+ingress:
+  host: questionbank-beta.ovea.pro
+  forwardAuthMiddleware: "infra-beta-authentik-forward-auth@kubernetescrd"

@@ -1,0 +1,59 @@
+replicaCount: 1
+
+image:
+  repository: questionbank
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 80
+
+container:
+  port: 3001
+
+# Ingress is Tailscale-only by default; switch externalDnsTarget to the
+# cloudflared tunnel CNAME to expose publicly.
+ingress:
+  enabled: true
+  host: questionbank-private.ovea.pro
+  externalDnsTarget: "100.100.117.17"
+  clusterIssuer: letsencrypt-prod
+  tls:
+    enabled: true
+    secretName: ""
+  # Authentik forwardAuth; switch to infra-beta-authentik-forward-auth for beta.
+  forwardAuthMiddleware: "infra-authentik-forward-auth@kubernetescrd"
+  annotations: {}
+
+persistence:
+  enabled: true
+  size: 5Gi
+  storageClass: ""
+  # PVC name; left blank → "<release>-data"
+  existingClaim: ""
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+# Plain env vars (non-secret). Empty values are dropped at render time.
+config:
+  NODE_ENV: "production"
+  PORT: "3001"
+  QB_DATA_DIR: "/data"
+  # Authentik forwardAuth sets X-authentik-uid as the stable per-user identifier.
+  QB_CUSTOMER_HEADER: "X-authentik-uid"
+  # Multi-tenant by Authentik UID; never fall back to a shared default customer.
+  QB_ALLOW_DEFAULT_CUSTOMER: "0"
+
+# Secret-backed env vars. The Secret is created out-of-band (kubectl apply,
+# OpenBao sync, etc.) — chart never commits secret values.
+secrets:
+  - name: questionbank-secrets
+    envMap:
+      ANTHROPIC_API_KEY: anthropic-api-key

@@ -1,0 +1,20 @@
+/* QuestionCard — the question body rendered as a card.
+   Ported from docs/mocks/learn.css .qbody styles. */
+.qbody {
+  width: 100%;
+  max-width: 36rem;
+  margin: 0 auto;
+  font-size: clamp(1.15rem, 1rem + 1.2vw, 1.45rem);
+  line-height: 1.5;
+  color: var(--fg);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 1.4rem 1.3rem;
+  box-shadow: var(--shadow);
+}
+/* Wide display math scrolls sideways instead of forcing the card wide. */
+.qbody .katex-display {
+  overflow-x: auto;
+  padding-bottom: 0.2rem;
+}

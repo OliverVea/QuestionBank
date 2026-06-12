@@ -139,6 +139,7 @@ async function loadData(page: HTMLElement, booksHost: HTMLElement): Promise<void
       icon: learnIcon(),
       eyebrow: `Next up: ${next.book.title}`,
       cta: 'Grow your knowledge',
+      onClick: () => { window.location.hash = '#/learn'; },
     });
     replacement.classList.add('animate-in');
     replacement.style.setProperty('--i', '1');

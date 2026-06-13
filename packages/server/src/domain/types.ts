@@ -70,7 +70,6 @@ export interface Attempt {
   createdAt: string;
 }
 
-
 /** A temporary skip — question is excluded from suggestion for 12 hours. */
 export interface Skip {
   id: string;
@@ -80,3 +79,20 @@ export interface Skip {
   /** ISO timestamp when this skip expires and the question becomes eligible again. */
   expiresAt: string;
 }
+
+/** Mastery word — how well a problem is known, derived from recent grade history. */
+export type Mastery = 'new' | 'improving' | 'strong' | 'excellent';
+
+/** Readiness — drives the badge color. ready = act now (purple), waiting = resting (grey), finalized = graduated (green). */
+export type Readiness = 'ready' | 'waiting' | 'finalized';
+
+/** Derived, never-persisted status for one problem — computed from its attempts. */
+export interface ProblemSummary {
+  mastery: Mastery;
+  readiness: Readiness;
+  /** Per-attempt grades, oldest first — backs the CI-history strip. */
+  grades: Grade[];
+}
+
+/** A question plus its derived summary, as returned by the book-questions list. */
+export type QuestionWithSummary = Question & { summary: ProblemSummary };

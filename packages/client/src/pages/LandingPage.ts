@@ -158,6 +158,7 @@ async function loadData(page: HTMLElement, booksHost: HTMLElement): Promise<void
       author: book.author,
       questionCount: book.questionIds.length,
       isbn: book.isbn,
+      onClick: () => { window.location.hash = `#/view-book?id=${encodeURIComponent(book.id)}`; },
     });
     row.classList.add('animate-in');
     row.style.setProperty('--i', String(ROW_INDEX_OFFSET + i));

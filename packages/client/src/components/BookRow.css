@@ -20,6 +20,15 @@
   box-shadow: 3px 4px 7px rgba(0, 0, 0, 0.3);
 }
 
+/* Tappable variant: opens the read-only book view. Mobile-first press feedback. */
+.book-tappable {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s ease;
+}
+.book-tappable:active { background: var(--surface); }
+@media (hover: hover) { .book-tappable:hover { background: var(--surface); } }
+
 .book .b-title { grid-area: title; font-size: 1.05rem; font-weight: 600; }
 .book .b-author { grid-area: author; font-size: 0.85rem; color: var(--muted); margin-top: 0.15rem; }
 .book .b-count {

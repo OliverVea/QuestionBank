@@ -35,4 +35,19 @@
   /* One consistent elevation for raised surfaces (cards, primary buttons).
      Tight blur so it doesn't get clipped by scroll containers; darker tone. */
   --shadow: 0 3px 12px rgba(25, 27, 28, 0.28);
+
+  /* ---- Attempt-history grade palette (ported from docs/mocks/mocks.css) ----
+     CI-history ticks + grade pills. success = solid green, partial = green
+     OUTLINE (rendered hollow with a green ring), fail = orange. */
+  --grade-correct: var(--learn-dark);   /* success — solid green */
+  --grade-partial: var(--learn);        /* partial — green (rendered as an outline tick) */
+  --grade-incorrect: var(--orange-200); /* fail — orange */
+
+  /* ---- Readiness (a problem's schedule state, drives the status-badge color) ----
+     ready/due now (incl. New) = purple; waiting (resting) = grey; finalized
+     (Excellent, graduated, never scheduled again) = green. The badge TEXT is the
+     mastery word (New/Improving/Strong/Excellent). */
+  --ready: var(--revisit);             /* purple — actionable now */
+  --waiting: var(--grey-200);          /* grey — not ready */
+  --finalized: var(--learn-dark);      /* green — graduated, off the schedule */
 }

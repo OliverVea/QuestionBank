@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import { newId, nowIso } from '../domain/ids.js';
-import type { Question, Relevance } from '../domain/types.js';
+import type { Attempt, Question, Relevance } from '../domain/types.js';
 import { requireCustomerId } from '../middleware/resolve-customer.js';
 import { planBatchSave, type IncomingQuestion } from '../services/batch-save.js';
 import { reconcileQuestionIds } from '../services/reconcile.js';
+import { deriveSummary } from '../services/summary.js';
 import type { Store } from '../storage/store.js';
 
 /** Order a book's questions by its (reconciled) questionIds; ids map 1:1 to questions. */
@@ -56,7 +57,19 @@ export function bookQuestionsRouter(store: Store): Router {
     if (!same) {
       await store.books.update(customerId, bookId, { questionIds: healed });
     }
-    res.json(orderByIds(healed, questions));
+    // Enrich each problem with its derived (never-persisted) summary so the
+    // read-only book view renders the badge + CI strip from this one fetch.
+    const ordered = orderByIds(healed, questions);
+    const byQuestion = new Map<string, Attempt[]>();
+    for (const a of await store.attempts.getAll(customerId)) {
+      const list = byQuestion.get(a.questionId);
+      if (list) list.push(a);
+      else byQuestion.set(a.questionId, [a]);
+    }
+    const now = nowIso();
+    res.json(
+      ordered.map((q) => ({ ...q, summary: deriveSummary(byQuestion.get(q.id) ?? [], now) })),
+    );
   });
 
   router.put('/', async (req, res) => {

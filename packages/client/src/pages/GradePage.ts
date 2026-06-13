@@ -20,6 +20,7 @@ export function GradePage(): HTMLElement {
   const params = new URLSearchParams(window.location.hash.split('?')[1] ?? '');
   const questionId = params.get('questionId') ?? '';
   const mode = params.get('mode') as 'photo' | 'type' ?? 'type';
+  const from = params.get('from') === 'revisit' ? 'revisit' : 'learn';
 
   const conversation: Turn[] = [];
   let lastRecommendedGrade: Grade | null = null;
@@ -71,9 +72,13 @@ export function GradePage(): HTMLElement {
 
   // ---- Skip ----
   const skipBtn = html`<button class="topbar-btn">Skip <span class="tb-sub">12h</span></button>`;
-  skipBtn.addEventListener('click', () => { window.location.hash = '#/learn'; });
+  skipBtn.addEventListener('click', () => {
+    void fetch(`/api/skip/${questionId}`, { method: 'POST' }).then(() => {
+      window.location.hash = `#/${from}`;
+    });
+  });
 
-  const topBar = TopBar({ onBack: () => { window.location.hash = '#/learn'; }, right: skipBtn });
+  const topBar = TopBar({ onBack: () => { window.location.hash = `#/${from}`; }, right: skipBtn });
 
   // ---- Page shell ----
   const page = html`<div class="grade-page">
@@ -192,7 +197,7 @@ export function GradePage(): HTMLElement {
           issues: lastIssues,
         }),
       });
-      window.location.hash = '#/learn';
+      window.location.hash = `#/${from}`;
     } catch {
       const err = ChatBubble('agent');
       err.textContent = 'Failed to save. Try again.';

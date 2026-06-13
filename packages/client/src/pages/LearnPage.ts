@@ -12,8 +12,8 @@ interface Book { title: string }
 interface LearnNextResponse { question: Question | null; book?: Book }
 
 export function LearnPage(): HTMLElement {
-  const skipped = new Set<string>();
   let currentQuestion: Question | null = null;
+  let loading = false;
 
   const eyebrow = html`<div class="qcard-eyebrow"><span></span></div>`;
   const qscroll = html`<div class="qscroll"></div>`;
@@ -34,11 +34,11 @@ export function LearnPage(): HTMLElement {
   const footer = html`<footer class="learn-actions">${uploadBtn}${typeBtn}${fileInput}</footer>`;
 
   uploadBtn.addEventListener('click', () => {
-    if (currentQuestion) fileInput.click();
+    if (currentQuestion && !loading) fileInput.click();
   });
   fileInput.addEventListener('change', () => {
     const files = fileInput.files;
-    if (!files?.length || !currentQuestion) return;
+    if (!files?.length || !currentQuestion || loading) return;
     const selected = [...files];
     fileInput.value = '';
     showPhotoModal(selected);
@@ -49,7 +49,7 @@ export function LearnPage(): HTMLElement {
       initialFiles,
       onPost({ files, notes }) {
         stashPhotos({ files, notes });
-        window.location.hash = `#/grade?questionId=${currentQuestion!.id}&mode=photo`;
+        window.location.hash = `#/grade?questionId=${currentQuestion!.id}&mode=photo&from=learn`;
       },
       onCancel() { /* nothing — user stays on learn page */ },
     });
@@ -57,21 +57,30 @@ export function LearnPage(): HTMLElement {
   }
 
   typeBtn.addEventListener('click', () => {
-    if (currentQuestion) window.location.hash = `#/grade?questionId=${currentQuestion.id}&mode=type`;
+    if (currentQuestion && !loading) window.location.hash = `#/grade?questionId=${currentQuestion.id}&mode=type&from=learn`;
   });
 
   const skipBtn = html`<button class="topbar-btn">Skip <span class="tb-sub">12h</span></button>`;
   skipBtn.addEventListener('click', () => {
-    if (!currentQuestion) return;
-    skipped.add(currentQuestion.id);
-    void loadNext();
+    if (!currentQuestion || loading) return;
+    const id = currentQuestion.id;
+    // Bug 1 fix: disable actions immediately to prevent race
+    setActionsEnabled(false);
+    void fetch(`/api/skip/${id}`, { method: 'POST' }).then(() => loadNext());
   });
 
   const topBar = TopBar({ onBack: () => { window.location.hash = '#/'; }, right: skipBtn });
 
   const page = html`<div class="learn-page anim-cascade">${topBar}${stage}${footer}</div>`;
 
+  function setActionsEnabled(enabled: boolean) {
+    (uploadBtn as HTMLButtonElement).disabled = !enabled;
+    (typeBtn as HTMLButtonElement).disabled = !enabled;
+    (skipBtn as HTMLButtonElement).disabled = !enabled;
+  }
+
   function render(data: LearnNextResponse) {
+    loading = false;
     if (!data.question || !data.book) {
       currentQuestion = null;
       eyebrow.querySelector('span')!.textContent = '';
@@ -88,9 +97,11 @@ export function LearnPage(): HTMLElement {
     qscroll.replaceChildren(card);
     footer.hidden = false;
     skipBtn.hidden = false;
+    setActionsEnabled(true);
   }
 
   function renderError() {
+    loading = false;
     currentQuestion = null;
     const retry = html`<button class="type-link">Try again</button>`;
     retry.addEventListener('click', () => void loadNext());
@@ -100,9 +111,11 @@ export function LearnPage(): HTMLElement {
   }
 
   async function loadNext() {
-    const excludeParam = skipped.size > 0 ? `?exclude=${[...skipped].join(',')}` : '';
+    if (loading) return; // Bug 6: prevent concurrent calls
+    loading = true;
+    setActionsEnabled(false);
     try {
-      const res = await fetch(`/api/learn/next${excludeParam}`);
+      const res = await fetch('/api/learn/next');
       if (!res.ok) { renderError(); return; }
       render(await res.json() as LearnNextResponse);
     } catch {

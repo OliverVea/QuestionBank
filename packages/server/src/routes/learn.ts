@@ -8,9 +8,7 @@ import type { Store } from '../storage/store.js';
 export function learnRouter(store: Store): Router {
   const router = Router();
   router.get('/next', async (req, res) => {
-    const excludeRaw = typeof req.query.exclude === 'string' ? req.query.exclude : '';
-    const exclude = excludeRaw ? new Set(excludeRaw.split(',')) : undefined;
-    const next = await suggestNext(store, requireCustomerId(req), nowIso(), exclude);
+    const next = await suggestNext(store, requireCustomerId(req), nowIso());
     res.json(next ?? { question: null });
   });
   return router;

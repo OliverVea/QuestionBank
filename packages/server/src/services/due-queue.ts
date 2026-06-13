@@ -1,4 +1,5 @@
 import type { Book, Question } from '../domain/types.js';
+import { activeSkippedIds } from '../routes/skip.js';
 import { scheduleFor, type ReviewSchedule } from './srs.js';
 import type { Store } from '../storage/store.js';
 
@@ -12,11 +13,11 @@ export interface DueItem {
 /**
  * The questions due for review now: those with at least one attempt whose derived
  * nextReviewDate is at or before `now`, ordered by nextReviewDate ascending (most overdue
- * first). Schedule is computed on read from attempt history. Skip is client-only now, so
- * there is no skipped filter.
+ * first). Excludes questions with active server-side skips.
  */
 export async function dueQueue(store: Store, customerId: string, now: string): Promise<DueItem[]> {
   const attempts = await store.attempts.getAll(customerId);
+  const skipped = await activeSkippedIds(store, customerId);
   const byQuestion = new Map<string, typeof attempts>();
   for (const a of attempts) {
     const list = byQuestion.get(a.questionId);
@@ -28,6 +29,7 @@ export async function dueQueue(store: Store, customerId: string, now: string): P
 
   const items: DueItem[] = [];
   for (const question of await store.questions.getAll(customerId)) {
+    if (skipped.has(question.id)) continue;
     const qAttempts = byQuestion.get(question.id);
     if (qAttempts === undefined) continue; // never attempted → not in the ladder
     const schedule = scheduleFor(qAttempts, now);

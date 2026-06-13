@@ -69,3 +69,14 @@ export interface Attempt {
   issues: GradingIssue[];
   createdAt: string;
 }
+
+
+/** A temporary skip — question is excluded from suggestion for 12 hours. */
+export interface Skip {
+  id: string;
+  customerId: string;
+  questionId: string;
+  createdAt: string;
+  /** ISO timestamp when this skip expires and the question becomes eligible again. */
+  expiresAt: string;
+}

@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import type { NextFunction, Request, Response } from 'express';
 import multer from 'multer';
 import { bufferImage, type ImageMimeType } from '../llm/image-ref.js';
 import { LlmError, type LlmProvider, type Message } from '../llm/provider.js';
@@ -49,7 +50,7 @@ export function extractRouter(provider: LlmProvider, store: Store): Router {
 
   // multer throws a LIMIT_FILE_COUNT error past `files`; turn that (and any multer error)
   // into a clean 400 rather than a 500.
-  const acceptImages = (req: import('express').Request, res: import('express').Response, next: import('express').NextFunction) => {
+  const acceptImages = (req: Request, res: Response, next: NextFunction) => {
     upload.array('images', MAX_IMAGES)(req, res, (err: unknown) => {
       if (err) {
         res.status(400).json({ error: `up to ${MAX_IMAGES} page images, each ≤10 MB` });
@@ -60,7 +61,7 @@ export function extractRouter(provider: LlmProvider, store: Store): Router {
   };
 
   /** Pull validated ImageRefs from the multipart files, or null if any is wrong. */
-  function readImages(req: import('express').Request): ReturnType<typeof bufferImage>[] | null {
+  function readImages(req: Request): ReturnType<typeof bufferImage>[] | null {
     const files = (req.files as Express.Multer.File[] | undefined) ?? [];
     if (files.length === 0) return null;
     const refs = [];

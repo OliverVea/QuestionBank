@@ -38,7 +38,7 @@ Three concrete failures follow:
 
 | Decision | Choice |
 | --- | --- |
-| Pages per batch | Many; one LLM call sees all pages so it carries section context forward. |
+| Pages per batch | Up to **5** in v0 (one LLM call sees all pages so it carries section context forward). Raising the cap is a deferred follow-up. |
 | Section model | Arbitrary-depth tree, **derived** from dotted-path labels (split on `.`). |
 | Tree vs flat | Label encodes the path; tree is reconstructed on demand. Flat `questionIds[]` stays canonical. |
 | Label semantics | Internal UUID = identity. Path = editable, **non-unique** grouping field; same-path problems order by `createdAt`. |
@@ -51,7 +51,7 @@ Three concrete failures follow:
 
 ```
 ScanProblemsPage  (multi-image picker + ambiguity prompts + delta review)
-  │  multipart: images[] (1..N)
+  │  multipart: images[] (1..5)
   ▼
 POST /api/extract            ← server fetches the book's existing problems by bookId
   │
@@ -145,12 +145,12 @@ Server-side validation (in `extract.ts`, replacing `parseExtractionResult`) enfo
 
 ## Server / API (`packages/server/src/routes/extract.ts`)
 
-`upload.single('image')` → `upload.array('images', N)` (cap N, e.g. 10, with the existing 10 MB-per-file limit). Both routes change.
+`upload.single('image')` → `upload.array('images', 5)` (v0 cap = 5, with the existing 10 MB-per-file limit). Both routes change. A 5-image cap keeps every page under the API's 8000×8000-px dimension ceiling (the >20-images-per-request rule that drops it to 2000×2000 never applies) and the whole request comfortably under the 32 MB request-size limit, so v0 can send images inline as base64 with no Files-API staging. Reject a 6th image with 400. (First-party API ceilings are far higher — 600 images/request on a 1M-context model like `claude-sonnet-4-6`, ~1.5K visual tokens per full-page photo — so 5 is a product choice, not a platform limit; see Deferred.)
 
 ```
 POST /api/extract
   multipart/form-data:
-    images[]   1..N image files (png/jpeg/webp/gif)
+    images[]   1..5 image files (png/jpeg/webp/gif)
     bookId     the book being scanned into        ← NEW: needed to load existing problems
   → 200 { resolved: Delta[], needsSection: NeedsSection[] }
   → 400  no images / invalid mimetype / missing bookId
@@ -204,6 +204,7 @@ Used by: a tree view in book management, and "learn this chapter/section" — an
 | Condition | Status | Client behavior |
 | --- | --- | --- |
 | No images / bad mimetype / missing bookId | 400 | Inline "choose at least one page image" |
+| More than 5 images | 400 | Inline "up to 5 pages per scan" (the client should also block selecting a 6th) |
 | Book not found | 404 | (shouldn't happen from UI) |
 | Provider error / schema / cross-field invalid | 502 | "Extraction failed — try again" |
 | `needsSection` non-empty | 200 | Per-page section prompt; commit blocked until resolved |
@@ -225,10 +226,15 @@ Each step ends with something observable.
 
 1. **Contract + validation** — extend `extraction-contract.ts` (prompt, envelope schema), replace `parseExtractionResult` with the typed-delta validator. Observable: unit test parses a resolved/needsSection envelope; rejects invalid cross-field deltas.
 2. **`buildTree`** — derive-tree function + test. Observable: tree reconstructed from flat paths in a test.
-3. **`/extract` multi-image + existing-problems context** — `upload.array`, `bookId`, load existing problems, `extractRouter(provider, store)` wiring, route tests with `FakeProvider`. Observable: multi-image POST returns typed deltas; skip/add behavior verified.
+3. **`/extract` multi-image + existing-problems context** — `upload.array('images', 5)`, `bookId`, load existing problems, `extractRouter(provider, store)` wiring, route tests with `FakeProvider` (including the 6th-image → 400 case). Observable: multi-image POST returns typed deltas; skip/add behavior verified.
 4. **`/refine` with `sectionAnswers`** — resolve `needsSection`, route test. Observable: answered page moves into resolved.
 5. **Client multi-image + ambiguity prompts + typed deltas** — `ScanProblemsPage` intake, prompt bubbles, edit/skip rendering, commit via existing CRUD. Observable: end-to-end multi-page scan with an ambiguity prompt and a re-scan-all-skips run.
 6. **Section tree view + learn-by-node** — render the derived tree; "learn this section" feeds node's UUIDs into the practice flow. Observable: pick a chapter, practice only its problems.
+
+## Deferred candidates
+
+- **Raise the 5-page cap + eager Files-API upload.** The 5-image v0 cap is a product choice, not a platform limit (the first-party API allows 600 images/request on a 1M-context model). Raising it pairs naturally with eager uploading: start streaming each selected photo to the server — and on to Anthropic's **Files API** (beta `files-api-2025-04-14`) — the moment it's picked, so "extract" sends lightweight `file_id` references instead of inline base64. That sidesteps the 32 MB request-size limit (the real ceiling once images get large or numerous) and overlaps upload latency with user think-time. Three preconditions before building it: (1) the `LlmProvider` interface gains an upload operation and `ImageRef` gains a remote-`file_id` variant — today the client never talks to Anthropic, so eager upload goes client → server → Files API; (2) **orphan-file GC becomes required** — uploaded files persist until deleted, and a user who picks photos then bails would leak them (this turns the already-deferred "image cleanup/GC" item into a hard requirement); (3) there must be an actual overlap window to hide the latency in — extraction currently auto-starts on page load (`ScanProblemsPage.ts`), so the upload would need to kick off at selection time on the prior page, or a confirm step inserted. Until then: inline base64, ≤5 pages, no Files-API statefulness.
+- **Image-page provenance.** `source.kind = 'image'` is recorded, but which of the batch's pages a problem came from is not tracked.
 
 ## Scaling note (deferred, not silently capped)
 

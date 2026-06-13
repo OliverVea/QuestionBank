@@ -2,11 +2,13 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Replace the single-page, book-blind, add-only image extraction with a multi-page (≤5), section-aware, dedupe-capable flow whose labels are dotted paths and whose section tree is derived (not stored).
+**Goal:** Replace the single-page, book-blind, add-only image extraction with a multi-page (≤5), section-aware, dedupe-capable flow whose labels are dotted paths and whose section tree is derived (not stored) — **while preserving the existing relevance-scoring feature** (per-question high/medium/low against the book's `learningGoal`).
 
 **Architecture:** All change lands in the extraction contract (prompt + schema), a new typed-delta validator (replacing `parseExtractionResult`), the two `/extract` routes (now multi-image + `bookId` + existing-problem context, wired with the store), a pure `buildTree` projection over labels, and `ScanProblemsPage` (multi-image intake, ambiguity prompts, add/edit/skip deltas). The LLM provider interface is untouched. Nothing is persisted by extraction; commit still rides the existing batch PUT.
 
 **Tech Stack:** TypeScript (ESM, `.js` import specifiers), Express + multer (server), Vitest + supertest (server tests), framework-free TS DOM (client). The reference spec is `docs/superpowers/specs/2026-06-13-multi-page-extraction-design.md`.
+
+> **⚠️ Relevance feature — DO NOT REGRESS.** The codebase already ships relevance scoring, which the spec predates and does not mention. It threads through: `extraction-contract.ts` (`relevanceInstruction(learningGoal)`, `extractionSchemaWithRelevance`), `routes/extract.ts` (reads a `learningGoal` field, conditionally picks prompt+schema), `llm/extract.ts` (validates `relevance`), `domain/types.ts` (`Relevance`, `Question.relevance?`), `services/batch-save.ts` (carries `relevance` on create+update), `routes/questions.ts` (validates it on the PUT), and the client (`ProblemRow`/`ProblemsList`/`EditBookPage` render/edit it; `getProblems()` returns it; the Save PUT sends it). This plan **integrates** relevance into the new multi-page flow rather than dropping it: when a book has a `learningGoal`, the model scores each extracted problem's relevance, it rides the envelope's `resolved` deltas, and it carries through the scan commit. The good news: the **persistence + client-commit half already carries `relevance`** (the `Problem` type, `getProblems()`, and the Save PUT in `EditBookPage` all include it), so the integration work is concentrated server-side in the contract/validator/routes plus the scan page's delta→handoff mapping.
 
 **Conventions in this codebase (read before starting):**
 - Server is ESM: every relative import ends in `.js` even though the source is `.ts`.
@@ -27,28 +29,30 @@
 - `packages/server/src/llm/extraction-delta.test.ts` — unit test for the validator's cross-field rules.
 
 **Server — modified:**
-- `packages/server/src/llm/extraction-contract.ts` — replace the single-page prompt + array schema with the multi-page prompt builder + `extractionEnvelopeSchema`.
-- `packages/server/src/routes/extract.ts` — `upload.array('images', 5)`, `bookId` field, load existing problems, build the existing-problems context, validate the envelope, both routes; `extractRouter(provider, store)`.
+- `packages/server/src/llm/extraction-contract.ts` — replace the single-page prompt + array schema with the multi-page prompt builder + `extractionEnvelopeSchema`. **Keep `relevanceInstruction(learningGoal)`** (folded into the new prompt builder); the new envelope schema adds a `relevance` enum to each `resolved` item, gated by whether a goal was given.
+- `packages/server/src/routes/extract.ts` — `upload.array('images', 5)`, `bookId` field, load existing problems, build the existing-problems context, **read `learningGoal` (from the book record — see note)**, validate the envelope, both routes; `extractRouter(provider, store)`.
 - `packages/server/src/index.ts` — pass `store` into `extractRouter`.
-- `packages/server/src/llm/extract.ts` — remove the now-dead `extractQuestions` / `parseExtractionResult` / `extractionEnvelopeSchema` (superseded). Keep the file only if something else imports it (it does not — verified in Task 3).
-- `packages/server/src/uat/api-uat.test.ts` — replace the "Scan ingest … (extract route deferred)" flow with a real multi-image extract + skip/add flow.
+- `packages/server/src/llm/extract.ts` — **DELETED**, but its relevance-validation logic (`VALID_RELEVANCE`, the `relevance` carry-through in `toExtractedQuestion`) moves into the new `extraction-delta.ts` validator. Do not lose it. (`extractQuestions`/`parseExtractionResult`/the old envelope schema are genuinely superseded.)
+- `packages/server/src/uat/api-uat.test.ts` — replace the "Scan ingest … (extract route deferred)" flow with a real multi-image extract + skip/add flow (+ the ambiguity round-trip + a relevance-scored flow).
 
 **Client — modified:**
-- `packages/client/src/pages/ScanProblemsPage.ts` — multi-image intake, `bookId` in the form, `needsSection` ambiguity prompts + `/refine` with `sectionAnswers`, `skip` rendering, commit carrying `targetId` for edits.
+- `packages/client/src/pages/ScanProblemsPage.ts` — multi-image intake, `bookId` in the form, `needsSection` ambiguity prompts + `/refine` with `sectionAnswers`, `skip` rendering, commit carrying `targetId` **and `relevance`** for accepted deltas.
 - `packages/client/src/pages/ScanProblemsPage.css` — styles for skip rows + ambiguity prompt bubbles.
-- `packages/client/src/components/ProblemsList.ts` — the scan-accepted handoff carries `kind`/`targetId` so an `edit` updates an existing row instead of adding a new one.
+- `packages/client/src/components/ProblemsList.ts` — the scan-accepted handoff carries `targetId` so an `edit` updates an existing row instead of adding a new one; the existing `relevance` field on the handoff continues to flow into the row.
+- `packages/client/src/lib/photo-transfer.ts` — add `bookId` to `PhotoTransfer`. (It **already** carries `files: File[]` and `learningGoal` — both multi-file and goal threading exist today; only `bookId` is missing.)
 
-**Client — context only (read, likely no change):**
-- `packages/client/src/lib/photo-transfer.ts` — already carries `files: File[]`; multi-file is supported as-is.
+**Server/client — context only (read, no change needed):**
+- `packages/server/src/services/batch-save.ts` + `packages/server/src/routes/questions.ts` — already carry `relevance` through the batch PUT (create + update + validation). The scan commit reuses this path; no change.
+- `packages/client/src/pages/EditBookPage.ts` + `packages/client/src/components/ProblemRow.ts` — already render/edit `relevance`; `getProblems()` returns it and the Save PUT sends it. The scan handoff feeds rows via `addRow({ …, relevance })`, which already exists.
 
 ---
 
-## Task 1: Extraction prompt + envelope schema
+## Task 1: Extraction prompt + envelope schema (with relevance)
 
-Replace the single-page, transcribe-only, always-label contract with the multi-page, path-label, dedupe-aware prompt and the `{ resolved, needsSection }` envelope schema. This is prompt/schema text only — validation lives in Task 2.
+Replace the single-page, transcribe-only, always-label contract with the multi-page, path-label, dedupe-aware prompt and the `{ resolved, needsSection }` envelope schema. **Fold the existing `relevanceInstruction` into the new prompt builder** and add a `relevance` enum to each resolved item, gated on whether the book has a `learningGoal`. This is prompt/schema text only — validation lives in Task 2.
 
 **Files:**
-- Modify: `packages/server/src/llm/extraction-contract.ts` (full rewrite of the two exports)
+- Modify: `packages/server/src/llm/extraction-contract.ts` (full rewrite; preserves `relevanceInstruction`)
 
 - [ ] **Step 1: Rewrite the contract file**
 
@@ -65,10 +69,25 @@ export interface ExistingProblem {
 }
 
 /**
+ * Relevance scoring against the book's learning goal — preserved from the
+ * single-page flow. Appended to the prompt only when the book has a goal.
+ */
+export function relevanceInstruction(learningGoal: string): string {
+  return [
+    '',
+    `The student's learning goal for this book is: "${learningGoal}"`,
+    'For each problem in `resolved` (not skips), also set its `relevance` to this goal:',
+    '- "high": directly tests or practices the stated goal',
+    '- "medium": partially related or builds prerequisite skills',
+    '- "low": tangential or unrelated to the goal',
+  ].join('\n');
+}
+
+/**
  * The provider-agnostic "what to ask" for multi-page question extraction. The prompt
  * and schema live here (the application layer), not in any provider, so a future
  * CLI→API swap does not duplicate or drift them. The prompt is built per-request
- * because it embeds the book's existing problems.
+ * because it embeds the book's existing problems (and optionally the learning goal).
  */
 const PROMPT_HEAD = [
   'You are given one or more photographed pages of a SINGLE book, in reading order.',
@@ -104,12 +123,22 @@ export function renderExistingProblems(existing: ExistingProblem[]): string {
   return ['EXISTING PROBLEMS IN THIS BOOK (id | path | text):', ...lines].join('\n');
 }
 
-/** Build the full extraction prompt for a request, embedding the book's existing problems. */
-export function buildExtractionPrompt(existing: ExistingProblem[]): string {
-  return [PROMPT_HEAD, '', renderExistingProblems(existing)].join('\n');
+/**
+ * Build the full extraction prompt, embedding the book's existing problems and — when
+ * the book has a learning goal — the relevance-scoring instruction.
+ */
+export function buildExtractionPrompt(existing: ExistingProblem[], learningGoal?: string): string {
+  const parts = [PROMPT_HEAD, '', renderExistingProblems(existing)];
+  if (learningGoal && learningGoal.trim()) parts.push(relevanceInstruction(learningGoal.trim()));
+  return parts.join('\n');
 }
 
-/** JSON Schema for the extraction envelope: resolved deltas + ambiguous pages. */
+/**
+ * JSON Schema for the extraction envelope: resolved deltas + ambiguous pages.
+ * `relevance` is OPTIONAL in the schema (a skip carries none, and books with no goal
+ * never set it); the route only asks for it via the prompt when a goal is present, and
+ * the validator (Task 2) just carries through whatever valid value appears.
+ */
 export const extractionEnvelopeSchema = {
   type: 'object',
   required: ['resolved', 'needsSection'],
@@ -126,6 +155,7 @@ export const extractionEnvelopeSchema = {
           path: { type: 'string' },
           canonicalText: { type: 'string' },
           targetId: { type: 'string' },
+          relevance: { type: 'string', enum: ['high', 'medium', 'low'] },
         },
       },
     },
@@ -159,13 +189,13 @@ export const extractionEnvelopeSchema = {
 - [ ] **Step 2: Verify the old exports are no longer referenced**
 
 Run: `npm run typecheck` from the repo root.
-Expected: FAIL — `extract.ts` and `routes/extract.ts` still import the now-removed `extractionPrompt` / `extractionSchema`. This confirms what Tasks 2–3 must replace. (Do not fix here; the failing typecheck is the signal that those tasks have real work.)
+Expected: FAIL — `extract.ts` (the lib) and `routes/extract.ts` still import the now-removed `extractionPrompt` / `extractionSchema` / `extractionSchemaWithRelevance`. (`relevanceInstruction` is KEPT and still exports — it will be re-consumed by the new prompt builder, already done in Step 1.) This failing typecheck confirms Tasks 2–4 have real work. Do not fix here.
 
 - [ ] **Step 3: Commit**
 
 ```bash
 git add packages/server/src/llm/extraction-contract.ts
-git commit -m "feat(extract): multi-page prompt + resolved/needsSection envelope schema"
+git commit -m "feat(extract): multi-page prompt + resolved/needsSection envelope schema (keeps relevance)"
 ```
 
 ---
@@ -205,6 +235,28 @@ describe('validateExtractionEnvelope', () => {
     expect(env.resolved).toHaveLength(3);
     expect(env.resolved[0]).toEqual({ kind: 'add', path: '1.A.3', canonicalText: 'new one' });
     expect(env.needsSection[0].pageIndex).toEqual(1);
+  });
+
+  it('carries a valid relevance through on add/edit and ignores it on skip', () => {
+    const raw = {
+      resolved: [
+        { kind: 'add', path: '1.A.3', canonicalText: 'new one', relevance: 'high' },
+        { kind: 'edit', path: '1.A.1', canonicalText: 'fixed', targetId: 'q1', relevance: 'medium' },
+        { kind: 'skip', canonicalText: 'unchanged', targetId: 'q2', relevance: 'low' },
+      ],
+      needsSection: [],
+    };
+    const env = validateExtractionEnvelope(raw, EXISTING, 1);
+    expect(env.resolved[0].relevance).toEqual('high');
+    expect(env.resolved[1].relevance).toEqual('medium');
+    // skip carries no relevance into the result (it is never committed).
+    expect(env.resolved[2].relevance).toBeUndefined();
+  });
+
+  it('drops an invalid relevance value rather than throwing (add stays valid)', () => {
+    const raw = { resolved: [{ kind: 'add', path: '1.A.3', canonicalText: 'x', relevance: 'bogus' }], needsSection: [] };
+    const env = validateExtractionEnvelope(raw, EXISTING, 1);
+    expect(env.resolved[0].relevance).toBeUndefined();
   });
 
   it('rejects an edit with no targetId (502 via LlmError)', () => {
@@ -250,6 +302,9 @@ Create `packages/server/src/llm/extraction-delta.ts`:
 
 ```typescript
 import { LlmError } from './provider.js';
+import type { Relevance } from '../domain/types.js';
+
+const VALID_RELEVANCE = new Set<Relevance>(['high', 'medium', 'low']);
 
 /** A resolved extraction delta the model emits for each problem it found. */
 export interface Delta {
@@ -260,6 +315,14 @@ export interface Delta {
   canonicalText: string;
   /** Present for edit/skip — the existing problem's UUID. */
   targetId?: string;
+  /** Relevance to the book's learning goal (only when a goal was given; never on skip). */
+  relevance?: Relevance;
+}
+
+/** Read a valid relevance off a raw item, or undefined (invalid/absent values are dropped). */
+function readRelevance(raw: Record<string, unknown>): Relevance | undefined {
+  const r = raw.relevance;
+  return typeof r === 'string' && VALID_RELEVANCE.has(r as Relevance) ? (r as Relevance) : undefined;
 }
 
 /** Problems on one page the model could not place — the user supplies the prefix. */
@@ -292,18 +355,19 @@ function validateDelta(raw: unknown, existingIds: Set<string>): Delta {
   if (!nonEmptyString(canonicalText)) {
     throw new LlmError('resolved item missing canonicalText');
   }
+  const relevance = readRelevance(raw);
   if (kind === 'add') {
     if (!nonEmptyString(path)) throw new LlmError('add delta requires a path');
     if (targetId !== undefined) throw new LlmError('add delta must not carry a targetId');
-    return { kind, path, canonicalText };
+    return { kind, path, canonicalText, ...(relevance ? { relevance } : {}) };
   }
   if (kind === 'edit') {
     if (!nonEmptyString(path)) throw new LlmError('edit delta requires a path');
     if (!nonEmptyString(targetId)) throw new LlmError('edit delta requires a targetId');
     if (!existingIds.has(targetId)) throw new LlmError(`edit targetId is not an existing problem: ${targetId}`);
-    return { kind, path, canonicalText, targetId };
+    return { kind, path, canonicalText, targetId, ...(relevance ? { relevance } : {}) };
   }
-  // skip
+  // skip — never carries relevance (it is informational only, never committed).
   if (!nonEmptyString(targetId)) throw new LlmError('skip delta requires a targetId');
   if (!existingIds.has(targetId)) throw new LlmError(`skip targetId is not an existing problem: ${targetId}`);
   return { kind, canonicalText, targetId };
@@ -352,7 +416,7 @@ export function validateExtractionEnvelope(
 - [ ] **Step 4: Run the test to verify it passes**
 
 Run: `npm test -w @qb/server -- src/llm/extraction-delta.test.ts`
-Expected: PASS — all 7 cases green.
+Expected: PASS — all 9 cases green (including the two relevance cases).
 
 - [ ] **Step 5: Commit**
 
@@ -646,6 +710,34 @@ describe('POST /api/extract (multi-page)', () => {
       .attach('images', PNG, { filename: 'p1.png', contentType: 'image/png' });
     expect(res.status).toEqual(502);
   });
+
+  it('asks for relevance only when the book has a learningGoal, and carries it through', async () => {
+    const provider = new FakeProvider({
+      structured: {
+        resolved: [{ kind: 'add', path: '1.A.1', canonicalText: 'q', relevance: 'high' }],
+        needsSection: [],
+      },
+    });
+    const app = createApp(store, provider, undefined);
+
+    // A goal-bearing book: the prompt includes the relevance instruction and the result keeps it.
+    const goalBook = await request(app).post('/api/books').send({ title: 'Calc', learningGoal: 'master derivatives' });
+    const withGoal = await request(app)
+      .post('/api/extract')
+      .field('bookId', goalBook.body.id)
+      .attach('images', PNG, { filename: 'p1.png', contentType: 'image/png' });
+    expect(withGoal.status).toEqual(200);
+    expect(provider.lastConversation[0].text).toContain('master derivatives');
+    expect(withGoal.body.resolved[0].relevance).toEqual('high');
+
+    // A goal-less book: the prompt omits relevance scoring entirely.
+    const plainBook = await request(app).post('/api/books').send({ title: 'NoGoal' });
+    await request(app)
+      .post('/api/extract')
+      .field('bookId', plainBook.body.id)
+      .attach('images', PNG, { filename: 'p1.png', contentType: 'image/png' });
+    expect(provider.lastConversation[0].text).not.toContain('learning goal for this book');
+  });
 });
 
 describe('POST /api/extract/refine', () => {
@@ -799,9 +891,15 @@ export function extractRouter(provider: LlmProvider, store: Store): Router {
     }
 
     const existing = await loadExisting(store, customerId, bookId);
-    const prompt = buildExtractionPrompt(existing);
+    // Relevance scoring rides the book's own learningGoal — no client field needed (the
+    // book is already loaded). When the book has no goal, the prompt omits relevance.
+    const prompt = buildExtractionPrompt(existing, book.learningGoal);
     const messages: Message[] = [{ role: 'user', text: prompt, images }];
-    log.info('extracting problems from pages', { pages: images.length, existing: existing.length });
+    log.info('extracting problems from pages', {
+      pages: images.length,
+      existing: existing.length,
+      hasGoal: !!book.learningGoal,
+    });
 
     try {
       const raw = await provider.completeStructured<unknown>(messages, extractionEnvelopeSchema);
@@ -849,7 +947,7 @@ export function extractRouter(provider: LlmProvider, store: Store): Router {
     const note = typeof body.note === 'string' ? body.note : '';
 
     const existing = await loadExisting(store, customerId, bookId);
-    const prompt = buildExtractionPrompt(existing);
+    const prompt = buildExtractionPrompt(existing, book.learningGoal);
 
     // Describe the section answers as an instruction line per answered page.
     const answerLines = Object.entries(sectionAnswers).map(
@@ -905,7 +1003,7 @@ to:
 - [ ] **Step 6: Run the route test + typecheck**
 
 Run: `npm test -w @qb/server -- src/routes/extract.test.ts`
-Expected: PASS — all cases green (6 in the `/extract` block + 2 in the `/refine` block).
+Expected: PASS — all cases green (7 in the `/extract` block incl. the relevance case + 2 in the `/refine` block).
 
 Run: `npm run typecheck`
 Expected: PASS — no dangling imports of the deleted `extract.ts` lib or removed contract exports.
@@ -922,9 +1020,10 @@ git commit -m "feat(extract): multi-image route with existing-problem context + 
 
 ## Task 5: UAT — real multi-image extract + refine flow
 
-Replace the deferred-extract placeholder UAT flow with two real flows:
+Replace the deferred-extract placeholder UAT flow with three real flows:
 1. A multi-image extract that skips a known problem and adds a new one, then commits the add via the batch PUT and confirms only the new problem landed.
 2. The **ambiguity round-trip** — extract returns a `needsSection` page; `/refine` with `sectionAnswers` folds those problems into `resolved` under the chosen prefix and clears `needsSection`. This is the most novel part of the spec and must be UAT-covered, not just unit-tested.
+3. The **relevance round-trip** — a goal-bearing book's extract scores each added problem's relevance, and committing it via the batch PUT persists the relevance onto the stored question (proving the new flow doesn't regress the existing relevance feature end-to-end).
 
 **Files:**
 - Modify: `packages/server/src/uat/api-uat.test.ts` (flow #7, lines ~366–389)
@@ -1052,6 +1151,46 @@ In `packages/server/src/uat/api-uat.test.ts`, replace the entire `it('Scan inges
     );
     expect(saved.map((q) => q.label)).toEqual(['1.A.1', '1.A.4']);
   });
+
+  // -------------------------------------------------------------------------
+  // 7c. SCAN RELEVANCE — a goal-bearing book scores each extracted problem's
+  //     relevance; committing the accepted add via the batch PUT persists that
+  //     relevance onto the stored question. Proves the multi-page flow does not
+  //     regress the existing relevance feature end-to-end.
+  // -------------------------------------------------------------------------
+  it('Scan relevance: extract scores relevance for a goal-bearing book; commit persists it', async () => {
+    const book = await createBook({ learningGoal: 'master integration' });
+
+    const scanApp = createApp(
+      store,
+      new FakeProvider({
+        structured: {
+          resolved: [{ kind: 'add', path: '3.1', canonicalText: 'Integrate sin x', relevance: 'high' }],
+          needsSection: [],
+        },
+      }),
+      undefined,
+    );
+
+    const extract = await request(scanApp)
+      .post('/api/extract')
+      .field('bookId', book.id)
+      .attach('images', PNG, { filename: 'p1.png', contentType: 'image/png' });
+    expect(extract.status).toEqual(200);
+    const add = extract.body.resolved[0];
+    expect(add.relevance).toEqual('high');
+
+    // Commit through the batch PUT carrying the scored relevance (the path the scan page
+    // uses: label = path, plus relevance). The questions route persists relevance.
+    const put = await request(app)
+      .put(`/api/books/${book.id}/questions`)
+      .send({ questions: [{ label: add.path, canonicalText: add.canonicalText, relevance: add.relevance }] });
+    expect(put.status).toEqual(200);
+
+    // The stored question carries the relevance, visible on the book-questions read.
+    const list = (await request(app).get(`/api/books/${book.id}/questions`)).body;
+    expect(list[0].relevance).toEqual('high');
+  });
 ```
 
 - [ ] **Step 2: Run the full UAT suite**
@@ -1078,80 +1217,137 @@ git commit -m "test(uat): real multi-image extract skip/add flow replaces deferr
 
 ## Task 6: Client — multi-image intake, upload spinner, ambiguity prompts, typed deltas
 
-Grow `ScanProblemsPage` from single-image/add-only to multi-image with `bookId`, `needsSection` ambiguity prompts → `/refine` with `sectionAnswers`, and add/edit/skip rendering. Carry `targetId` through commit so an `edit` updates an existing row rather than appending. **Upload feedback:** the page must show an explicit spinner while the images upload and confirm a successful upload before the "reading the pages" phase — so the user knows the photo fully arrived and sees a distinct error if the upload itself fails. This is done with an XHR-based POST (fetch can't report upload progress). This task has no automated test (the client has no test harness here); the observable is the manual e2e in Task 7.
+Grow `ScanProblemsPage` from single-image/add-only to multi-image with `bookId`, `needsSection` ambiguity prompts → `/refine` with `sectionAnswers`, and add/edit/skip rendering. Carry `targetId` (so an `edit` updates an existing row) **and `relevance`** through commit. **Upload feedback:** the page must show an explicit spinner while the images upload and confirm a successful upload before the "reading the pages" phase — so the user knows the photo fully arrived and sees a distinct error if the upload itself fails. This is done with an XHR-based POST (fetch can't report upload progress). This task has no automated test (the client has no test harness here); the observable is the manual e2e in Task 7.
+
+**What already exists (do not rebuild):** `ProblemsList` already has a multi-file picker (`fileInput.multiple = true`), a `PhotoReviewModal`, and calls `stashPhotos({ files, notes, learningGoal })`. `PhotoTransfer` already carries `files: File[]` and `learningGoal`. The `Problem` type, `getProblems()`, and `EditBookPage`'s Save PUT already carry `relevance`. **The only gaps are:** `PhotoTransfer` has no `bookId`; the scan page reads `files[0]` only and posts a single image with no `bookId`; the handoff doesn't route `edit` deltas. Relevance scoring is now driven by the **book's stored `learningGoal`** server-side (Task 4), so the client no longer needs to pass `learningGoal` for scoring — but leave the existing `learningGoal` stash in place (harmless; the refine note path may still use it, and removing it is out of scope).
 
 **Files:**
+- Modify: `packages/client/src/lib/photo-transfer.ts` (add `bookId`)
 - Modify: `packages/client/src/pages/ScanProblemsPage.ts` (substantial rewrite of intake, network, delta mapping, commit)
 - Modify: `packages/client/src/pages/ScanProblemsPage.css` (skip-row + prompt styles)
-- Modify: `packages/client/src/components/ProblemsList.ts` (accept `kind`/`targetId` in the scan handoff)
+- Modify: `packages/client/src/components/ProblemsList.ts` (thread `bookId` into the stash; route `edit` deltas + relevance in the handoff)
 
-**Context — the page needs the book id.** `ScanProblemsPage` is reached from the problems list via the in-memory photo transfer. Confirm where the book id is available: it is the book whose edit screen launched the scan. Check `ProblemsList.ts` / the edit-book page for the current book id in scope.
+- [ ] **Step 1: Thread `bookId` from `EditBookPage` → `ProblemsList` → the stash**
 
-- [ ] **Step 1: Read the launch path to find the book id and photo stash**
+`stashPhotos` is called inside `ProblemsList` (the `fileInput` change handler), but the book id lives in `EditBookPage` (`const bookId = params.get('id')`). Add a `bookId` prop to `ProblemsList` and pass it at the stash call.
 
-Run: `grep -rn "stashPhotos\|ScanProblems\|#/scan\|bookId" packages/client/src/components/ProblemsList.ts packages/client/src/pages`
-Expected: shows where `stashPhotos({ files, notes })` is called and how the scan page is navigated to. Identify the variable holding the current book id at that call site (the edit-book page knows it). If the book id is not currently passed, extend `PhotoTransfer` to carry it (Step 2).
+In `packages/client/src/components/ProblemsList.ts`, extend `ProblemsListProps`:
 
-- [ ] **Step 2: Extend the photo transfer to carry the book id**
+```typescript
+export interface ProblemsListProps {
+  problems?: Problem[];
+  onChange?: () => void;
+  /** Supplier for the current learning goal (may change after mount). */
+  getLearningGoal?: () => string;
+  /** The book being edited — stashed into the scan transfer so /extract can load existing problems. */
+  bookId?: string;
+}
+```
 
-In `packages/client/src/lib/photo-transfer.ts`, add `bookId` to the interface:
+Destructure `bookId` in the function signature (`export function ProblemsList({ problems = [], onChange, getLearningGoal, bookId }: ProblemsListProps = {})`), and at the `stashPhotos(...)` call in the `fileInput` change handler, add it:
+
+```typescript
+        const goal = getLearningGoal?.();
+        stashPhotos({ files: posted, notes, ...(bookId ? { bookId } : {}), ...(goal ? { learningGoal: goal } : {}) });
+```
+
+In `packages/client/src/pages/EditBookPage.ts`, pass the id when constructing the list (around line 53):
+
+```typescript
+  const problemsList = ProblemsList({ onChange: markDirty, getLearningGoal: () => goalInput.value.trim(), bookId });
+```
+
+- [ ] **Step 2: Add `bookId` to `PhotoTransfer`**
+
+In `packages/client/src/lib/photo-transfer.ts`, add `bookId` to the interface (`learningGoal` is already there):
 
 ```typescript
 export interface PhotoTransfer {
   files: File[];
   notes: string;
   /** The book being scanned into — needed by /extract to load existing problems. */
-  bookId: string;
+  bookId?: string;
+  /** Optional learning goal (already supported). */
+  learningGoal?: string;
 }
 ```
 
-Then, at the `stashPhotos(...)` call site found in Step 1, add `bookId: <the current book id>` to the stashed object. (The edit-book page already holds the book id it is editing — pass that.)
+> Read the current `PhotoTransfer` first and add only the missing `bookId` field — `learningGoal` is already declared. Keep both optional so other `stashPhotos` callers don't break.
 
-- [ ] **Step 3: Update the scan-accepted handoff shape in `ProblemsList.ts`**
+- [ ] **Step 3: Honor `targetId` (edit) + `relevance` in the `ProblemsList` scan handoff**
 
-The scan page commits accepted deltas by writing them to `sessionStorage[SCAN_ACCEPTED_KEY]`; `ProblemsList.checkForReturnedProblems()` reads them and calls `addRow(p)`. Today each accepted item is `{ label, latex }` → always a new row. An `edit` delta must instead update the existing row whose problem id is `targetId`.
+The scan page commits accepted deltas by writing them to `sessionStorage[SCAN_ACCEPTED_KEY]`; `ProblemsList.checkForReturnedProblems()` reads them as `Problem[]` and calls `addRow(p)` for each. The `Problem` type already includes `relevance`, so a scored `add` flows through unchanged once the scan page includes it in the handoff (done in Step 4's commit block). **The one new behavior** is `edit`: an accepted `edit` delta carries a `targetId` (the existing problem's id) and must UPDATE that existing row, not append a new one.
 
-In `packages/client/src/components/ProblemsList.ts`, change the accepted-item shape and `checkForReturnedProblems` to honor `targetId`. Replace the body of `checkForReturnedProblems` (lines ~163–172) with:
+`ProblemsList` tracks rows as two parallel arrays — `rows: ProblemRowHandle[]` and `rowIds: (string | undefined)[]` — and `ProblemRowHandle` has no value setters (label/latex/relevance are fixed at construction). So the simplest correct update is: find the row by its id, remove it, and re-add a fresh row with the new values at the same position, preserving its id.
+
+In `packages/client/src/components/ProblemsList.ts`:
+
+(a) Extend the `Problem` type (around line 10) to allow the handoff to carry the edit target id. `relevance` is already present:
 
 ```typescript
-  // Check for returned problems from scan page.
+export interface Problem {
+  id?: string;
+  label: string;
+  latex: string;
+  relevance?: Relevance;
+  /** When present (scan-edit handoff), this replaces the existing row with this id. */
+  targetId?: string;
+}
+```
+
+(b) Replace `checkForReturnedProblems` (around lines 169–178) with a version that routes edits to an in-place replace and everything else to `addRow`:
+
+```typescript
+  // Check for returned problems from scan page. An `edit` (targetId set) replaces the
+  // existing row with that id; everything else is a new row. relevance rides through.
   function checkForReturnedProblems() {
     const raw = sessionStorage.getItem(SCAN_ACCEPTED_KEY);
     if (!raw) return;
     sessionStorage.removeItem(SCAN_ACCEPTED_KEY);
     try {
-      const accepted: Array<{ label: string; latex: string; targetId?: string }> = JSON.parse(raw);
+      const accepted: Problem[] = JSON.parse(raw);
       for (const p of accepted) {
         if (p.targetId) {
-          updateRowById(p.targetId, { label: p.label, latex: p.latex });
+          replaceRowById(p.targetId, { id: p.targetId, label: p.label, latex: p.latex, ...(p.relevance ? { relevance: p.relevance } : {}) });
         } else {
-          addRow({ label: p.label, latex: p.latex });
+          addRow(p);
         }
       }
       notify();
     } catch { /* ignore malformed */ }
   }
-```
 
-Add an `updateRowById` helper alongside `addRow`. Find `addRow`'s definition and the row-record structure it pushes (each row tracks its problem `id` for the batch save). Add, near `addRow`:
-
-```typescript
-  /** Update an existing row (matched by its problem id) in place; no-op if not found. */
-  function updateRowById(id: string, fields: { label: string; latex: string }) {
-    const row = rows.find((r) => r.problem.id === id);
-    if (!row) {
-      // The edited problem isn't in the current working set — fall back to adding it.
-      addRow({ id, label: fields.label, latex: fields.latex });
-      return;
-    }
-    row.problem.label = fields.label;
-    row.problem.latex = fields.latex;
-    // Re-render the row's visible fields from the updated problem.
-    syncRow(row);
+  /**
+   * Replace the row whose problem id === `id` with a fresh row carrying `next` (same id),
+   * in place. Falls back to appending if the id isn't in the current working set (e.g. the
+   * user scanned an edit for a problem not loaded into this list).
+   */
+  function replaceRowById(id: string, next: Problem) {
+    const i = rowIds.indexOf(id);
+    if (i < 0) { addRow(next); return; }
+    const old = rows[i]!;
+    // Build the replacement row with the same handlers addRow uses.
+    const handle = ProblemRow({
+      label: next.label,
+      latex: next.latex,
+      relevance: (next.relevance ?? '') as Relevance,
+      onChange: notify,
+      onDelete: () => {
+        const j = rows.indexOf(handle);
+        if (j >= 0) { rows.splice(j, 1); rowIds.splice(j, 1); }
+        handle.el.remove();
+        notify();
+      },
+    });
+    old.el.replaceWith(handle.el);
+    rows[i] = handle;
+    rowIds[i] = id;
+    makeDraggable(handle);
+    renumber();
   }
 ```
 
-> **Adapt to the real row structure.** `ProblemsList.ts` was only partially read in planning. Before writing `updateRowById`, read the file's row-record type and rendering helper (the function that paints a row's label/latex into the DOM) and match the field names exactly — `rows`, `r.problem.id`, `syncRow` are illustrative. If rows don't track the problem `id`, thread it through `addRow` so edits can target it. Keep the fallback-to-add behavior.
+> The `ProblemRow({...})` construction above duplicates the handler wiring inside `addRow`. That duplication is acceptable for one call site, but if you prefer, refactor `addRow` to build the handle via a shared `makeRow(problem)` helper and have both `addRow` and `replaceRowById` use it. Either way, keep `rows`/`rowIds` index-aligned — the drag-reorder code (`makeDraggable`) and `getProblems()` both rely on that alignment.
 
 - [ ] **Step 4: Rewrite `ScanProblemsPage.ts`**
 
@@ -1170,11 +1366,13 @@ import './ScanProblemsPage.css';
 
 const SCAN_ACCEPTED_KEY = 'qb-scan-accepted';
 
+type Relevance = 'high' | 'medium' | 'low';
 interface Delta {
   kind: 'add' | 'edit' | 'skip';
   path?: string;
   canonicalText: string;
   targetId?: string;
+  relevance?: Relevance;
 }
 interface NeedsSection {
   pageIndex: number;
@@ -1258,6 +1456,14 @@ export function ScanProblemsPage(): HTMLElement {
     const head = document.createElement('div');
     head.className = 'sp-delta-head';
     head.append(tag, label);
+
+    // Relevance chip (only when the model scored it — i.e. the book had a learning goal).
+    if (delta.relevance) {
+      const rel = document.createElement('span');
+      rel.className = `sp-delta-rel sp-rel-${delta.relevance}`;
+      rel.textContent = delta.relevance;
+      head.append(rel);
+    }
 
     // skip rows are informational only — no accept toggle, muted, collapsed body.
     if (delta.kind === 'skip') {
@@ -1500,6 +1706,7 @@ export function ScanProblemsPage(): HTMLElement {
       .map((c) => ({
         label: c.delta.path || '',
         latex: c.delta.canonicalText,
+        ...(c.delta.relevance ? { relevance: c.delta.relevance } : {}),
         ...(c.delta.kind === 'edit' && c.delta.targetId ? { targetId: c.delta.targetId } : {}),
       }));
     sessionStorage.setItem(SCAN_ACCEPTED_KEY, JSON.stringify(accepted));
@@ -1536,6 +1743,20 @@ Append to `packages/client/src/pages/ScanProblemsPage.css`:
   background: var(--surface-muted, #e9e9ee);
   color: var(--muted, #6b6b76);
 }
+
+/* Relevance chip on a delta card head. */
+.sp-delta-rel {
+  margin-left: auto;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.sp-rel-high { background: #e6f4ea; color: #1b7f3b; }
+.sp-rel-medium { background: #fff4e0; color: #9a6700; }
+.sp-rel-low { background: #f0f0f3; color: #6b6b76; }
 
 /* Ambiguity prompt bubble. */
 .sp-needs-section .sp-needs-q {
@@ -1581,8 +1802,8 @@ Expected: PASS — server + client.
 - [ ] **Step 8: Commit**
 
 ```bash
-git add packages/client/src/pages/ScanProblemsPage.ts packages/client/src/pages/ScanProblemsPage.css packages/client/src/components/ProblemsList.ts packages/client/src/lib/photo-transfer.ts
-git commit -m "feat(client): multi-image scan with ambiguity prompts + add/edit/skip deltas"
+git add packages/client/src/pages/ScanProblemsPage.ts packages/client/src/pages/ScanProblemsPage.css packages/client/src/components/ProblemsList.ts packages/client/src/lib/photo-transfer.ts packages/client/src/pages/EditBookPage.ts
+git commit -m "feat(client): multi-image scan with upload spinner, ambiguity prompts, add/edit/skip + relevance"
 ```
 
 ---
@@ -1605,11 +1826,15 @@ Run the project's dev/run flow (check root `package.json` scripts — typically 
 3. Answer the section prompt (e.g. `1.A`); verify it calls refine, the prompt resolves, the bare problems reappear as `add` cards under that prefix, and "Add to book" enables.
 4. Commit; verify the accepted problems land in the edit-book problem list with their dotted-path labels, then save the book.
 
-- [ ] **Step 3: Re-scan the same pages → all skips**
+- [ ] **Step 3: Relevance preserved (goal-bearing book)**
+
+On a book that **has a learning goal**, run a scan. Verify each add/edit card shows a relevance chip (high/medium/low). Commit, and confirm the relevance dropdown on each new row in the edit-book list reflects the scored value; save and re-open to confirm it persisted. On a book with **no** goal, confirm no relevance chip appears and the flow is otherwise identical. (This is the regression guard for the existing relevance feature.)
+
+- [ ] **Step 4: Re-scan the same pages → all skips**
 
 Re-launch the scan with the same pages. Verify every problem now comes back as a muted **skip** row ("already in book"), and "Add to book" stays disabled (nothing new to add).
 
-- [ ] **Step 4: Record the result**
+- [ ] **Step 5: Record the result**
 
 If all three steps pass, the feature is functionally complete through the spec's build-order step 5. Note any deviation. (Build-order step 6 — the section-tree VIEW + learn-by-node — is intentionally out of scope for this plan; see "Out of scope" below.)
 
@@ -1641,7 +1866,10 @@ These are explicitly **not** in this plan and must not be added:
 - Error matrix (400 no-images/missing-bookId, 404 book, 502 provider/invalid) → Task 4 tests (both `/extract` and `/refine`).
 - The dead `'edit'` delta becomes real → Task 6 (edit card + targetId commit) + Task 6 Step 3 ProblemsList changes.
 - **Upload feedback / "image fully uploaded" spinner** (user request) → Task 6 (`postWithProgress` XHR helper: "Uploading…" → "Uploaded ✓ — reading…", distinct upload-failure message) + Task 7 Step 2 (manual verification of both the success transition and the upload-failure path).
+- **Relevance feature — PRESERVED, NOT REGRESSED** (already-shipped feature the spec predates) → Task 1 (`relevanceInstruction` kept + folded into `buildExtractionPrompt(existing, learningGoal)`; `relevance` enum added to the envelope schema), Task 2 (`Delta.relevance` + validator carries valid values, drops invalid, never on skip — 2 unit cases), Task 4 (route sources `learningGoal` from the book record; relevance route test asserts goal-on vs goal-off), Task 5 (UAT flow 7c: scored extract → commit → persisted on the stored question), Task 6 (relevance chip on cards + carried through commit; the existing `Problem`/`getProblems`/batch-PUT path persists it unchanged), Task 7 Step 3 (manual regression guard). **Covered by UAT** end-to-end per the user's request.
 
-**Placeholder scan:** every code step contains complete code. The two "adapt to the real structure" notes (ProblemsList row shape in Task 6 Step 3; CSS variable names in Task 6 Step 5) are flagged because those files were not fully read in planning — they point at a specific verification, not a vague TODO.
+**Placeholder scan:** every code step contains complete code. The "adapt to the real structure" notes (CSS variable names in Task 6 Step 5; the optional `makeRow` refactor in Step 3) point at specific verifications, not vague TODOs. The earlier ProblemsList-row uncertainty is resolved: Step 3 now matches the real parallel-array (`rows`/`rowIds`) structure and the setter-less `ProblemRowHandle`, using a delete+re-add replace.
 
-**Type consistency:** `validateExtractionEnvelope(raw, existingIds, pageCount)` signature is identical across Task 2 (definition), Task 2 test, and Task 4 (call sites). `ExtractionEnvelope`/`Delta`/`NeedsSection` shapes match between server (Task 2) and client (Task 6). `buildExtractionPrompt(existing)` / `renderExistingProblems` / `extractionEnvelopeSchema` names match between Task 1 and Task 4. `TreeProblem`/`TreeNode`/`buildTree` match between Task 3 and its test. The scan-accepted item shape `{ label, latex, targetId? }` matches between Task 6's `ScanProblemsPage` commit and `ProblemsList.checkForReturnedProblems`.
+**Type consistency:** `validateExtractionEnvelope(raw, existingIds, pageCount)` signature is identical across Task 2 (definition), Task 2 test, and Task 4 (call sites). `ExtractionEnvelope`/`Delta`/`NeedsSection` shapes match between server (Task 2) and client (Task 6), including the added `relevance?: Relevance`. `buildExtractionPrompt(existing, learningGoal?)` / `renderExistingProblems` / `relevanceInstruction` / `extractionEnvelopeSchema` names match between Task 1 and Task 4. `Relevance = 'high'|'medium'|'low'` matches the domain type (server) and the local client alias. `TreeProblem`/`TreeNode`/`buildTree` match between Task 3 and its test. The scan-accepted item shape `{ label, latex, relevance?, targetId? }` matches between Task 6's `ScanProblemsPage` commit, the `Problem` type, and `ProblemsList.checkForReturnedProblems`.
+
+**Relevance cross-check (the regression that prompted this revision):** the plan no longer deletes relevance. `extract.ts` (lib) is still removed, but its relevance-validation logic is re-homed in `extraction-delta.ts` (Task 2). The contract keeps `relevanceInstruction`. The routes source `learningGoal` from the book (no lost client field). The commit path was already relevance-aware and is reused. Net: relevance survives and is exercised by a unit test, a route test, a UAT flow, and a manual step.

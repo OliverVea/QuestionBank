@@ -11,6 +11,8 @@ import { AddBookPage } from '@/pages/AddBookPage';
 import { ScanProblemsPage } from '@/pages/ScanProblemsPage';
 import { ManageBooksPage } from '@/pages/ManageBooksPage';
 import { EditBookPage } from '@/pages/EditBookPage';
+import { ViewBookPage } from '@/pages/ViewBookPage';
+import { AttemptsPage } from '@/pages/AttemptsPage';
 import { LearnPage } from '@/pages/LearnPage';
 import { RevisitPage } from '@/pages/RevisitPage';
 import { GradePage } from '@/pages/GradePage';
@@ -28,6 +30,8 @@ router
   .on('/scan-problems', () => mount(ScanProblemsPage))
   .on('/manage-books', () => mount(ManageBooksPage))
   .on('/edit-book', () => mount(EditBookPage))
+  .on('/view-book', () => mount(ViewBookPage))
+  .on('/attempts', () => mount(AttemptsPage))
   .on('/learn', () => mount(LearnPage))
   .on('/revisit', () => mount(RevisitPage))
   .on('/grade', () => mount(GradePage))

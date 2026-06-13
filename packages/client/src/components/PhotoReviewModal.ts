@@ -12,6 +12,9 @@ export interface PhotoReviewModalProps {
   onCancel: () => void;
 }
 
+/** Server accepts at most this many page images per scan (see /api/extract). */
+const MAX_PHOTOS = 5;
+
 /**
  * Full-screen modal for reviewing selected photos before posting.
  * Shows thumbnails with delete buttons, an "add more" tile, optional notes,
@@ -26,6 +29,12 @@ export function PhotoReviewModal({ initialFiles, onPost, onCancel }: PhotoReview
   notes.className = 'photo-notes';
   notes.rows = 2;
   notes.placeholder = 'Optional notes (e.g. "pages 1-2 of proof")';
+
+  // Over-limit warning — shown when more than MAX_PHOTOS pages are selected.
+  const warning = document.createElement('div');
+  warning.className = 'photo-warning';
+  warning.hidden = true;
+  warning.textContent = `You can scan up to ${MAX_PHOTOS} pages at a time — remove some to continue.`;
 
   const postBtn = html`<button class="photo-post-btn" type="button">Post this</button>`;
 
@@ -65,7 +74,8 @@ export function PhotoReviewModal({ initialFiles, onPost, onCancel }: PhotoReview
       grid.appendChild(item);
     });
 
-    // "Add more" tile
+    // "Add more" tile — disabled once the page limit is reached.
+    const atLimit = files.length >= MAX_PHOTOS;
     const addTile = html`<button class="photo-add-more" type="button">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
            stroke-linecap="round" stroke-linejoin="round">
@@ -73,14 +83,17 @@ export function PhotoReviewModal({ initialFiles, onPost, onCancel }: PhotoReview
       </svg>
       Add more
     </button>`;
-    addTile.addEventListener('click', () => addInput.click());
+    (addTile as HTMLButtonElement).disabled = atLimit;
+    addTile.addEventListener('click', () => { if (!atLimit) addInput.click(); });
     grid.appendChild(addTile);
 
-    (postBtn as HTMLButtonElement).disabled = files.length === 0;
+    const overLimit = files.length > MAX_PHOTOS;
+    warning.hidden = !overLimit;
+    (postBtn as HTMLButtonElement).disabled = files.length === 0 || overLimit;
   }
 
   postBtn.addEventListener('click', () => {
-    if (files.length === 0) return;
+    if (files.length === 0 || files.length > MAX_PHOTOS) return;
     onPost({ files: [...files], notes: notes.value.trim() });
     modal.remove();
   });
@@ -95,6 +108,7 @@ export function PhotoReviewModal({ initialFiles, onPost, onCancel }: PhotoReview
     </div>
     <div class="photo-modal-body">
       ${grid}
+      ${warning}
       ${notes}
       ${addInput}
     </div>

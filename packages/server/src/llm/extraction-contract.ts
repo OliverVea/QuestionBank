@@ -53,6 +53,12 @@ const PROMPT_HEAD = [
   'its `id`. If it exists but your transcription corrects an error (OCR, math, typo), return an',
   '`edit` referencing its `id` with the improved `canonicalText`. Otherwise return an `add`.',
   'Treat same-path-but-genuinely-different problems as `add`s (a path may hold several problems).',
+  '',
+  'REQUIRED FIELDS PER DELTA — every delta MUST carry these or it will be rejected:',
+  '- `add`:  `path` + `canonicalText`  (NO `targetId`).',
+  '- `edit`: `path` + `canonicalText` + `targetId`. ALWAYS include the `path` — reuse the',
+  '  existing problem\'s `path` from the list above (do not omit it, even when only the text changed).',
+  '- `skip`: `targetId` only (the `canonicalText` is informational).',
 ].join('\n');
 
 /** Render the existing-problem block; an empty book yields an explicit "none" line. */

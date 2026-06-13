@@ -103,6 +103,18 @@
 }
 .photo-add-more:active { background: var(--grey-50); }
 .photo-add-more svg { width: 1.4rem; height: 1.4rem; }
+.photo-add-more:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Over-limit warning (more than the per-scan page cap selected) */
+.photo-warning {
+  margin: 0.25rem 0 0;
+  padding: 0.5rem 0.7rem;
+  border-radius: 0.5rem;
+  background: #fff4e0;
+  color: #9a6700;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
 
 /* Notes textarea */
 .photo-notes {

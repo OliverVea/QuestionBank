@@ -56,8 +56,10 @@
  *   5. Queues ............. home-screen banners: GET /learn/next ordering and
  *                           GET /practice/due (+ ?count=true) SRS gating.
  *   6. Lookup ............. GET /lookup/isbn/:isbn metadata prefill surface.
- *   7. Scan ingest ........ scan-accepted problems persist via the batch PUT;
- *                           the extract route itself is DEFERRED this pass.
+ *   7. Scan ingest ........ multi-page /extract emits add/edit/skip deltas;
+ *                           /refine resolves ambiguous pages; relevance scored
+ *                           for goal-bearing books; accepted deltas persist via
+ *                           the batch PUT.
  *   8. Cascade delete ..... DELETE /books/:id removes its questions + attempts;
  *                           an unrelated book survives.
  *   9. Segmentation (SECURITY, REQUIRED) — two customers fully isolated across

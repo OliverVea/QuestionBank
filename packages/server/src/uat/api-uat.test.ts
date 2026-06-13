@@ -63,6 +63,9 @@
  *   9. Segmentation (SECURITY, REQUIRED) — two customers fully isolated across
  *                           every entity; wrong-owner is 404 (not 403);
  *                           unattributed is 401. See the second describe block.
+ *  10. Attempt history ... read-only book view summary (mastery/readiness/grades)
+ *                           per problem + DELETE one attempt → summary re-derives;
+ *                           wrong-owner delete is 404 (in the segmentation block).
  */
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -412,6 +415,48 @@ describe('UAT: API flows on the flat problems model', () => {
     expect((await request(app).get(`/api/questions/${sq.id}`)).status).toEqual(200);
   });
 
+  // -------------------------------------------------------------------------
+  // 10. ATTEMPT HISTORY — the read-only book view + attempt review/delete. The
+  //     book-questions list carries a derived summary per problem (mastery word,
+  //     readiness color, per-attempt grades), and an individual attempt can be
+  //     deleted, after which the summary re-derives from the remaining history.
+  // -------------------------------------------------------------------------
+  it('Attempt history: list carries derived summary; deleting an attempt re-derives it', async () => {
+    const book = await createBook();
+    const [q] = await saveProblems(book.id, [{ label: '1', canonicalText: 'Solve x + 2 = 6' }]);
+
+    // A brand-new (un-attempted) problem reads as new + ready, with no grades.
+    const fresh = (await request(app).get(`/api/books/${book.id}/questions`)).body;
+    expect(fresh[0].summary).toEqual({ mastery: 'new', readiness: 'ready', grades: [] });
+
+    // Record two attempts: an incorrect then a correct.
+    const a1 = await request(app)
+      .post(`/api/questions/${q.id}/attempts`)
+      .send({ answer: 'x = 5', recommendedGrade: 'incorrect', rating: 'incorrect', issues: [] });
+    expect(a1.status).toEqual(201);
+    const a2 = await request(app)
+      .post(`/api/questions/${q.id}/attempts`)
+      .send({ answer: 'x = 4', recommendedGrade: 'correct', rating: 'correct', issues: [] });
+    expect(a2.status).toEqual(201);
+
+    // The summary now reflects both grades, oldest-first.
+    const withHistory = (await request(app).get(`/api/books/${book.id}/questions`)).body;
+    expect(withHistory[0].summary.grades).toEqual(['incorrect', 'correct']);
+
+    // Delete the incorrect attempt — 204, and it drops out of the list + the summary.
+    const del = await request(app).delete(`/api/questions/${q.id}/attempts/${a1.body.id}`);
+    expect(del.status).toEqual(204);
+
+    const remaining = (await request(app).get(`/api/questions/${q.id}/attempts`)).body;
+    expect(remaining.map((a: { id: string }) => a.id)).toEqual([a2.body.id]);
+
+    const reDerived = (await request(app).get(`/api/books/${book.id}/questions`)).body;
+    expect(reDerived[0].summary.grades).toEqual(['correct']);
+
+    // Deleting an unknown attempt id, or one not on this question, is a clean 404.
+    expect((await request(app).delete(`/api/questions/${q.id}/attempts/ghost`)).status).toEqual(404);
+  });
+
   /** Swap the running app onto a freshly-scripted provider mid-test. */
   function scriptProvider(structured: unknown): FakeProvider {
     const p = new FakeProvider({ structured });
@@ -536,6 +581,26 @@ describe('UAT (security): customer segmentation is airtight', () => {
     // B still sees its own attempt — A's probing changed nothing.
     const bAttempts = await as(request(segApp).get(`/api/questions/${questionId}/attempts`), B);
     expect(bAttempts.status).toEqual(200);
+    expect(bAttempts.body).toHaveLength(1);
+  });
+
+  it('A cannot delete B\'s attempt (wrong-owner is 404, and B\'s attempt survives)', async () => {
+    const { questionId } = await seedChain(B);
+    const bAttemptId = (await as(request(segApp).get(`/api/questions/${questionId}/attempts`), B))
+      .body[0].id;
+
+    // A probing the delete endpoint on B's question/attempt is 404 — never confirms existence.
+    expect(
+      (
+        await as(
+          request(segApp).delete(`/api/questions/${questionId}/attempts/${bAttemptId}`),
+          A,
+        )
+      ).status,
+    ).toEqual(404);
+
+    // B's attempt is untouched.
+    const bAttempts = await as(request(segApp).get(`/api/questions/${questionId}/attempts`), B);
     expect(bAttempts.body).toHaveLength(1);
   });
 

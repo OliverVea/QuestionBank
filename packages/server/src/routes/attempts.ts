@@ -77,5 +77,23 @@ export function questionAttemptsRouter(store: Store): Router {
     res.status(201).json(await store.attempts.create(customerId, attempt));
   });
 
+  router.delete('/:attemptId', async (req, res) => {
+    const customerId = requireCustomerId(req);
+    const { id: questionId, attemptId } = req.params as { id: string; attemptId: string };
+    if (!(await store.questions.getById(customerId, questionId))) {
+      res.status(404).json({ error: 'question not found' });
+      return;
+    }
+    const existing = await store.attempts.getById(customerId, attemptId);
+    // 404 unless the attempt exists AND belongs to this question — never a no-op 204
+    // that hides a wrong id, and never lets one question delete another's attempt.
+    if (!existing || existing.questionId !== questionId) {
+      res.status(404).json({ error: 'attempt not found' });
+      return;
+    }
+    await store.attempts.delete(customerId, attemptId);
+    res.status(204).end();
+  });
+
   return router;
 }

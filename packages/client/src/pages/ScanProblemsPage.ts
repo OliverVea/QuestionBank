@@ -48,6 +48,21 @@ export function ScanProblemsPage(): HTMLElement {
   let current: Envelope = { resolved: [], needsSection: [] };
   let pendingPrompts = 0; // unanswered needsSection pages — blocks commit while > 0
   const sectionAnswers: Record<string, string> = {};
+  // Agent bubbles (proposal + ambiguity prompts) from the current envelope. A refine
+  // produces a fresh envelope, so the prior ones are dimmed + locked (sp-superseded) and
+  // their now-orphaned toggles/inputs disabled, so stale controls can't mutate state.
+  let liveBubbles: HTMLElement[] = [];
+
+  /** Dim + lock the previous envelope's bubbles before rendering a new one. */
+  function supersedeLiveBubbles() {
+    for (const el of liveBubbles) {
+      el.classList.add('sp-superseded');
+      el.querySelectorAll('input, button').forEach((node) => {
+        (node as HTMLInputElement | HTMLButtonElement).disabled = true;
+      });
+    }
+    liveBubbles = [];
+  }
 
   const chat = ChatContainer();
 
@@ -71,7 +86,9 @@ export function ScanProblemsPage(): HTMLElement {
       const img = document.createElement('img');
       img.className = 'sp-thumb';
       img.alt = 'Photographed problems page';
-      img.src = URL.createObjectURL(file);
+      const url = URL.createObjectURL(file);
+      img.addEventListener('load', () => URL.revokeObjectURL(url), { once: true });
+      img.src = url;
       msg.appendChild(img);
       chat.append(msg);
     }
@@ -186,6 +203,7 @@ export function ScanProblemsPage(): HTMLElement {
     }
     msg.appendChild(list);
     chat.append(msg);
+    liveBubbles.push(msg);
     syncApply();
   }
 
@@ -208,6 +226,7 @@ export function ScanProblemsPage(): HTMLElement {
       row.append(input, go);
       msg.appendChild(row);
       chat.append(msg);
+      liveBubbles.push(msg);
 
       go.addEventListener('click', () => {
         const prefix = input.value.trim();
@@ -226,6 +245,9 @@ export function ScanProblemsPage(): HTMLElement {
 
   // ---- Render a full envelope ----
   function renderEnvelope(env: Envelope, introText?: string) {
+    // A refine replaces the prior envelope — supersede its bubbles so their stale
+    // toggles/prompts can't mutate the freshly-rendered state.
+    supersedeLiveBubbles();
     current = env;
     renderResolved(env.resolved, introText);
     if (env.needsSection.length > 0) renderNeedsSection(env.needsSection);

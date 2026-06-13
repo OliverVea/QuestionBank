@@ -1,0 +1,20 @@
+/* CI-history strip: one tick per attempt, oldest→newest. Ported from
+   docs/mocks/mocks.css. Color tokens live in styles/tokens.css. */
+.ci-strip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  --tick: 0.5rem;
+}
+.ci-strip.lg { --tick: 0.85rem; gap: 0.3rem; }
+.ci-tick {
+  width: var(--tick);
+  height: var(--tick);
+  border-radius: 3px;
+  flex: none;
+  background: var(--grey-100);
+}
+.ci-tick.t-correct { background: var(--grade-correct); }      /* success — solid green */
+.ci-tick.t-incorrect { background: var(--grade-incorrect); }  /* fail — orange */
+/* partial — green OUTLINE: hollow fill, green ring */
+.ci-tick.t-partial { background: transparent; box-shadow: inset 0 0 0 2px var(--grade-correct); }

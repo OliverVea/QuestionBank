@@ -88,7 +88,11 @@ Because there's a real origin:
 
 The mocks form a navigable flow, not a gallery. `index.html` is the home
 screen (the library) and the default landing page the server serves at `/`.
-From there: the Revisit/Learn banners open `learn.html`; the add-a-book footer
+From there: the Revisit/Learn banners open `learn.html`; tapping a library book
+row opens `view-book.html?isbn=NNN` (the read-only book view — its problem list
+with a per-problem status badge + attempt-history strip); tapping a problem row
+there opens `attempts-filled.html?isbn=NNN&p=INDEX` (that problem's past
+attempts, where each can be reviewed and deleted); the add-a-book footer
 row opens `add-book.html`; the library-header pencil opens `manage-books.html`;
 tapping a row in `manage-books.html` opens `edit-book.html?isbn=NNN`;
 in `edit-book.html` the "Scan a problems page" button opens the OS camera/photo

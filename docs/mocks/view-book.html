@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <!-- PWA: installable, runs in its own window (standalone). -->
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#f9ae60" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icon.svg" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="QuestionBank" />
+  <title>Question Bank — Book View Mock</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css" />
+  <link rel="stylesheet" href="mocks.css" />
+  <link rel="stylesheet" href="view-book.css" />
+  <script src="vendor/katex/katex.min.js"></script>
+  <!-- Shared badge + CI-strip helpers (window.attemptSummary). -->
+  <script src="attempt-summary.js"></script>
+</head>
+<body class="anim-cascade">
+  <div class="app gridpad">
+    <!-- Top bar: Back returns to the library. -->
+    <header class="topbar">
+      <button class="topbar-btn" id="back-btn">
+        <span aria-hidden="true">←</span> Library
+      </button>
+    </header>
+
+    <div class="vb-scroll">
+      <!-- Book header -->
+      <section class="vb-head animate-in" style="--i: 0">
+        <div id="cover-slot"><!-- cover or fallback --></div>
+        <div>
+          <div class="vb-title" id="b-title">Book</div>
+          <div class="vb-author" id="b-author"></div>
+          <div class="vb-meta" id="b-meta" hidden></div>
+        </div>
+      </section>
+
+      <div class="vb-listhead animate-in" style="--i: 1">
+        <h2>Problems</h2>
+        <span class="vb-n" id="b-count"></span>
+      </div>
+
+      <ol class="vb-list" id="problem-list"><!-- rows injected --></ol>
+    </div>
+  </div>
+
+  <script>
+    // --- Minimal LaTeX renderer (ported from grade.html / problems-list.js) --
+    function findClosingDollar(source, from, display) {
+      for (let j = from; j < source.length; j++) {
+        if (source[j] === '\\') { j++; continue; }
+        if (source[j] === '$') {
+          if (display) { if (source[j + 1] === '$') return j; continue; }
+          return j;
+        }
+      }
+      return -1;
+    }
+    function splitMath(source) {
+      const segments = []; let text = '';
+      const pushText = () => { if (text) segments.push({ kind: 'text', value: text }); text = ''; };
+      let i = 0;
+      while (i < source.length) {
+        const ch = source[i];
+        if (ch === '\\' && source[i + 1] === '$') { text += '$'; i += 2; continue; }
+        if (ch === '$') {
+          const display = source[i + 1] === '$';
+          const open = display ? i + 2 : i + 1;
+          const close = findClosingDollar(source, open, display);
+          if (close === -1) { text += ch; i += 1; continue; }
+          pushText();
+          segments.push({ kind: 'math', value: source.slice(open, close), display });
+          i = display ? close + 2 : close + 1; continue;
+        }
+        text += ch; i += 1;
+      }
+      pushText(); return segments;
+    }
+    const HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+    const escapeHtml = (t) => t.replace(/[&<>"']/g, (c) => HTML_ESCAPES[c]);
+    function renderLatex(host, source) {
+      host.innerHTML = '';
+      for (const seg of splitMath(source)) {
+        if (seg.kind === 'text') {
+          const span = document.createElement('span');
+          span.innerHTML = escapeHtml(seg.value).replace(/\n/g, ' ');
+          host.appendChild(span); continue;
+        }
+        const mathHost = seg.display ? document.createElement('span') : document.createElement('span');
+        if (window.katex) katex.render(seg.value, mathHost, { displayMode: false, throwOnError: false });
+        else mathHost.textContent = '$' + seg.value + '$';
+        host.appendChild(mathHost);
+      }
+    }
+
+    // --- Seed data ----------------------------------------------------------
+    // Standalone mock: carries its own books. Same shape as edit-book, plus an
+    // `attempts` array per problem (oldest first) and an optional `status`
+    // pinning readiness. ?isbn=NNN picks the book; defaults to the first.
+    const BOOKS = {
+      '9781107179868': {
+        title: 'Introduction to Quantum Mechanics', author: 'David J. Griffiths',
+        publisher: 'Cambridge University Press', year: '2018',
+        problems: [
+          {
+            label: '1.A.1', status: 'ready',
+            latex: 'Normalize the wave function $\\Psi(x,0)=A\\,e^{-\\lambda|x|}$ and find $A$.',
+            attempts: [
+              { grade: 'incorrect', daysAgo: 9, answer: 'Set $\\int|\\Psi|^2=1$ but I integrated $e^{-\\lambda x}$ over all $x$ and got a divergent integral.', reasoning: 'The integrand is $e^{-2\\lambda|x|}$, not $e^{-2\\lambda x}$ — the absolute value matters. Split the integral at 0.' },
+              { grade: 'partial', daysAgo: 5, answer: '$\\int_{-\\infty}^{\\infty}A^2 e^{-2\\lambda|x|}\\,dx = \\frac{A^2}{\\lambda}=1$, so $A=\\sqrt{\\lambda}$.', reasoning: 'Right value of $A$, but make the factor-of-2 step explicit: $2\\int_0^\\infty A^2 e^{-2\\lambda x}\\,dx=\\frac{A^2}{\\lambda}$.' },
+              { grade: 'incorrect', daysAgo: 1, answer: '$A=\\lambda$.', reasoning: 'That drops the square root. From $A^2/\\lambda=1$ you get $A=\\sqrt{\\lambda}$.' },
+            ],
+          },
+          {
+            label: '1.A.2', status: 'waiting',
+            latex: 'For $\\Psi(x,t)$, show that $\\frac{d\\langle x\\rangle}{dt}=\\frac{\\langle p\\rangle}{m}$.',
+            attempts: [
+              { grade: 'partial', daysAgo: 14, answer: 'Differentiated under the integral but forgot the boundary terms vanish.', reasoning: 'The argument needs $\\Psi\\to 0$ at $\\pm\\infty$ to kill the boundary term — state it.' },
+              { grade: 'correct', daysAgo: 6, answer: 'Used the Schrödinger equation to replace $\\partial_t|\\Psi|^2$, integrated by parts twice, boundary terms vanish since $\\Psi\\to0$, giving $\\frac{\\langle p\\rangle}{m}$.', reasoning: 'Complete and rigorous. Boundary terms justified.' },
+              { grade: 'correct', daysAgo: 1, answer: 'Same derivation, cleaner — one integration by parts after writing the probability current.', reasoning: 'Correct; the probability-current framing is the slick way.' },
+            ],
+          },
+          {
+            label: '1.B.1', status: 'finalized',
+            latex: 'Solve the time-independent Schrödinger equation for the infinite square well: $$-\\frac{\\hbar^2}{2m}\\psi\'\' = E\\psi.$$',
+            attempts: [
+              { grade: 'correct', daysAgo: 30, answer: '$\\psi_n(x)=\\sqrt{2/a}\\,\\sin(n\\pi x/a)$, $E_n=\\frac{n^2\\pi^2\\hbar^2}{2ma^2}$.', reasoning: 'Correct eigenfunctions and spectrum, normalized.' },
+              { grade: 'correct', daysAgo: 7, answer: 'Re-derived the same; applied boundary conditions $\\psi(0)=\\psi(a)=0$ to quantize $k$.', reasoning: 'Solid, boundary conditions handled correctly.' },
+            ],
+          },
+          { label: null, status: 'ready', latex: 'State the uncertainty principle for position and momentum.', attempts: [] },
+        ],
+      },
+    };
+
+    // --- Cover resolution (ported from edit-book.html) ----------------------
+    const COVER_CACHE_PREFIX = 'qb-cover:';
+    const ORANGE_STEPS = ['--orange-200', '--orange-300', '--orange-400', '--orange-500'];
+    const COVER_COLOR = `var(${ORANGE_STEPS[0]})`;
+    function makeFallback(title) {
+      const tile = document.createElement('span');
+      tile.className = 'vb-cover-fallback';
+      tile.style.background = COVER_COLOR;
+      const inner = document.createElement('span');
+      inner.textContent = title || '—';
+      tile.appendChild(inner);
+      return tile;
+    }
+    async function resolveCover(isbn) {
+      if (!isbn) return null;
+      const key = COVER_CACHE_PREFIX + isbn;
+      const cached = localStorage.getItem(key);
+      if (cached) return cached;
+      const url = `https://covers.openlibrary.org/b/isbn/${isbn}-M.jpg?default=false`;
+      try {
+        const res = await fetch(url);
+        if (!res.ok) return null;
+        const blob = await res.blob();
+        if (blob.size < 100) return null;
+        const dataUrl = await new Promise((resolve, reject) => {
+          const fr = new FileReader();
+          fr.onload = () => resolve(fr.result);
+          fr.onerror = reject;
+          fr.readAsDataURL(blob);
+        });
+        try { localStorage.setItem(key, dataUrl); } catch { /* quota */ }
+        return dataUrl;
+      } catch { return null; }
+    }
+
+    // --- Resolve the book from the query ------------------------------------
+    const params = new URLSearchParams(location.search);
+    const wantedIsbn = params.get('isbn');
+    const isbn = BOOKS[wantedIsbn] ? wantedIsbn : Object.keys(BOOKS)[0];
+    const book = BOOKS[isbn];
+
+    document.getElementById('back-btn').addEventListener('click', () => {
+      window.location.href = 'index.html';
+    });
+
+    // --- Header -------------------------------------------------------------
+    document.getElementById('b-title').textContent = book.title;
+    document.getElementById('b-author').textContent = book.author || '';
+    const meta = [book.publisher, book.year].filter(Boolean).join(' · ');
+    const metaEl = document.getElementById('b-meta');
+    metaEl.textContent = meta;
+    metaEl.hidden = !meta;
+
+    const coverSlot = document.getElementById('cover-slot');
+    const fb = makeFallback(book.title);
+    coverSlot.appendChild(fb);
+    void resolveCover(isbn).then((dataUrl) => {
+      if (!dataUrl || !coverSlot.contains(fb)) return;
+      const img = document.createElement('img');
+      img.className = 'vb-cover';
+      img.alt = `${book.title} cover`;
+      img.src = dataUrl;
+      fb.replaceWith(img);
+    });
+
+    // --- Problem rows -------------------------------------------------------
+    const listHost = document.getElementById('problem-list');
+    const problems = book.problems || [];
+    document.getElementById('b-count').textContent =
+      problems.length + ' problem' + (problems.length === 1 ? '' : 's');
+
+    problems.forEach((p, i) => {
+      const row = document.createElement('a');
+      row.className = 'vb-row animate-in';
+      row.style.setProperty('--i', 2 + i);
+      // Deep-link the attempt-history subpage to this problem.
+      row.href = 'attempts-filled.html?isbn=' + encodeURIComponent(isbn) + '&p=' + i;
+
+      const label = document.createElement('span');
+      label.className = 'vb-label';
+      label.textContent = p.label != null && p.label !== '' ? p.label : String(i + 1);
+
+      const body = document.createElement('div');
+      body.className = 'vb-body qbody';
+      renderLatex(body, p.latex || '');
+
+      const badgeRow = document.createElement('div');
+      badgeRow.className = 'vb-badge-row';
+      badgeRow.appendChild(attemptSummary.badgeEl(p));
+      if ((p.attempts || []).length > 0) {
+        badgeRow.appendChild(attemptSummary.ciStripEl(p.attempts, { cap: 8 }));
+      }
+
+      const chev = document.createElement('span');
+      chev.className = 'vb-chev';
+      chev.setAttribute('aria-hidden', 'true');
+      chev.textContent = '›';
+
+      row.append(label, body, badgeRow, chev);
+      listHost.appendChild(row);
+    });
+  </script>
+  <script src="footer.js" defer></script>
+</body>
+</html>

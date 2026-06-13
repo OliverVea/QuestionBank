@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <!-- PWA: installable, runs in its own window (standalone). -->
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#f9ae60" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icon.svg" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="QuestionBank" />
+  <title>Question Bank — Attempt History Mock</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css" />
+  <link rel="stylesheet" href="mocks.css" />
+  <link rel="stylesheet" href="attempts.css" />
+  <script src="vendor/katex/katex.min.js"></script>
+  <!-- Shared badge + CI-strip helpers (window.attemptSummary). -->
+  <script src="attempt-summary.js"></script>
+</head>
+<body class="anim-cascade">
+  <div class="app gridpad">
+    <!-- Top bar: Back returns to the book being edited. -->
+    <header class="topbar">
+      <button class="topbar-btn" id="back-btn">
+        <span aria-hidden="true">←</span> Back
+      </button>
+    </header>
+
+    <div class="ah-scroll">
+      <!-- The problem this history belongs to. -->
+      <section class="ah-problem animate-in" style="--i: 0">
+        <div class="ah-eyebrow" id="eyebrow">Problem</div>
+        <div class="ah-qbody qbody" id="q-body"><!-- rendered LaTeX --></div>
+        <!-- status pill + solidity + the full CI-pipeline strip -->
+        <div class="ah-summary" id="summary"></div>
+      </section>
+
+      <!-- The attempt list (or the empty state, for a New problem). -->
+      <div id="content"></div>
+    </div>
+  </div>
+
+  <script>
+    // --- Minimal LaTeX/markdown renderer (ported from grade.html) ----------
+    function splitMath(source) {
+      const segments = []; let text = '';
+      const pushText = () => { if (text) segments.push({ kind: 'text', value: text }); text = ''; };
+      let i = 0;
+      while (i < source.length) {
+        const ch = source[i];
+        if (ch === '\\' && source[i + 1] === '$') { text += '$'; i += 2; continue; }
+        if (ch === '$') {
+          const display = source[i + 1] === '$';
+          const open = display ? i + 2 : i + 1;
+          const close = findClosingDollar(source, open, display);
+          if (close === -1) { text += ch; i += 1; continue; }
+          pushText();
+          segments.push({ kind: 'math', value: source.slice(open, close), display });
+          i = display ? close + 2 : close + 1; continue;
+        }
+        text += ch; i += 1;
+      }
+      pushText(); return segments;
+    }
+    function findClosingDollar(source, from, display) {
+      for (let j = from; j < source.length; j++) {
+        if (source[j] === '\\') { j++; continue; }
+        if (source[j] === '$') {
+          if (display) { if (source[j + 1] === '$') return j; continue; }
+          return j;
+        }
+      }
+      return -1;
+    }
+    const HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+    function escapeHtml(t) { return t.replace(/[&<>"']/g, (c) => HTML_ESCAPES[c]); }
+    function renderMarkup(text) {
+      let html = escapeHtml(text);
+      html = html.replace(/\*\*([^]+?)\*\*/g, '<strong>$1</strong>');
+      html = html.replace(/\*([^*]+?)\*/g, '<em>$1</em>');
+      html = html.replace(/\n\n+/g, '<br><br>').replace(/\n/g, '<br>');
+      return html;
+    }
+    function renderContent(host, source) {
+      host.innerHTML = '';
+      for (const seg of splitMath(source)) {
+        if (seg.kind === 'text') {
+          const span = document.createElement('span');
+          span.innerHTML = renderMarkup(seg.value);
+          host.appendChild(span); continue;
+        }
+        const mathHost = seg.display ? document.createElement('div') : document.createElement('span');
+        if (seg.display) mathHost.className = 'qbody-display';
+        if (window.katex) katex.render(seg.value, mathHost, { displayMode: seg.display, throwOnError: false });
+        else mathHost.textContent = seg.display ? seg.value : '$' + seg.value + '$';
+        host.appendChild(mathHost);
+      }
+    }
+
+    // --- Seed data ----------------------------------------------------------
+    // The mock is standalone, so it carries its own copy of the books (the same
+    // shape edit-book seeds). The real client would load the problem + its
+    // attempts from the server by id. ?isbn=NNN picks the book, ?p=INDEX the
+    // problem within it. Each attempt: { grade, daysAgo, answer, reasoning }.
+    const BOOKS = {
+      '9781107179868': {
+        title: 'Introduction to Quantum Mechanics',
+        problems: [
+          {
+            label: '1.A.1', status: 'ready',
+            latex: 'Normalize the wave function $\\Psi(x,0)=A\\,e^{-\\lambda|x|}$ and find $A$.',
+            attempts: [
+              { grade: 'incorrect', daysAgo: 9, answer: 'Set $\\int|\\Psi|^2=1$ but I integrated $e^{-\\lambda x}$ over all $x$ and got a divergent integral.', reasoning: 'The integrand is $e^{-2\\lambda|x|}$, not $e^{-2\\lambda x}$ — the absolute value matters. Split the integral at 0.' },
+              { grade: 'partial', daysAgo: 5, answer: '$\\int_{-\\infty}^{\\infty}A^2 e^{-2\\lambda|x|}\\,dx = \\frac{A^2}{\\lambda}=1$, so $A=\\sqrt{\\lambda}$.', reasoning: 'Right value of $A$, but make the factor-of-2 step explicit: $2\\int_0^\\infty A^2 e^{-2\\lambda x}\\,dx=\\frac{A^2}{\\lambda}$.' },
+              { grade: 'incorrect', daysAgo: 1, answer: '$A=\\lambda$.', reasoning: 'That drops the square root. From $A^2/\\lambda=1$ you get $A=\\sqrt{\\lambda}$.' },
+            ],
+          },
+          {
+            label: '1.A.2', status: 'waiting',
+            latex: 'For $\\Psi(x,t)$, show that $\\frac{d\\langle x\\rangle}{dt}=\\frac{\\langle p\\rangle}{m}$.',
+            attempts: [
+              { grade: 'partial', daysAgo: 14, answer: 'Differentiated under the integral but forgot the boundary terms vanish.', reasoning: 'The argument needs $\\Psi\\to 0$ at $\\pm\\infty$ to kill the boundary term — state it.' },
+              { grade: 'correct', daysAgo: 6, answer: 'Used the Schrödinger equation to replace $\\partial_t|\\Psi|^2$, integrated by parts twice, boundary terms vanish since $\\Psi\\to0$, giving $\\frac{\\langle p\\rangle}{m}$.', reasoning: 'Complete and rigorous. Boundary terms justified.' },
+              { grade: 'correct', daysAgo: 1, answer: 'Same derivation, cleaner — one integration by parts after writing the probability current.', reasoning: 'Correct; the probability-current framing is the slick way.' },
+            ],
+          },
+          {
+            label: '1.B.1', status: 'finalized',
+            latex: 'Solve the time-independent Schrödinger equation for the infinite square well: $$-\\frac{\\hbar^2}{2m}\\psi\'\' = E\\psi.$$',
+            attempts: [
+              { grade: 'correct', daysAgo: 30, answer: '$\\psi_n(x)=\\sqrt{2/a}\\,\\sin(n\\pi x/a)$, $E_n=\\frac{n^2\\pi^2\\hbar^2}{2ma^2}$.', reasoning: 'Correct eigenfunctions and spectrum, normalized.' },
+              { grade: 'correct', daysAgo: 7, answer: 'Re-derived the same; applied boundary conditions $\\psi(0)=\\psi(a)=0$ to quantize $k$.', reasoning: 'Solid, boundary conditions handled correctly.' },
+            ],
+          },
+          { label: null, status: 'ready', latex: 'State the uncertainty principle for position and momentum.', attempts: [] },
+        ],
+      },
+    };
+
+    // Relative date from a day offset (mock has no real clock; Date.now is out).
+    function relDate(daysAgo) {
+      if (daysAgo <= 0) return 'Today';
+      if (daysAgo === 1) return 'Yesterday';
+      if (daysAgo < 7) return daysAgo + ' days ago';
+      if (daysAgo < 14) return 'A week ago';
+      if (daysAgo < 30) return Math.round(daysAgo / 7) + ' weeks ago';
+      if (daysAgo < 60) return 'A month ago';
+      return Math.round(daysAgo / 30) + ' months ago';
+    }
+
+    // --- Resolve the target problem from the query --------------------------
+    const params = new URLSearchParams(location.search);
+    const wantedIsbn = params.get('isbn');
+    const isbn = BOOKS[wantedIsbn] ? wantedIsbn : Object.keys(BOOKS)[0];
+    const book = BOOKS[isbn];
+    const pRaw = parseInt(params.get('p'), 10);
+    const pIdx = Number.isInteger(pRaw) && book.problems[pRaw] ? pRaw : 0;
+    const problem = book.problems[pIdx];
+
+    // Working copy of the attempts (delete mutates this in-memory only).
+    let attempts = (problem.attempts || []).map((a) => ({ ...a }));
+
+    // --- Back returns to the (read-only) book view it came from --------------
+    document.getElementById('back-btn').addEventListener('click', () => {
+      window.location.href = 'view-book.html?isbn=' + encodeURIComponent(isbn);
+    });
+
+    // --- Render the problem header + summary --------------------------------
+    const labelText = problem.label != null && problem.label !== ''
+      ? 'Problem ' + problem.label : 'Problem ' + (pIdx + 1);
+    document.getElementById('eyebrow').textContent = book.title + ' · ' + labelText;
+    renderContent(document.getElementById('q-body'), problem.latex || '');
+
+    const summaryEl = document.getElementById('summary');
+    function renderSummary() {
+      // The badge reads from the live attempts (so deletes re-grade the word),
+      // but keeps the problem's pinned status. The CI strip shows every attempt.
+      const live = { attempts, status: problem.status };
+      summaryEl.innerHTML = '';
+      summaryEl.appendChild(attemptSummary.badgeEl(live));
+      if (attempts.length > 0) {
+        summaryEl.appendChild(attemptSummary.ciStripEl(attempts, { large: true }));
+      }
+    }
+
+    // --- Render the attempt list (or empty state) ---------------------------
+    const content = document.getElementById('content');
+
+    const TRASH_SVG = `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M3 6h18" /><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" />
+        <path d="M6 6l1 14a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-14" />
+        <path d="M10 11v6M14 11v6" />
+      </svg>`;
+
+    function buildAttempt(at, animIndex) {
+      const det = document.createElement('details');
+      det.className = 'attempt animate-in';
+      det.style.setProperty('--i', animIndex);
+
+      // Summary row: grade pill + date + (push) trash + chevron.
+      const sum = document.createElement('summary');
+      const pill = document.createElement('span');
+      pill.className = 'badge grade-' + at.grade;
+      pill.textContent = at.grade;
+      const date = document.createElement('span');
+      date.className = 'at-date';
+      date.textContent = relDate(at.daysAgo);
+
+      const del = document.createElement('button');
+      del.className = 'at-del';
+      del.type = 'button';
+      del.setAttribute('aria-label', 'Delete attempt');
+      del.innerHTML = TRASH_SVG;
+
+      const chev = document.createElement('span');
+      chev.className = 'at-chev';
+      chev.setAttribute('aria-hidden', 'true');
+      chev.textContent = '⌄';
+
+      sum.append(pill, date, del, chev);
+      det.appendChild(sum);
+
+      // Open body: the answer, then the grader reasoning.
+      const body = document.createElement('div');
+      body.className = 'at-body';
+
+      const aLbl = document.createElement('div');
+      aLbl.className = 'at-section-lbl';
+      aLbl.textContent = 'Your answer';
+      const ans = document.createElement('div');
+      ans.className = 'at-answer qbody';
+      renderContent(ans, at.answer || '—');
+      const aWrap = document.createElement('div');
+      aWrap.append(aLbl, ans);
+
+      body.appendChild(aWrap);
+
+      if (at.reasoning) {
+        const rLbl = document.createElement('div');
+        rLbl.className = 'at-section-lbl';
+        rLbl.textContent = 'Grader';
+        const reason = document.createElement('div');
+        reason.className = 'at-reasoning qbody';
+        renderContent(reason, at.reasoning);
+        const rWrap = document.createElement('div');
+        rWrap.append(rLbl, reason);
+        body.appendChild(rWrap);
+      }
+
+      det.appendChild(body);
+
+      // --- Delete: confirm, then drop from the working copy + re-summarize ---
+      del.addEventListener('click', (e) => {
+        // The button lives inside <summary>; stop the click from toggling open.
+        e.preventDefault();
+        e.stopPropagation();
+        if (!confirm('Delete this attempt?')) return;
+        // → real client: DELETE /attempts/:id, then refresh.
+        attempts = attempts.filter((x) => x !== at);
+        det.classList.add('removing');
+        const done = () => { det.remove(); afterDelete(); };
+        det.addEventListener('animationend', done, { once: true });
+        // Fallback if animations are off.
+        if (getComputedStyle(det).animationName === 'none') done();
+        renderSummary();   // CI strip + status/solidity update immediately
+      });
+
+      return det;
+    }
+
+    function renderEmpty() {
+      content.innerHTML = '';
+      const wrap = document.createElement('div');
+      wrap.className = 'ah-empty animate-in';
+      wrap.style.setProperty('--i', 1);
+      wrap.innerHTML = `
+        <span class="ah-empty-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+               stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" />
+          </svg>
+        </span>
+        <h2>No attempts yet</h2>
+        <p>Once you grade this problem, each attempt shows up here.</p>`;
+      content.appendChild(wrap);
+    }
+
+    function renderList() {
+      content.innerHTML = '';
+      const head = document.createElement('div');
+      head.className = 'ah-head animate-in';
+      head.style.setProperty('--i', 1);
+      head.innerHTML = '<h2>Past attempts</h2>';
+      const count = document.createElement('span');
+      count.className = 'ah-count';
+      count.id = 'ah-count';
+      count.textContent = attempts.length + ' attempt' + (attempts.length === 1 ? '' : 's');
+      head.appendChild(count);
+      content.appendChild(head);
+
+      const list = document.createElement('ol');
+      list.className = 'ah-list';
+      // Newest first.
+      [...attempts].reverse().forEach((at, i) => {
+        list.appendChild(buildAttempt(at, i + 2));
+      });
+      content.appendChild(list);
+    }
+
+    // After a delete: update the count, and fall through to the empty state if
+    // that was the last attempt.
+    function afterDelete() {
+      if (attempts.length === 0) { renderEmpty(); return; }
+      const count = document.getElementById('ah-count');
+      if (count) count.textContent = attempts.length + ' attempt' + (attempts.length === 1 ? '' : 's');
+    }
+
+    function render() {
+      renderSummary();
+      if (attempts.length === 0) renderEmpty();
+      else renderList();
+    }
+    render();
+  </script>
+  <script src="footer.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,173 @@
+/* Attempt-history subpage: a single problem's past attempts, reachable from the
+   status badge on an edit-book problem row. Shows the problem at the top, a
+   CI-pipeline strip + status/solidity summary, then the attempt list (each row
+   collapses to grade + date; tap to reveal the answer and grader reasoning;
+   trash to delete). Shared pills/ticks/dots come from mocks.css. */
+
+.app {
+  height: 100dvh;
+  display: grid;
+  grid-template-rows: auto 1fr;       /* topbar / scrolling body */
+  overflow: hidden;
+  max-width: 760px;
+  margin: 0 auto;
+}
+.app > .topbar { background: var(--bg); }
+
+/* The one scroll container. */
+.ah-scroll {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0.4rem 1rem max(1.2rem, env(safe-area-inset-bottom));
+}
+
+/* ---- Problem header ---- */
+.ah-problem {
+  border-bottom: 1px solid var(--border);
+  padding: 0.4rem 0 1rem;
+  margin-bottom: 0.9rem;
+}
+.ah-eyebrow {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+.ah-qbody {
+  font-size: 1.1rem;
+  line-height: 1.5;
+  color: var(--fg);
+  margin-top: 0.5rem;
+}
+.ah-qbody .qbody-display { overflow-x: auto; max-width: 100%; }
+
+/* Summary line: status pill + solidity dot/label + the large CI strip. */
+.ah-summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 0.85rem;
+}
+.ah-summary .ci-strip { margin-left: auto; }
+
+/* ---- Section heading above the list ---- */
+.ah-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 0.6rem;
+}
+.ah-head h2 { font-size: 1rem; margin: 0; }
+.ah-count { font-size: 0.82rem; color: var(--muted); font-weight: 600; }
+
+/* ---- Attempt list ---- */
+.ah-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.6rem; }
+
+/* Each attempt is a <details>: summary = grade pill + date + trash; open body =
+   the answer and reasoning. */
+.attempt {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.attempt > summary {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.7rem 0.8rem;
+  cursor: pointer;
+  list-style: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.attempt > summary::-webkit-details-marker { display: none; }
+.at-date { font-size: 0.88rem; color: var(--muted); font-weight: 600; }
+.at-chev { color: var(--grey-200); transition: transform 0.15s ease; margin-left: 0.1rem; }
+.attempt[open] .at-chev { transform: rotate(180deg); }
+/* Trash sits at the far right of the summary. */
+.at-del {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  background: none;
+  color: var(--grey-200);
+  border-radius: 8px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.at-del svg { width: 1.15rem; height: 1.15rem; display: block; }
+.at-del:active { background: var(--surface); color: var(--orange-200); }
+@media (hover: hover) { .at-del:hover { background: var(--surface); color: var(--orange-200); } }
+
+/* Open body */
+.at-body {
+  padding: 0 0.8rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+.at-section-lbl {
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  margin-bottom: 0.3rem;
+}
+.at-answer {
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--fg);
+  background: color-mix(in srgb, var(--orange-100) 14%, var(--bg));
+  border: 1px solid var(--orange-200);
+  border-radius: 10px;
+  padding: 0.6rem 0.75rem;
+  overflow-wrap: anywhere;
+}
+.at-answer .qbody-display { overflow-x: auto; max-width: 100%; }
+.at-reasoning {
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--muted);
+  border-left: 3px solid var(--border);
+  padding-left: 0.7rem;
+}
+
+/* Deleting: collapse the row out smoothly. */
+.attempt.removing {
+  animation: at-remove 0.25s ease forwards;
+  overflow: hidden;
+}
+@keyframes at-remove {
+  to { opacity: 0; transform: translateX(-12px); max-height: 0; margin: 0; padding: 0; border-width: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .attempt.removing { animation: none; display: none; }
+}
+
+/* ---- Empty state (a New problem: no attempts yet) ---- */
+.ah-empty {
+  text-align: center;
+  color: var(--muted);
+  padding: 2.5rem 1rem;
+}
+.ah-empty .ah-empty-icon {
+  display: inline-flex;
+  width: 3rem; height: 3rem;
+  align-items: center; justify-content: center;
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--grey-200);
+  margin-bottom: 0.8rem;
+}
+.ah-empty .ah-empty-icon svg { width: 1.5rem; height: 1.5rem; }
+.ah-empty h2 { font-size: 1.05rem; color: var(--fg); margin: 0 0 0.3rem; }
+.ah-empty p { font-size: 0.92rem; margin: 0; }

@@ -1,0 +1,131 @@
+/* Read-only book view: cover + details header, then the book's flat problem
+   list. Each row shows the problem, its status badge (mastery word / readiness
+   color, from mocks.css) and its CI-history strip, and links to the
+   attempt-history subpage. Unlike edit-book this list isn't editable — it's the
+   "open a book and see how you're doing" screen. */
+
+.app {
+  height: 100dvh;
+  display: grid;
+  grid-template-rows: auto 1fr;       /* topbar / scrolling body */
+  overflow: hidden;
+  max-width: 760px;
+  margin: 0 auto;
+}
+.app > .topbar { background: var(--bg); }
+
+.vb-scroll {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0.2rem 1rem max(1.2rem, env(safe-area-inset-bottom));
+}
+
+/* ---- Book header: cover + title/author/meta ---- */
+.vb-head {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.9rem;
+  align-items: center;
+  padding: 0.4rem 0 1rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1rem;
+}
+.vb-cover {
+  width: 4.5rem;
+  height: 6.4rem;
+  border-radius: 8px;
+  object-fit: cover;
+  box-shadow: var(--shadow);
+  background: var(--surface);
+}
+.vb-cover-fallback {
+  width: 4.5rem;
+  height: 6.4rem;
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0.4rem;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1.2;
+  overflow: hidden;
+}
+.vb-title { font-size: 1.25rem; font-weight: 700; line-height: 1.25; }
+.vb-author { font-size: 0.95rem; color: var(--muted); margin-top: 0.2rem; }
+.vb-meta { font-size: 0.8rem; color: var(--muted); margin-top: 0.4rem; }
+
+/* ---- Section heading ---- */
+.vb-listhead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 0.6rem;
+}
+.vb-listhead h2 { font-size: 1rem; margin: 0; }
+.vb-listhead .vb-n { font-size: 0.82rem; color: var(--muted); font-weight: 600; }
+
+/* ---- Problem rows ---- */
+.vb-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.6rem; }
+
+/* Each row links to the attempt-history subpage. */
+.vb-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-areas:
+    "label body chev"
+    "label badge chev";
+  column-gap: 0.6rem;
+  row-gap: 0.4rem;
+  align-items: center;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+  box-shadow: var(--shadow);
+  text-decoration: none;
+  color: inherit;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.08s ease, background 0.12s ease;
+}
+.vb-row:active { transform: scale(0.99); background: var(--surface); }
+@media (hover: hover) { .vb-row:hover { background: var(--surface); } }
+
+.vb-label {
+  grid-area: label;
+  align-self: center;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--muted);
+  background: var(--surface);
+  border-radius: 7px;
+  padding: 0.3rem 0.4rem;
+  min-width: 2.4rem;
+  text-align: center;
+}
+.vb-body {
+  grid-area: body;
+  min-width: 0;
+  font-size: 1rem;
+  line-height: 1.45;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;          /* keep rows compact; full text on the subpage */
+  -webkit-box-orient: vertical;
+}
+.vb-body .qbody-display { overflow-x: auto; max-width: 100%; }
+
+/* status badge + CI strip share the second line under the problem text */
+.vb-badge-row {
+  grid-area: badge;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+.vb-badge-row .ci-strip { flex-wrap: wrap; }
+
+.vb-chev { grid-area: chev; align-self: center; color: var(--grey-200); font-size: 1.3rem; line-height: 1; }

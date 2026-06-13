@@ -99,20 +99,8 @@
   gap: 0.55rem;
 }
 
-/* Grade badge */
-.badge {
-  align-self: flex-start;
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #fff;
-  padding: 0.2rem 0.6rem;
-  border-radius: 999px;
-}
-.grade-correct { background: var(--learn-dark); }
-.grade-partial { background: var(--orange-200); }
-.grade-incorrect { background: var(--purple-400); }
+/* Grade badge + pill colors are shared — see `.badge` / `.grade-*` in mocks.css.
+   (Lifted there when the attempt-history subpage needed the same pills.) */
 
 .grade-ok { font-size: 0.95rem; color: var(--learn-dark); font-weight: 600; }
 

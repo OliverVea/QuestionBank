@@ -151,7 +151,10 @@
   align-items: center;
   -webkit-tap-highlight-color: transparent;
 }
-/* v0: home-screen book rows are display-only — no press/hover feedback. */
+/* Tapping a book opens its read-only view; give the row press/hover feedback. */
+.book.tappable { cursor: pointer; transition: background 0.12s ease; }
+.book.tappable:active { background: var(--surface); }
+@media (hover: hover) { .book.tappable:hover { background: var(--surface); } }
 
 .book .b-cover {
   grid-area: icon;

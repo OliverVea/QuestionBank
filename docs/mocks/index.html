@@ -212,8 +212,12 @@
       lbl.textContent = b.ready === 0 ? '—' : `${b.ready} ready`;
 
       row.append(placeholder, title, author, num, lbl);
-      // v0: books on the home screen are non-interactive — opening a book
-      // isn't a v0 flow, so the rows are display-only.
+      // Tapping a book opens its read-only view (problem list + per-problem
+      // attempt history). The library row is the entry point into a book.
+      row.classList.add('tappable');
+      row.addEventListener('click', () => {
+        window.location.href = 'view-book.html?isbn=' + encodeURIComponent(b.isbn);
+      });
       booksHost.appendChild(row);
 
       void loadCover(placeholder, b);

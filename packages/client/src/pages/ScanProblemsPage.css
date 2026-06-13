@@ -159,3 +159,54 @@
   .sp-apply:not(:disabled):hover { filter: brightness(1.05); }
 }
 .sp-apply-count { font-weight: 600; opacity: 0.85; font-size: 0.9rem; }
+
+/* Skip rows: muted, no toggle — "already in book". */
+.sp-delta-card.sp-skip {
+  opacity: 0.6;
+}
+.sp-delta-tag.sp-tag-skip {
+  background: var(--grey-100);
+  color: var(--muted);
+}
+
+/* Relevance chip on a delta card head. */
+.sp-delta-rel {
+  margin-left: auto;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.sp-rel-high { background: #e6f4ea; color: #1b7f3b; }
+.sp-rel-medium { background: #fff4e0; color: #9a6700; }
+.sp-rel-low { background: var(--grey-100); color: var(--muted); }
+
+/* Ambiguity prompt bubble. */
+.sp-needs-section .sp-needs-q {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+.sp-needs-row {
+  display: flex;
+  gap: 0.5rem;
+}
+.sp-needs-input {
+  flex: 1;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  font-size: 0.95rem;
+}
+.sp-needs-go {
+  padding: 0.5rem 0.9rem;
+  border: none;
+  border-radius: 0.5rem;
+  background: var(--learn);
+  color: #fff;
+  font-weight: 600;
+}
+.sp-needs-go:disabled {
+  opacity: 0.6;
+}

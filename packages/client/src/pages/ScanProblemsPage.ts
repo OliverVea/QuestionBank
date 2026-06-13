@@ -6,41 +6,48 @@ import { ChatBubble } from '@/components/ChatBubble';
 import { ReplyRow } from '@/components/ReplyRow';
 import { ThinkingBubble } from '@/components/ThinkingBubble';
 import { unstashPhotos } from '@/lib/photo-transfer';
-import type { Relevance } from '@/lib/types';
 import './ScanProblemsPage.css';
 
 const SCAN_ACCEPTED_KEY = 'qb-scan-accepted';
 
-interface DeltaItem {
-  kind: 'add' | 'edit';
-  label?: string | undefined;
+type Relevance = 'high' | 'medium' | 'low';
+interface Delta {
+  kind: 'add' | 'edit' | 'skip';
+  path?: string;
   canonicalText: string;
+  targetId?: string;
   relevance?: Relevance;
-  before?: string;
+}
+interface NeedsSection {
+  pageIndex: number;
+  problems: Array<{ localLabel: string; canonicalText: string }>;
+}
+interface Envelope {
+  resolved: Delta[];
+  needsSection: NeedsSection[];
 }
 
 interface CardRecord {
-  item: DeltaItem;
+  delta: Delta;
   el: HTMLElement;
   accepted: boolean;
 }
 
 export function ScanProblemsPage(): HTMLElement {
-  // Pull the photo passed in-memory from the problems list (cleared on read).
   const transfer = unstashPhotos();
-  const photoFile = transfer?.files[0] ?? null;
-  const learningGoal = transfer?.learningGoal;
+  const files = transfer?.files ?? [];
+  const bookId = transfer?.bookId ?? '';
 
-  // Guard: redirect if no photo context available.
-  if (!photoFile) {
+  // Guard: redirect if no photo context.
+  if (files.length === 0 || !bookId) {
     window.location.hash = '#/manage-books';
     return html`<div></div>`;
   }
 
   const cards: CardRecord[] = [];
-  let liveProposalEl: HTMLElement | null = null;
-  let imageFile: File | null = null;
-  let currentExtraction: { canonicalText: string; label?: string }[] = [];
+  let current: Envelope = { resolved: [], needsSection: [] };
+  let pendingPrompts = 0; // unanswered needsSection pages — blocks commit while > 0
+  const sectionAnswers: Record<string, string> = {};
 
   const chat = ChatContainer();
 
@@ -51,78 +58,90 @@ export function ScanProblemsPage(): HTMLElement {
   </button>`;
 
   function syncApply() {
-    const n = cards.filter((c) => c.accepted).length;
+    const n = cards.filter((c) => c.accepted && c.delta.kind !== 'skip').length;
     applyCount.textContent = n ? `· ${n}` : '';
-    (applyBtn as HTMLButtonElement).disabled = n === 0;
+    (applyBtn as HTMLButtonElement).disabled = n === 0 || pendingPrompts > 0;
   }
 
-  // ---- Photo bubble ----
-  function addPhotoBubble(dataUrl: string | null) {
-    const msg = ChatBubble('user');
-    msg.classList.add('sp-photo');
-    if (dataUrl) {
+  // ---- Photo bubbles (one per page) ----
+  function addPhotoBubbles() {
+    for (const file of files) {
+      const msg = ChatBubble('user');
+      msg.classList.add('sp-photo');
       const img = document.createElement('img');
       img.className = 'sp-thumb';
       img.alt = 'Photographed problems page';
-      img.src = dataUrl;
+      img.src = URL.createObjectURL(file);
       msg.appendChild(img);
-    } else {
-      const ph = document.createElement('div');
-      ph.className = 'sp-thumb';
-      ph.style.cssText = 'display:flex;align-items:center;justify-content:center;height:140px;color:var(--muted);font-size:0.82rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;border:1px dashed var(--border);';
-      ph.textContent = 'page photo';
-      msg.appendChild(ph);
+      chat.append(msg);
     }
-    const cap = document.createElement('div');
-    cap.className = 'sp-cap';
-    cap.textContent = 'Pull the problems off this page.';
-    msg.appendChild(cap);
-    chat.append(msg);
+    const cap = ChatBubble('user');
+    cap.classList.add('sp-cap-bubble');
+    const capText = document.createElement('div');
+    capText.className = 'sp-cap';
+    capText.textContent = `Pull the problems off ${files.length === 1 ? 'this page' : `these ${files.length} pages`}.`;
+    cap.appendChild(capText);
+    chat.append(cap);
   }
 
   // ---- Delta card ----
-  function makeCard(item: DeltaItem): HTMLElement {
+  function makeCard(delta: Delta, beforeText?: string): HTMLElement {
     const card = document.createElement('div');
-    card.className = `sp-delta-card sp-${item.kind}`;
+    card.className = `sp-delta-card sp-${delta.kind}`;
 
     const tag = document.createElement('span');
-    tag.className = `sp-delta-tag sp-tag-${item.kind}`;
-    tag.textContent = item.kind === 'add' ? 'New' : 'Edit';
+    tag.className = `sp-delta-tag sp-tag-${delta.kind}`;
+    tag.textContent = delta.kind === 'add' ? 'New' : delta.kind === 'edit' ? 'Edit' : 'Already in book';
 
     const label = document.createElement('span');
     label.className = 'sp-delta-label';
-    label.textContent = item.label || '—';
+    label.textContent = delta.path || '—';
+
+    const head = document.createElement('div');
+    head.className = 'sp-delta-head';
+    head.append(tag, label);
+
+    // Relevance chip (only when the model scored it — i.e. the book had a learning goal).
+    if (delta.relevance) {
+      const rel = document.createElement('span');
+      rel.className = `sp-delta-rel sp-rel-${delta.relevance}`;
+      rel.textContent = delta.relevance;
+      head.append(rel);
+    }
+
+    // skip rows are informational only — no accept toggle, muted, collapsed body.
+    if (delta.kind === 'skip') {
+      card.appendChild(head);
+      cards.push({ delta, el: card, accepted: false });
+      return card;
+    }
 
     const toggle = document.createElement('button');
     toggle.type = 'button';
     toggle.className = 'sp-delta-toggle on';
-
-    const head = document.createElement('div');
-    head.className = 'sp-delta-head';
-    head.append(tag, label, toggle);
+    head.append(toggle);
     card.appendChild(head);
 
-    if (item.kind === 'add') {
+    if (delta.kind === 'add') {
       const body = document.createElement('div');
       body.className = 'sp-delta-body';
-      renderLatex(body, item.canonicalText);
+      renderLatex(body, delta.canonicalText);
       card.appendChild(body);
     } else {
       const before = document.createElement('div');
       before.className = 'sp-delta-before';
-      renderLatex(before, item.before ?? '');
+      renderLatex(before, beforeText ?? '');
       const arrow = document.createElement('div');
       arrow.className = 'sp-delta-arrow';
       arrow.textContent = '↓';
       const after = document.createElement('div');
       after.className = 'sp-delta-after';
-      renderLatex(after, item.canonicalText);
+      renderLatex(after, delta.canonicalText);
       card.append(before, arrow, after);
     }
 
-    const rec: CardRecord = { item, el: card, accepted: true };
+    const rec: CardRecord = { delta, el: card, accepted: true };
     cards.push(rec);
-
     function syncToggle() {
       card.classList.toggle('sp-rejected', !rec.accepted);
       toggle.textContent = rec.accepted ? 'Added ✓' : 'Add';
@@ -137,140 +156,204 @@ export function ScanProblemsPage(): HTMLElement {
     return card;
   }
 
-  // ---- Agent reply (delta proposal) ----
-  function addAgentReply(delta: DeltaItem[], introText?: string) {
-    if (liveProposalEl) liveProposalEl.classList.add('sp-superseded');
+  // ---- Render the resolved deltas as a reply ----
+  function renderResolved(resolved: Delta[], introText?: string) {
     cards.length = 0;
-
-    const adds = delta.filter((d) => d.kind === 'add').length;
-    const edits = delta.filter((d) => d.kind === 'edit').length;
+    const adds = resolved.filter((d) => d.kind === 'add').length;
+    const edits = resolved.filter((d) => d.kind === 'edit').length;
+    const skips = resolved.filter((d) => d.kind === 'skip').length;
 
     const msg = ChatBubble('agent');
-
     const intro = document.createElement('div');
     intro.className = 'sp-delta-intro';
     if (introText) {
-      renderLatex(intro, introText);
+      intro.textContent = introText;
     } else {
       const parts: string[] = [];
-      if (adds) parts.push(`${adds} new problem${adds === 1 ? '' : 's'}`);
-      if (edits) parts.push(`a fix to ${edits} existing one${edits === 1 ? '' : 's'}`);
+      if (adds) parts.push(`${adds} new`);
+      if (edits) parts.push(`${edits} fix${edits === 1 ? '' : 'es'}`);
+      if (skips) parts.push(`${skips} already in the book`);
       intro.textContent = parts.length
-        ? `I found ${parts.join(' and ')} on that page. Toggle any you don't want, then Add to book.`
-        : 'I couldn\'t find any problems on that page.';
+        ? `Found ${parts.join(', ')}. Toggle any you don't want, then Add to book.`
+        : 'I couldn\'t find any problems on those pages.';
     }
     msg.appendChild(intro);
 
     const list = document.createElement('div');
     list.className = 'sp-delta-list';
-    for (const item of delta) list.appendChild(makeCard(item));
+    for (const delta of resolved) {
+      list.appendChild(makeCard(delta));
+    }
     msg.appendChild(list);
-
     chat.append(msg);
-    liveProposalEl = msg;
     syncApply();
   }
 
-  // ---- User refinement message ----
-  function addUserMessage(text: string) {
-    const msg = ChatBubble('user');
-    const body = document.createElement('div');
-    body.textContent = text;
-    msg.appendChild(body);
-    chat.append(msg);
+  // ---- Ambiguity prompt per needsSection page ----
+  function renderNeedsSection(pages: NeedsSection[]) {
+    pendingPrompts = pages.length;
+    for (const page of pages) {
+      const msg = ChatBubble('agent');
+      msg.classList.add('sp-needs-section');
+      const q = document.createElement('div');
+      q.className = 'sp-needs-q';
+      const nums = page.problems.map((p) => p.localLabel).join(', ');
+      q.textContent = `Page ${page.pageIndex + 1} shows problem${page.problems.length === 1 ? '' : 's'} ${nums} with no chapter/section. Which section are these in?`;
+      msg.appendChild(q);
+
+      const input = html`<input class="sp-needs-input" type="text" placeholder="e.g. 1.A" />` as HTMLInputElement;
+      const go = html`<button class="sp-needs-go" type="button">Set</button>` as HTMLButtonElement;
+      const row = document.createElement('div');
+      row.className = 'sp-needs-row';
+      row.append(input, go);
+      msg.appendChild(row);
+      chat.append(msg);
+
+      go.addEventListener('click', () => {
+        const prefix = input.value.trim();
+        if (!prefix) return;
+        sectionAnswers[String(page.pageIndex)] = prefix;
+        input.disabled = true;
+        go.disabled = true;
+        go.textContent = 'Set ✓';
+        pendingPrompts -= 1;
+        syncApply();
+        if (pendingPrompts === 0) void refine();
+      });
+    }
+    syncApply();
   }
 
-  // ---- Send refinement ----
-  let refining = false;
-  const reply = ReplyRow({
-    placeholder: 'Refine the problems…',
-    onSend(text) { void sendRefine(text); },
-  });
+  // ---- Render a full envelope ----
+  function renderEnvelope(env: Envelope, introText?: string) {
+    current = env;
+    renderResolved(env.resolved, introText);
+    if (env.needsSection.length > 0) renderNeedsSection(env.needsSection);
+  }
 
-  async function sendRefine(text: string) {
-    if (!imageFile || refining) return;
+  // ---- Network ----
+  function buildForm(extra: Record<string, string> = {}): FormData {
+    const form = new FormData();
+    form.append('bookId', bookId);
+    for (const file of files) form.append('images', file);
+    for (const [k, v] of Object.entries(extra)) form.append(k, v);
+    return form;
+  }
+
+  /**
+   * POST a multipart form via XHR so we can show real upload progress. fetch() gives
+   * no upload-progress events; XHR's upload.onprogress does, so the spinner reflects the
+   * actual byte upload and flips to "reading" only once the images are fully received.
+   * Resolves with the parsed JSON body on 2xx; rejects with a tagged Error otherwise.
+   */
+  function postWithProgress(
+    url: string,
+    form: FormData,
+    onUploaded: () => void,
+  ): Promise<unknown> {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', url);
+      let uploaded = false;
+      const markUploaded = () => {
+        if (!uploaded) { uploaded = true; onUploaded(); }
+      };
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable && e.loaded >= e.total) markUploaded();
+      });
+      xhr.upload.addEventListener('load', markUploaded);
+      xhr.upload.addEventListener('error', () => reject(new Error('upload-failed')));
+      xhr.addEventListener('error', () => reject(new Error('network-failed')));
+      xhr.addEventListener('load', () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try { resolve(JSON.parse(xhr.responseText)); }
+          catch { reject(new Error('parse-failed')); }
+        } else {
+          reject(new Error(`http-${xhr.status}`));
+        }
+      });
+      xhr.send(form);
+    });
+  }
+
+  async function startExtraction() {
+    const status = ThinkingBubble(
+      files.length === 1 ? 'Uploading your page…' : `Uploading ${files.length} pages…`,
+    );
+    chat.append(status);
+    try {
+      const raw = await postWithProgress('/api/extract', buildForm(), () => {
+        setThinkingLabel(status, 'Uploaded ✓ — reading the pages…');
+      });
+      status.remove();
+      renderEnvelope(raw as Envelope);
+    } catch (err) {
+      status.remove();
+      const msg = err instanceof Error && (err.message === 'upload-failed' || err.message === 'network-failed')
+        ? 'Upload failed — check your connection and try again.'
+        : 'Extraction failed. Go back and try again.';
+      renderEnvelope({ resolved: [], needsSection: [] }, msg);
+    }
+  }
+
+  let refining = false;
+  async function refine(note = '') {
+    if (refining) return;
     refining = true;
     reply.disable();
-
-    addUserMessage(text);
-    const thinking = ThinkingBubble('Reading the page…');
-    chat.append(thinking);
-
-    const form = new FormData();
-    form.append('image', imageFile);
-    form.append('currentExtraction', JSON.stringify(currentExtraction));
-    form.append('note', text);
-    if (learningGoal) form.append('learningGoal', learningGoal);
-
+    const status = ThinkingBubble('Re-uploading the pages…');
+    chat.append(status);
     try {
-      const res = await fetch('/api/extract/refine', { method: 'POST', body: form });
-      if (!res.ok) throw new Error('refinement failed');
-      const data: { questions: { canonicalText: string; label?: string; relevance?: Relevance }[] } = await res.json();
-      thinking.remove();
-      currentExtraction = data.questions;
-      const delta: DeltaItem[] = data.questions.map((q) => ({
-        kind: 'add' as const,
-        label: q.label,
-        canonicalText: q.canonicalText,
-        ...(q.relevance ? { relevance: q.relevance } : {}),
-      }));
-      addAgentReply(delta, 'Here\'s the updated set:');
+      const raw = await postWithProgress(
+        '/api/extract/refine',
+        buildForm({
+          currentExtraction: JSON.stringify(current),
+          sectionAnswers: JSON.stringify(sectionAnswers),
+          note,
+        }),
+        () => setThinkingLabel(status, 'Uploaded ✓ — placing those problems…'),
+      );
+      status.remove();
+      renderEnvelope(raw as Envelope, 'Here\'s the updated set:');
     } catch {
-      thinking.remove();
-      addAgentReply([], 'Refinement failed. Try again or add what you have.');
+      status.remove();
+      renderEnvelope(current, 'Refinement failed. Add what you have, or try again.');
     } finally {
       refining = false;
       reply.enable();
     }
   }
 
-  // Apply: write accepted problems to sessionStorage and navigate back.
+  /** Swap the visible label of a ThinkingBubble in place (it renders into .thinking-label). */
+  function setThinkingLabel(bubble: HTMLElement, label: string) {
+    const el = bubble.querySelector('.thinking-label');
+    if (el) el.textContent = label;
+  }
+
+  const reply = ReplyRow({
+    placeholder: 'Refine the problems…',
+    onSend(text) { void refine(text); },
+  });
+
+  // ---- Commit ----
   applyBtn.addEventListener('click', () => {
     const accepted = cards
-      .filter((c) => c.accepted)
+      .filter((c) => c.accepted && c.delta.kind !== 'skip')
       .map((c) => ({
-        label: c.item.label || '',
-        latex: c.item.canonicalText,
-        ...(c.item.relevance ? { relevance: c.item.relevance } : {}),
+        label: c.delta.path || '',
+        latex: c.delta.canonicalText,
+        ...(c.delta.relevance ? { relevance: c.delta.relevance } : {}),
+        ...(c.delta.kind === 'edit' && c.delta.targetId ? { targetId: c.delta.targetId } : {}),
       }));
     sessionStorage.setItem(SCAN_ACCEPTED_KEY, JSON.stringify(accepted));
     window.history.back();
   });
 
-  // ---- Boot: use the stashed photo File, start extraction ----
-  imageFile = photoFile;
-  addPhotoBubble(URL.createObjectURL(photoFile));
-  startExtraction();
+  // ---- Boot ----
+  addPhotoBubbles();
+  void startExtraction();
 
-  async function startExtraction() {
-    if (!imageFile) return;
-    const thinking = ThinkingBubble('Reading the page…');
-    chat.append(thinking);
-
-    const form = new FormData();
-    form.append('image', imageFile);
-    if (learningGoal) form.append('learningGoal', learningGoal);
-
-    try {
-      const res = await fetch('/api/extract', { method: 'POST', body: form });
-      if (!res.ok) throw new Error('extraction failed');
-      const data: { questions: { canonicalText: string; label?: string; relevance?: Relevance }[] } = await res.json();
-      thinking.remove();
-      currentExtraction = data.questions;
-      const delta: DeltaItem[] = data.questions.map((q) => ({
-        kind: 'add' as const,
-        label: q.label,
-        canonicalText: q.canonicalText,
-        ...(q.relevance ? { relevance: q.relevance } : {}),
-      }));
-      addAgentReply(delta);
-    } catch {
-      thinking.remove();
-      addAgentReply([], 'Extraction failed. Go back and try again.');
-    }
-  }
-
-  const page = html`<div class="scan-page">
+  return html`<div class="scan-page">
     ${TopBar({ onBack: () => window.history.back() })}
     ${chat.el}
     <footer class="sp-actions">
@@ -278,6 +361,4 @@ export function ScanProblemsPage(): HTMLElement {
       ${applyBtn}
     </footer>
   </div>`;
-
-  return page;
 }

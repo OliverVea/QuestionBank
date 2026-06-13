@@ -50,7 +50,7 @@ export function EditBookPage(): HTMLElement {
   const lookupStatus = html`<div class="lookup-status" hidden></div>`;
   const saveBtn = html`<button class="primary-btn" type="button" disabled>Save changes</button>`;
 
-  const problemsList = ProblemsList({ onChange: markDirty, getLearningGoal: () => goalInput.value.trim() });
+  const problemsList = ProblemsList({ onChange: markDirty, getLearningGoal: () => goalInput.value.trim(), bookId });
 
   function markDirty() {
     dirty = true;

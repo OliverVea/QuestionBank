@@ -7,6 +7,8 @@
 export interface PhotoTransfer {
   files: File[];
   notes: string;
+  /** The book being scanned into — needed by /extract to load existing problems. */
+  bookId?: string;
   /** The book's learning goal, if set — used for auto-relevance scoring at extraction. */
   learningGoal?: string;
 }

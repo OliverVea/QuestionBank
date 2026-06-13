@@ -12,6 +12,8 @@ export interface Problem {
   label: string;
   latex: string;
   relevance?: Relevance;
+  /** When present (scan-edit handoff), this replaces the existing row with this id. */
+  targetId?: string;
 }
 
 export interface ProblemsListProps {
@@ -19,6 +21,8 @@ export interface ProblemsListProps {
   onChange?: () => void;
   /** Supplier for the current learning goal (may change after mount). */
   getLearningGoal?: () => string;
+  /** The book being scanned into — threaded to the scan stash so /extract can load existing problems. */
+  bookId?: string;
 }
 
 export interface ProblemsListHandle {
@@ -27,7 +31,7 @@ export interface ProblemsListHandle {
   addRow: (problem?: Problem, focus?: boolean) => void;
 }
 
-export function ProblemsList({ problems = [], onChange, getLearningGoal }: ProblemsListProps = {}): ProblemsListHandle {
+export function ProblemsList({ problems = [], onChange, getLearningGoal, bookId }: ProblemsListProps = {}): ProblemsListHandle {
   const rows: ProblemRowHandle[] = [];
   const rowIds: (string | undefined)[] = [];
   const list = document.createElement('ol');
@@ -157,7 +161,7 @@ export function ProblemsList({ problems = [], onChange, getLearningGoal }: Probl
       onPost({ files: posted, notes }) {
         if (!posted.length) return;
         const goal = getLearningGoal?.();
-        stashPhotos({ files: posted, notes, ...(goal ? { learningGoal: goal } : {}) });
+        stashPhotos({ files: posted, notes, ...(bookId ? { bookId } : {}), ...(goal ? { learningGoal: goal } : {}) });
         window.location.hash = '#/scan-problems';
       },
       onCancel() { /* stay on page */ },
@@ -165,16 +169,50 @@ export function ProblemsList({ problems = [], onChange, getLearningGoal }: Probl
     document.body.appendChild(modal);
   });
 
-  // Check for returned problems from scan page.
+  // Check for returned problems from scan page. An `edit` (targetId set) replaces the
+  // existing row with that id; everything else is a new row. relevance rides through.
   function checkForReturnedProblems() {
     const raw = sessionStorage.getItem(SCAN_ACCEPTED_KEY);
     if (!raw) return;
     sessionStorage.removeItem(SCAN_ACCEPTED_KEY);
     try {
       const accepted: Problem[] = JSON.parse(raw);
-      for (const p of accepted) addRow(p);
+      for (const p of accepted) {
+        if (p.targetId) {
+          replaceRowById(p.targetId, { id: p.targetId, label: p.label, latex: p.latex, ...(p.relevance ? { relevance: p.relevance } : {}) });
+        } else {
+          addRow(p);
+        }
+      }
       notify();
     } catch { /* ignore malformed */ }
+  }
+
+  /**
+   * Replace the row whose problem id === `id` with a fresh row carrying `next` (same id),
+   * in place. Falls back to appending if the id isn't in the current working set.
+   */
+  function replaceRowById(id: string, next: Problem) {
+    const i = rowIds.indexOf(id);
+    if (i < 0) { addRow(next); return; }
+    const handle = ProblemRow({
+      label: next.label,
+      latex: next.latex,
+      relevance: (next.relevance ?? '') as Relevance,
+      onChange: notify,
+      onDelete: () => {
+        const j = rows.indexOf(handle);
+        if (j >= 0) { rows.splice(j, 1); rowIds.splice(j, 1); }
+        handle.el.remove();
+        notify();
+      },
+    });
+    const old = rows[i]!;
+    old.el.replaceWith(handle.el);
+    rows[i] = handle;
+    rowIds[i] = id;
+    makeDraggable(handle);
+    renumber();
   }
 
   // Seed initial problems.

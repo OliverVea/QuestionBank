@@ -29,6 +29,14 @@ export interface ProblemsListHandle {
   el: HTMLElement;
   getProblems: () => Problem[];
   addRow: (problem?: Problem, focus?: boolean) => void;
+  /**
+   * Apply problems handed back from the scan page (from sessionStorage). Call this AFTER
+   * existing problems have loaded so `edit` deltas can match their target row. Returns
+   * true if any problems were applied (so the host can persist the merged list).
+   */
+  applyReturnedProblems: () => boolean;
+  /** Replace the entire row set — used to resync to the server's saved list (with ids). */
+  setProblems: (problems: Problem[]) => void;
 }
 
 export function ProblemsList({ problems = [], onChange, getLearningGoal, bookId }: ProblemsListProps = {}): ProblemsListHandle {
@@ -62,6 +70,15 @@ export function ProblemsList({ problems = [], onChange, getLearningGoal, bookId 
     makeDraggable(handle);
     renumber();
     if (focus) handle.enterEdit();
+  }
+
+  /** Replace the entire row set (e.g. resync to the server's authoritative list, with ids). */
+  function setProblems(next: Problem[]) {
+    for (const r of rows) r.el.remove();
+    rows.length = 0;
+    rowIds.length = 0;
+    for (const p of next) addRow(p);
+    renumber();
   }
 
   function makeDraggable(row: ProblemRowHandle) {
@@ -169,14 +186,18 @@ export function ProblemsList({ problems = [], onChange, getLearningGoal, bookId 
     document.body.appendChild(modal);
   });
 
-  // Check for returned problems from scan page. An `edit` (targetId set) replaces the
+  // Apply problems handed back from the scan page. An `edit` (targetId set) replaces the
   // existing row with that id; everything else is a new row. relevance rides through.
-  function checkForReturnedProblems() {
+  // Called by the host AFTER existing problems have loaded, so an `edit` can find its
+  // target row (otherwise it would fall back to appending a duplicate). Returns whether
+  // anything was applied, so the host can persist the merged list.
+  function applyReturnedProblems(): boolean {
     const raw = sessionStorage.getItem(SCAN_ACCEPTED_KEY);
-    if (!raw) return;
+    if (!raw) return false;
     sessionStorage.removeItem(SCAN_ACCEPTED_KEY);
     try {
       const accepted: Problem[] = JSON.parse(raw);
+      if (accepted.length === 0) return false;
       for (const p of accepted) {
         if (p.targetId) {
           replaceRowById(p.targetId, { id: p.targetId, label: p.label, latex: p.latex, ...(p.relevance ? { relevance: p.relevance } : {}) });
@@ -185,7 +206,8 @@ export function ProblemsList({ problems = [], onChange, getLearningGoal, bookId 
         }
       }
       notify();
-    } catch { /* ignore malformed */ }
+      return true;
+    } catch { /* ignore malformed */ return false; }
   }
 
   /**
@@ -217,9 +239,8 @@ export function ProblemsList({ problems = [], onChange, getLearningGoal, bookId 
 
   // Seed initial problems.
   for (const p of problems) addRow(p);
-
-  // Check on mount for returned scan results.
-  checkForReturnedProblems();
+  // Note: returned scan results are applied by the host via applyReturnedProblems(),
+  // AFTER existing problems have loaded — not on mount — so edit-deltas can match.
 
   const addBtn = html`<button class="add-problem" type="button">
     <span class="plus" aria-hidden="true">
@@ -250,5 +271,7 @@ export function ProblemsList({ problems = [], onChange, getLearningGoal, bookId 
       return p;
     }),
     addRow,
+    applyReturnedProblems,
+    setProblems,
   };
 }

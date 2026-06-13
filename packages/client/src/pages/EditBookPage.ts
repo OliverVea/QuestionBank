@@ -96,6 +96,27 @@ export function EditBookPage(): HTMLElement {
   authorInput.addEventListener('input', markDirty);
   goalInput.addEventListener('input', markDirty);
 
+  /**
+   * PUT the current problem list for this book and return the server's saved rows
+   * (ordered, each with its id). Shared by manual Save and scan auto-save.
+   */
+  async function putProblems(): Promise<Question[]> {
+    const problems = problemsList.getProblems();
+    const res = await fetch(`/api/books/${bookId}/questions`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        questions: problems.map((p) => ({
+          ...(p.id ? { id: p.id } : {}),
+          label: p.label,
+          canonicalText: p.latex,
+          relevance: p.relevance,
+        })),
+      }),
+    });
+    return res.json();
+  }
+
   // Save: PATCH book metadata + PUT problems list.
   saveBtn.addEventListener('click', async () => {
     const title = titleInput.value.trim();
@@ -103,7 +124,6 @@ export function EditBookPage(): HTMLElement {
     (saveBtn as HTMLButtonElement).disabled = true;
     saveBtn.textContent = 'Saving…';
 
-    const problems = problemsList.getProblems();
     try {
       await fetch(`/api/books/${bookId}`, {
         method: 'PATCH',
@@ -116,18 +136,7 @@ export function EditBookPage(): HTMLElement {
         }),
       });
 
-      await fetch(`/api/books/${bookId}/questions`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          questions: problems.map((p) => ({
-            ...(p.id ? { id: p.id } : {}),
-            label: p.label,
-            canonicalText: p.latex,
-            relevance: p.relevance,
-          })),
-        }),
-      });
+      await putProblems();
 
       dirty = false;
       window.location.hash = '#/manage-books';
@@ -226,10 +235,39 @@ export function EditBookPage(): HTMLElement {
 
       updateSaveState();
       dirty = false; // Prefill is not a user change.
+
+      // Apply problems handed back from a scan AFTER existing rows have loaded (so an
+      // `edit` delta can match its target row), then persist immediately: scanned
+      // problems are committed on return, not left as an unsaved draft. This also makes
+      // them visible to the next scan's dedupe (which loads the book's saved problems).
+      await applyReturnedScanProblems();
     } catch {
       // If load fails, leave the form empty — user can fill manually.
     }
     showForm();
+  }
+
+  /** Merge scan-accepted problems into the loaded list and auto-save them. */
+  async function applyReturnedScanProblems() {
+    const applied = problemsList.applyReturnedProblems();
+    if (!applied) return;
+    try {
+      // Persist, then resync the in-memory rows to the server's saved list so the new
+      // problems carry their assigned ids (otherwise a later manual Save would re-create
+      // them as duplicates and delete the originals).
+      const saved = await putProblems();
+      const validRelevance = new Set<string>(['high', 'medium', 'low']);
+      problemsList.setProblems(
+        saved.map((q) => {
+          const rel = validRelevance.has(q.relevance ?? '') ? (q.relevance as Relevance) : undefined;
+          return { id: q.id, label: q.label, latex: q.canonicalText, ...(rel ? { relevance: rel } : {}) };
+        }),
+      );
+      dirty = false; // The scanned problems are now persisted.
+    } catch {
+      // Auto-save failed — keep them in the list and mark dirty so a manual Save retries.
+      markDirty();
+    }
   }
 
   function showForm() {

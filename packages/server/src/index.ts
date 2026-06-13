@@ -58,7 +58,7 @@ export function createApp(
   app.use('/api/learn', learnRouter(store));
   app.use('/api/practice', practiceRouter(store));
   app.use('/api/questions', questionsRouter(store));
-  app.use('/api/extract', extractRouter(provider));
+  app.use('/api/extract', extractRouter(provider, store));
   app.use('/api/skip', skipRouter(store));
 
   app.use(errorLogger);

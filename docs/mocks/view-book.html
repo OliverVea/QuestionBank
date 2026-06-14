@@ -116,7 +116,7 @@
             ],
           },
           {
-            label: '1.A.2', status: 'waiting',
+            label: '1.A.2', status: 'waiting', nextReviewInDays: 3,
             latex: 'For $\\Psi(x,t)$, show that $\\frac{d\\langle x\\rangle}{dt}=\\frac{\\langle p\\rangle}{m}$.',
             attempts: [
               { grade: 'partial', daysAgo: 14, answer: 'Differentiated under the integral but forgot the boundary terms vanish.', reasoning: 'The argument needs $\\Psi\\to 0$ at $\\pm\\infty$ to kill the boundary term — state it.' },
@@ -132,7 +132,63 @@
               { grade: 'correct', daysAgo: 7, answer: 'Re-derived the same; applied boundary conditions $\\psi(0)=\\psi(a)=0$ to quantize $k$.', reasoning: 'Solid, boundary conditions handled correctly.' },
             ],
           },
-          { label: null, status: 'ready', latex: 'State the uncertainty principle for position and momentum.', attempts: [] },
+          {
+            label: '1.B.2', status: 'waiting', nextReviewInDays: 12,
+            latex: 'For the infinite square well, compute $\\langle x\\rangle$ and $\\langle x^2\\rangle$ in the $n$th stationary state.',
+            attempts: [
+              { grade: 'partial', daysAgo: 18, answer: '$\\langle x\\rangle = a/2$ by symmetry; got stuck on $\\langle x^2\\rangle$.', reasoning: 'Symmetry argument for $\\langle x\\rangle$ is right. For $\\langle x^2\\rangle$ use $\\int_0^a x^2\\sin^2(n\\pi x/a)\\,dx$.' },
+              { grade: 'correct', daysAgo: 4, answer: '$\\langle x^2\\rangle = a^2\\left(\\frac{1}{3}-\\frac{1}{2n^2\\pi^2}\\right)$.', reasoning: 'Correct; the $1/n^2$ term is the quantum correction.' },
+            ],
+          },
+          {
+            label: '1.C.1', status: 'ready',
+            latex: 'Find the allowed energies of the harmonic oscillator using the ladder-operator method.',
+            attempts: [],
+          },
+          {
+            label: '1.C.2', status: 'ready',
+            latex: 'Construct the first three stationary states $\\psi_0,\\psi_1,\\psi_2$ of the harmonic oscillator.',
+            attempts: [
+              { grade: 'incorrect', daysAgo: 2, answer: 'Applied $a_+$ to $\\psi_0$ but dropped the normalization constant each time.', reasoning: 'Each $a_+$ application brings a factor $\\sqrt{n+1}$ — track it so the states stay normalized.' },
+            ],
+          },
+          {
+            label: '2.A.1', status: 'waiting', nextReviewInDays: 6,
+            latex: 'A free particle has $\\Psi(x,0)=Ae^{-ax^2}$. Find $\\Phi(k)$ and $\\Psi(x,t)$.',
+            attempts: [
+              { grade: 'correct', daysAgo: 11, answer: 'Gaussian integral gives $\\Phi(k)=(2\\pi a)^{-1/4}\\,(1/\\sqrt{2a})\\,e^{-k^2/4a}$; propagated each mode by $e^{-i\\hbar k^2 t/2m}$.', reasoning: 'Correct; the spreading wave packet is the key result.' },
+            ],
+          },
+          {
+            label: '2.A.2', status: 'ready',
+            latex: 'Show that the Gaussian wave packet spreads in time, and find the width $w(t)$.',
+            attempts: [],
+          },
+          {
+            label: '2.B.1', status: 'finalized',
+            latex: 'Solve the delta-function potential $V(x)=-\\alpha\\,\\delta(x)$ for its single bound state.',
+            attempts: [
+              { grade: 'correct', daysAgo: 40, answer: '$\\psi(x)=\\sqrt{m\\alpha}/\\hbar\\;e^{-m\\alpha|x|/\\hbar^2}$, $E=-m\\alpha^2/2\\hbar^2$.', reasoning: 'Correct; the discontinuity in $\\psi\'$ at the origin gives the binding energy.' },
+              { grade: 'correct', daysAgo: 12, answer: 'Re-derived using the jump condition $\\Delta\\psi\' = -2m\\alpha\\psi(0)/\\hbar^2$.', reasoning: 'Clean re-derivation; jump condition applied correctly.' },
+            ],
+          },
+          {
+            label: '2.3', status: 'ready',
+            latex: 'A particle of energy $E$ encounters a step potential of height $V_0<E$. Compute the reflection coefficient $R$.',
+            attempts: [
+              { grade: 'partial', daysAgo: 3, answer: 'Got $R=\\left(\\frac{k_1-k_2}{k_1+k_2}\\right)^2$ but used probability instead of flux.', reasoning: 'Right final form, but justify it with the probability current, not $|B/A|^2$ alone — they coincide here only because the step is real.' },
+            ],
+          },
+          {
+            label: '3.A.1', status: 'ready',
+            latex: 'Show that the position and momentum operators satisfy $[\\hat{x},\\hat{p}]=i\\hbar$.',
+            attempts: [],
+          },
+          {
+            label: null, status: 'ready',
+            latex: 'State the uncertainty principle for position and momentum, and sketch the argument from the Schwarz inequality.',
+            attempts: [],
+          },
         ],
       },
     };
@@ -202,41 +258,205 @@
       fb.replaceWith(img);
     });
 
-    // --- Problem rows -------------------------------------------------------
+    // --- Problem rows, grouped by path (two levels: chapter ▸ section) ------
+    // The dotted path label (`1.A.3`) IS the organizing concept. We fan it out
+    // TWO levels: chapter (first segment) → its subsections (`A`, `B`, …) AND
+    // the problems that live directly at the chapter (`2.3`). `1.A.1` nests
+    // under chapter 1 ▸ section A; `2.3` is a direct child of chapter 2. Within
+    // a chapter, entries sort alphabetically by their next segment, with the
+    // chapter's loose direct-problems FIRST, then the lettered subsections.
+    // Headers fan out the path and toggle expand/collapse — they NEVER navigate.
+    // Two grouping levels only (no deeper recursion). Collapse state is
+    // in-memory, default expanded. Unlabelled problems fall into an "Ungrouped"
+    // chapter, ordered last.
     const listHost = document.getElementById('problem-list');
     const problems = book.problems || [];
     document.getElementById('b-count').textContent =
       problems.length + ' problem' + (problems.length === 1 ? '' : 's');
 
+    // Split a label into { segments, terminal } — the breadcrumb prefix and the
+    // final "Problem N". `1.A.3` → prefix [1, A], terminal '3'. A label that is
+    // just `3` (no prefix) → prefix [], terminal '3'. No label → ungrouped.
+    function splitLabel(label) {
+      if (label == null || label === '') return null;
+      const parts = String(label).split('.');
+      const chapter = parts[0];
+      if (parts.length >= 3) return { chapter, section: parts[1], terminal: parts.slice(2).join('.') };
+      if (parts.length === 2) return { chapter, section: null, terminal: parts[1] };
+      return { chapter, section: null, terminal: null };
+    }
+    const fullLabel = (p, i) => (p.label != null && p.label !== '' ? String(p.label) : String(i + 1));
+
+    // Build the chapter buckets, preserving first-seen order (the seed is
+    // already in (path, createdAt) order) so problems stay path-ordered.
+    const UNGROUPED = '￿';   // sorts after any real chapter
+    const chapterMap = new Map();
+    const chapterFor = (key, name) => {
+      if (!chapterMap.has(key)) {
+        chapterMap.set(key, { name, direct: [], sections: new Map() });
+      }
+      return chapterMap.get(key);
+    };
     problems.forEach((p, i) => {
+      const split = splitLabel(p.label);
+      const entry = { p, i };
+      if (!split) { chapterFor(UNGROUPED, null).direct.push(entry); return; }
+      const ch = chapterFor(split.chapter, split.chapter);
+      if (split.section == null) ch.direct.push(entry);
+      else {
+        if (!ch.sections.has(split.section)) ch.sections.set(split.section, []);
+        ch.sections.get(split.section).push(entry);
+      }
+    });
+    // Chapters in path order (Ungrouped last via the sentinel key).
+    const chapters = [...chapterMap.entries()]
+      .sort(([a], [b]) => a.localeCompare(b, undefined, { numeric: true }))
+      .map(([, c]) => c);
+
+    let stagger = 2;   // continues the header's animate-in cascade (head=0, listhead=1)
+
+    // Build a collapsible header (breadcrumb + count + caret). `segments` is the
+    // path fanned out (`['2','A']`); levels read quieter with depth.
+    function makeHeader(segments, isUngrouped, n) {
+      const header = document.createElement('button');
+      header.type = 'button';
+      header.className = 'vb-group-head animate-in';
+      header.style.setProperty('--i', stagger++);
+      header.setAttribute('aria-expanded', 'true');
+
+      const crumb = document.createElement('span');
+      crumb.className = 'vb-crumb';
+      if (isUngrouped) {
+        const segEl = document.createElement('span');
+        segEl.className = 'vb-crumb-seg lvl-other';
+        segEl.textContent = 'Ungrouped';
+        crumb.appendChild(segEl);
+      } else {
+        segments.forEach((seg, si) => {
+          if (si > 0) {
+            const sep = document.createElement('span');
+            sep.className = 'vb-crumb-sep';
+            sep.setAttribute('aria-hidden', 'true');
+            sep.textContent = '›';   // ›
+            crumb.appendChild(sep);
+          }
+          const segEl = document.createElement('span');
+          // Depth class lets each level read distinct (chapter strongest).
+          segEl.className = 'vb-crumb-seg lvl-' + Math.min(si, 3);
+          segEl.textContent = seg;
+          crumb.appendChild(segEl);
+        });
+      }
+
+      const count = document.createElement('span');
+      count.className = 'vb-group-n';
+      count.textContent = n;
+
+      const caret = document.createElement('span');
+      caret.className = 'vb-group-caret';
+      caret.setAttribute('aria-hidden', 'true');
+      caret.textContent = '⌄';   // ⌄
+
+      header.append(crumb, count, caret);
+      return header;
+    }
+
+    // Wire a header to expand/collapse its body. In-memory only.
+    function wireToggle(header, groupEl) {
+      header.addEventListener('click', () => {
+        const collapsed = groupEl.classList.toggle('collapsed');
+        header.setAttribute('aria-expanded', String(!collapsed));
+      });
+    }
+
+    // Build one problem row. The label chip is tinted by mastery (how
+    // established); the bottom-right column shows readiness/timing.
+    function makeRow(p, i) {
       const row = document.createElement('a');
-      row.className = 'vb-row animate-in';
-      row.style.setProperty('--i', 2 + i);
-      // Deep-link the attempt-history subpage to this problem.
+      row.className = 'vb-row';
       row.href = 'attempts-filled.html?isbn=' + encodeURIComponent(isbn) + '&p=' + i;
 
+      // Label chip carries the FULL dotted shortcode — a neutral identifier.
+      // (The green "how established" tint lives on the mastery badge below.)
       const label = document.createElement('span');
       label.className = 'vb-label';
-      label.textContent = p.label != null && p.label !== '' ? p.label : String(i + 1);
+      label.textContent = fullLabel(p, i);
 
       const body = document.createElement('div');
       body.className = 'vb-body qbody';
       renderLatex(body, p.latex || '');
 
+      // Bottom-left: the mastery WORD as a pill (New/Improving/Strong/Excellent)
+      // plus the CI-history strip. The label chip's green depth echoes the same
+      // mastery; the word spells it out.
+      const m = attemptSummary.mastery(p);
       const badgeRow = document.createElement('div');
       badgeRow.className = 'vb-badge-row';
-      badgeRow.appendChild(attemptSummary.badgeEl(p));
+      const word = document.createElement('span');
+      word.className = 'vb-mastery est-' + m;
+      word.textContent = attemptSummary.MASTERY_LABEL[m];
+      badgeRow.appendChild(word);
       if ((p.attempts || []).length > 0) {
         badgeRow.appendChild(attemptSummary.ciStripEl(p.attempts, { cap: 8 }));
       }
 
+      // Bottom-right: the NEXT time the problem comes up. purple = ready now,
+      // grey = inactive/resting ("Ready in N days"). Excellent (finalized) is
+      // graduated — it has no next, so the column is left empty.
+      const ready = document.createElement('span');
+      ready.className = 'vb-ready';
+      const r = attemptSummary.readiness(p, m);
+      if (r === 'finalized') { /* no next — graduated */ }
+      else if (r === 'waiting') {
+        ready.classList.add('r-waiting');
+        const d = p.nextReviewInDays;
+        ready.textContent = d != null ? ('Ready in ' + d + ' day' + (d === 1 ? '' : 's')) : 'Resting';
+      } else { ready.classList.add('r-ready'); ready.textContent = 'Ready now'; }
+
       const chev = document.createElement('span');
       chev.className = 'vb-chev';
       chev.setAttribute('aria-hidden', 'true');
-      chev.textContent = '›';
+      chev.textContent = '›';   // ›
 
-      row.append(label, body, badgeRow, chev);
-      listHost.appendChild(row);
+      row.append(label, body, badgeRow, ready, chev);
+      return row;
+    }
+
+    chapters.forEach((chapter) => {
+      const isUngrouped = chapter.name == null;
+      const total = chapter.direct.length +
+        [...chapter.sections.values()].reduce((s, arr) => s + arr.length, 0);
+
+      const chapterEl = document.createElement('li');
+      chapterEl.className = 'vb-group';
+      const header = makeHeader(isUngrouped ? [] : [chapter.name], isUngrouped, total);
+      wireToggle(header, chapterEl);
+
+      const groupBody = document.createElement('div');
+      groupBody.className = 'vb-group-rows';
+
+      // Direct chapter problems FIRST (loose, before lettered subsections).
+      chapter.direct.forEach(({ p, i }) => groupBody.appendChild(makeRow(p, i)));
+
+      // Then subsections, alphabetically by section letter.
+      [...chapter.sections.keys()]
+        .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+        .forEach((sectionName) => {
+          const items = chapter.sections.get(sectionName);
+          const subEl = document.createElement('div');
+          subEl.className = 'vb-subgroup';
+          const subHeader = makeHeader([chapter.name, sectionName], false, items.length);
+          subHeader.classList.add('is-sub');
+          wireToggle(subHeader, subEl);
+          const subRows = document.createElement('div');
+          subRows.className = 'vb-group-rows';
+          items.forEach(({ p, i }) => subRows.appendChild(makeRow(p, i)));
+          subEl.append(subHeader, subRows);
+          groupBody.appendChild(subEl);
+        });
+
+      chapterEl.append(header, groupBody);
+      listHost.appendChild(chapterEl);
     });
   </script>
   <script src="footer.js" defer></script>

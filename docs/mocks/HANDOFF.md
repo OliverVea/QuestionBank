@@ -88,15 +88,42 @@ The header went through several iterations before landing on the 3-number row:
 If a calendar/history/ring comes back, the git history of `index.html` has the
 working implementations to crib from.
 
-## NOT done yet — Mock 3 (path fan-out) is still TODO
-`view-book.html` was **not touched** this session. The remaining brief item:
-make each dotted-path segment a **non-intrusive** affordance in the problem
-browse list — e.g. `1 › A › 3` where levels feel distinct/collapsible WITHOUT
-turning the dense mobile list into a heavy tree ("fan out on each path element in
-a non-intrusive way"). Browse-only nicety, NOT learn-by-node navigation
-(deferred). Read `view-book.html` + `view-book.css` first (flat problem list with
-status badges + CI-history strips). Expect to iterate — land a skeleton, then try
-the fan-out treatment. Do NOT build a heavy tree/navigation UI.
+## Mock 3 (path fan-out) — DONE this session (`view-book.html`)
+The dotted label is now fanned out as **two levels of collapsible grouping**
+(user chose collapsible over visual-only; chose chapter-containing-subsections
+over one-level). Browse-only — headers toggle, they NEVER navigate; rows keep
+their `attempts-filled.html?isbn=…&p=i` deep-link. No deeper than two levels (the
+"heavy tree" line). Collapse state is in-memory, default expanded.
+
+### Grouping model
+- **Chapter** (first path segment) is the top group. Within it: the chapter's
+  **direct problems first** (e.g. `2.3`), then its lettered **subsections**
+  (`2 › A`, `2 › B`) alphabetically. So chapter 2 reads `2.3`, `2 › A`, `2 › B`.
+- `splitLabel` → `{ chapter, section, terminal }`: `1.A.3`→(1,A,3); `2.3`→(2,—,3);
+  bare `5`→(5,—,—). Null/empty label → an **"Ungrouped"** chapter, sorted last
+  (sentinel key `￿`). Chapters sort numerically; sections alphabetically.
+- **Cross-type order decision:** loose direct-problems before lettered
+  subsections (a default — easy to flip).
+- Collapse CSS is scoped to each group's OWN body via **direct-child** selectors
+  (`.vb-group.collapsed > .vb-group-rows`, same for `.vb-subgroup`) so chapter
+  and subsection fold independently. (A descendant selector here was the bug.)
+
+### Per-row treatment (changed from the old flat row)
+- **Label chip** = the FULL dotted shortcode (`1.A.1`, `2.3`), neutral grey
+  (user: "not the short code just the badge color").
+- **Bottom-left** = mastery **word pill** (New/Improving/Strong/Excellent) +
+  CI-history strip. The pill tints with a **muted** green that deepens with
+  mastery via `color-mix(--learn-dark % over --surface)` — NOT the raw
+  `--green-50/100` ramp (user: "too bright"). `est-new` stays neutral grey.
+- **Bottom-right** (`.vb-ready`) = when it's next up: **purple "Ready now"**,
+  **grey "Ready in N days"** (from `nextReviewInDays` seed field), and
+  **Excellent/finalized shows nothing** (graduated, no next).
+- Row grid gained a 4th column: `"label body body chev" / "label badge ready chev"`.
+
+### Seed data
+Expanded to 12 problems across chapters 1–3 (sections A/B/C, a short-path `2.3`,
+a single-problem `3.A.1`, and one null-label) so every grouping case renders.
+Added `nextReviewInDays` on the waiting problems.
 
 ## Files
 - `docs/mocks/index.html` — landing page (Mocks 1+2). Demo data in the `activity`

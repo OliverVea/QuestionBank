@@ -1,112 +1,79 @@
 /* Single-screen home layout. Shared tokens + base reset come from mocks.css. */
 
-/* One-screen shell: exactly the viewport height, clips its own overflow, and
-   only the library list (the 1fr row) scrolls inside it. Page-level rubber-band
-   is handled by `overscroll-behavior: none` on the body in mocks.css. */
+/* One-screen shell: exactly the viewport height, clips its own overflow. A
+   single inner region (.home-scroll) scrolls — the global activity header AND
+   the library scroll together, since the header + taller per-book cards won't
+   fit one phone screen. Page-level rubber-band is handled by
+   `overscroll-behavior: none` on the body in mocks.css. */
 .app {
   height: 100dvh;
   display: grid;
-  grid-template-rows: auto auto 1fr;
+  grid-template-rows: 1fr;
   overflow: hidden;
   max-width: 760px;
   margin: 0 auto;
 }
+.home-scroll {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+}
 
-/* ---- Action banners ---- */
-.banner {
-  position: relative;        /* anchor the watermark icon */
-  overflow: hidden;          /* clip the oversized outline glyph */
-  border: 1px solid var(--icon-stroke);
-  cursor: pointer;
-  font: inherit;
-  text-align: left;
-  color: #fff;
-  padding: 1.25rem 1.4rem;
-  margin: 0.25rem 0.3rem 0;
+/* ====================================================================
+   Global activity header — three metrics in a row (home-only)
+   ==================================================================== */
+/* One full-width card — its frame anchors the block so nothing floats. */
+.activity {
+  margin: 0.85rem 1rem;
+  padding: 0.85rem 0.5rem;
+  border: 1px solid var(--border);
   border-radius: 14px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
-  display: flex;
-  align-items: center;
-  gap: 0.85rem;
-  -webkit-tap-highlight-color: transparent;   /* we provide our own press state */
-  transition: transform 0.08s ease, filter 0.12s ease, box-shadow 0.12s ease;
-}
-.banner:not(.empty) { cursor: pointer; }
-/* Press feedback — the primary cue on touch */
-.banner:not(.empty):active {
-  transform: scale(0.985);
-  filter: brightness(0.97);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.14);
-}
-/* Hover effects are desktop-only enhancement; skip on touch so they don't stick */
-@media (hover: hover) {
-  .banner:not(.empty):hover { filter: brightness(1.05); }
-  .banner:not(.empty):hover .b-arrow { transform: translateX(0.2rem); }
+  background: var(--surface);
 }
 
-/* Large line-art icon, darker tone, sitting behind the text */
-.banner .b-icon {
-  position: absolute;
-  right: 0.9rem;
-  top: 50%;
-  transform: translateY(-50%);
-  height: 85%;                 /* ~85% of the banner's height */
-  aspect-ratio: 1;             /* keep the icon square */
-  pointer-events: none;
-  color: var(--icon-stroke);   /* SVG strokes inherit via currentColor */
-  opacity: 0.55;
-}
-.banner .b-icon svg { width: 100%; height: 100%; display: block; }
-.banner .b-text {
+/* Three metrics in a row, split by faint vertical dividers. */
+.activity-head { display: flex; align-items: stretch; }
+.stat {
   flex: 1;
-  min-width: 0;               /* allow the title to truncate */
-  position: relative;
-  z-index: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.1rem;
+  align-items: center;
+  justify-content: center;   /* balance the 3-row streak vs 2-row goals */
+  gap: 0.3rem;
+  padding: 0 0.35rem;
 }
-.banner .b-eyebrow {
-  font-size: 0.78rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  opacity: 0.85;
-}
-.banner .b-cta {
-  font-size: 1.15rem;
-  font-weight: 700;
-  margin-top: 0.15rem;
-  display: inline-flex;
-  align-items: center;        /* center the larger arrow against the text */
-}
-.banner .b-arrow {
-  margin-left: 0.6rem;        /* breathing room so it reads as a separate cue */
-  font-size: 1.4em;           /* larger than the CTA text */
+.stat + .stat { border-left: 1px solid var(--border); }
+
+.stat-num {
+  font-size: 1.5rem;
+  font-weight: 800;
   line-height: 1;
-  transition: transform 0.12s ease;   /* nudges right on hover */
+  letter-spacing: -0.02em;
+  color: var(--fg);
 }
+/* The "/ N" target reads quieter than the current value. */
+.stat-of { font-size: 1rem; font-weight: 700; color: var(--muted); }
 
-
-.banner.revisit { background: var(--revisit); --icon-stroke: var(--revisit-dark); }
-.banner.learn { background: var(--learn); --icon-stroke: var(--learn-dark); }
-
-/* Disabled / nothing-to-do state keeps the banner but softens it */
-.banner.empty {
-  background: var(--surface);
+.stat-lbl {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   color: var(--muted);
-  cursor: default;
-  --icon-stroke: var(--grey-100);
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.25;
 }
-.banner.empty:hover { filter: none; }
+
+#stat-streak .stat-num { color: var(--streak-dark); }
+
+/* A met goal turns green. */
+.stat.complete .stat-num { color: var(--learn-dark); }
+.stat.complete .stat-of { color: color-mix(in srgb, var(--learn-dark) 60%, var(--muted)); }
 
 /* ---- Library ---- */
 .library {
-  min-height: 0;
-  overflow-y: auto;
-  /* Don't bounce/scroll-chain when the list already fits — stops the
-     "scroll past the end even with few books" rubber-banding on touch. */
-  overscroll-behavior: contain;
   padding: 0.75rem 0 0.5rem;
 }
 .library-head {
@@ -139,24 +106,49 @@
   .edit-btn:hover { background: var(--grey-50); color: var(--orange-200); }
 }
 
-.book {
+/* ---- Per-book card ----
+   Each book is now a card: a head (cover + title + progress) that opens the
+   book view, plus the folded-in per-book action lines (revisit / learn) that
+   used to live in the two global banners. The celebratory override replaces
+   the action lines when the book is fully mastered. */
+.book-card {
+  border-bottom: 1px solid var(--border);
+  padding: 0.4rem 0 0.7rem;
+}
+/* A finished book (100% + nothing due) reads green across the whole row. */
+.book-card.finished {
+  background: color-mix(in srgb, var(--learn) 9%, var(--bg));
+}
+.book-card.finished .bc-head:active,
+.book-card.finished .bc-head:hover {
+  background: color-mix(in srgb, var(--learn) 16%, var(--bg));
+}
+.book-card.finished .b-title2 { color: var(--learn-dark); }
+
+/* Card head — the view-book tap target. A <button>, so the inner action lines
+   (their own buttons, with stopPropagation) can't legally nest in an <a>. */
+.bc-head {
   display: grid;
   grid-template-columns: 64px 1fr auto;
   grid-template-areas:
-    "icon title  ready-num"
-    "icon author ready-lbl";
+    "icon text progress";
   column-gap: 1rem;
-  padding: 0.85rem 1.25rem;
-  border-bottom: 1px solid var(--border);
   align-items: center;
+  width: 100%;
+  border: none;
+  background: none;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  padding: 0.5rem 1.25rem;
+  cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s ease;
 }
-/* Tapping a book opens its read-only view; give the row press/hover feedback. */
-.book.tappable { cursor: pointer; transition: background 0.12s ease; }
-.book.tappable:active { background: var(--surface); }
-@media (hover: hover) { .book.tappable:hover { background: var(--surface); } }
+.bc-head:active { background: var(--surface); }
+@media (hover: hover) { .bc-head:hover { background: var(--surface); } }
 
-.book .b-cover {
+.b-cover {
   grid-area: icon;
   align-self: center;
   width: auto;                /* width follows the cover's real aspect ratio */
@@ -170,7 +162,7 @@
   display: block;
 }
 /* Fallback tile shown when the cover image fails to load */
-.book .b-cover-fallback {
+.b-cover-fallback {
   grid-area: icon;
   align-self: center;
   justify-self: center;
@@ -186,7 +178,7 @@
   padding: 3px 2px;
   overflow: hidden;
 }
-.book .b-cover-fallback span {
+.b-cover-fallback span {
   display: block;
   text-align: center;
   font-size: 0.55rem;
@@ -198,27 +190,91 @@
   max-height: 100%;
 }
 
-.book .b-title2 { grid-area: title; font-size: 1.05rem; font-weight: 600; }
-.book .b-author { grid-area: author; font-size: 0.85rem; color: var(--muted); margin-top: 0.15rem; }
-
-.book .ready-num {
-  grid-area: ready-num;
-  justify-self: end;
+.bc-text { grid-area: text; min-width: 0; }
+.bc-text .b-title2 {
   font-size: 1.05rem;
-  font-weight: 700;
-  color: var(--muted);
+  font-weight: 600;
+  line-height: 1.25;
+  overflow-wrap: anywhere;   /* let long titles wrap so progress stays in view */
 }
-.book .ready-num.none { color: var(--border); }
-.book .ready-lbl {
-  grid-area: ready-lbl;
+.bc-text .b-author { font-size: 0.85rem; color: var(--muted); margin-top: 0.15rem; }
+
+/* Progress = mastery %, kept distinct from the "ready" count (which the revisit
+   line now carries — the old corner "N ready" is dropped). */
+.bc-progress {
+  grid-area: progress;
   justify-self: end;
-  font-size: 0.72rem;
+  text-align: right;
+  line-height: 1.05;
+}
+.bc-pct { display: block; font-size: 1.05rem; font-weight: 700; color: var(--muted); }
+.bc-pct-lbl {
+  display: block;
+  font-size: 0.66rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--revisit);
-  margin-top: 0.15rem;
+  color: var(--muted);
+  margin-top: 0.1rem;
 }
-.book .ready-lbl.none { color: var(--border); }
+.bc-progress.none .bc-pct,
+.bc-progress.none .bc-pct-lbl { color: var(--border); }
+/* 100% = finished — green. */
+.bc-progress.complete .bc-pct,
+.bc-progress.complete .bc-pct-lbl { color: var(--learn-dark); }
+
+/* ---- Per-book action pills (revisit / learn) ----
+   Folded in from the old global banners, now compact chips. They sit together
+   in a wrapping row, indented to line up with the book text (not the cover). */
+.bc-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  /* align with the title column: 64px cover + 1rem gap + the head's 1.25rem pad */
+  padding: 0.15rem 1.25rem 0.2rem calc(1.25rem + 64px + 1rem);
+}
+.bc-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--fg);
+  padding: 0.3rem 0.65rem;
+  border-radius: 999px;
+  line-height: 1;
+}
+.bc-pill .bc-pill-icon { flex: none; width: 0.9rem; height: 0.9rem; line-height: 0; }
+.bc-pill .bc-pill-icon svg { width: 100%; height: 100%; display: block; }
+.bc-pill .bc-pill-text { white-space: nowrap; }
+
+/* Tappable pills (revisit-due, learn) get press/hover feedback. */
+.bc-pill.tappable {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.08s ease, filter 0.12s ease, background 0.12s ease;
+}
+.bc-pill.tappable:active { transform: scale(0.97); }
+
+/* Revisit (due now) — purple accent, the actionable cue. */
+.bc-revisit {
+  color: #fff;
+  background: var(--revisit);
+  border-color: var(--revisit-dark);
+}
+/* Learn — green accent. */
+.bc-learn {
+  color: #fff;
+  background: var(--learn);
+  border-color: var(--learn-dark);
+}
+@media (hover: hover) {
+  .bc-revisit:hover, .bc-learn:hover { filter: brightness(1.06); }
+}
+/* Quiet, non-tappable "ready in X" hint — muted outline chip. */
+.bc-revisit-soon { color: var(--muted); background: var(--bg); }
 
 /* ---- Add-book footer ---- */
 .add-book {

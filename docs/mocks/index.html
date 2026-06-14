@@ -10,124 +10,205 @@
 </head>
 <body class="anim-cascade">
   <div class="app">
-    <!-- Banner 1: Revisit (blue) -->
-    <button class="banner revisit animate-in" style="--i: 0" id="revisit-banner">
-      <span class="b-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
-             stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3 12a9 9 0 0 1 15.5-6.2L21 8" />
-          <path d="M21 3v5h-5" />
-          <path d="M21 12a9 9 0 0 1-15.5 6.2L3 16" />
-          <path d="M3 21v-5h5" />
-        </svg>
-      </span>
-      <span class="b-text">
-        <span class="b-eyebrow" id="revisit-eyebrow">Revisit: 5 problems waiting</span>
-        <span class="b-cta" id="revisit-cta">Make it stick<span class="b-arrow" aria-hidden="true">→</span></span>
-      </span>
-    </button>
+    <!-- One scrolling region: global activity header, then the per-book library.
+         (Was a fixed one-screen shell with two global banners; the banners' info
+         now lives per-book on each card, and the activity header is global.) -->
+    <div class="home-scroll">
 
-    <!-- Banner 2: Learn (green) -->
-    <button class="banner learn animate-in" style="--i: 1" id="learn-banner">
-      <span class="b-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
-             stroke-linecap="round" stroke-linejoin="round">
-          <path d="M9 18h6" />
-          <path d="M10 21h4" />
-          <path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.2 1 2v.3h6v-.3c0-.8.4-1.5 1-2A7 7 0 0 0 12 2Z" />
-          <path d="M12 6a3 3 0 0 0-3 3" />
-        </svg>
-      </span>
-      <span class="b-text">
-        <span class="b-eyebrow" id="learn-eyebrow">Next up: Griffiths 2A</span>
-        <span class="b-cta" id="learn-cta">Grow your knowledge<span class="b-arrow" aria-hidden="true">→</span></span>
-      </span>
-    </button>
+      <!-- ===== Global activity header (spans all books) ===== -->
+      <!-- One full-width card: three metrics in a row, split by vertical
+           dividers — streak, days/week, problems/week. Goals show actual / N
+           inline. -->
+      <section class="activity animate-in" style="--i: 0" aria-label="Your activity">
+        <div class="activity-head">
+          <!-- Streak count. -->
+          <div class="stat" id="stat-streak">
+            <span class="stat-num"><span id="streak-num">—</span></span>
+            <span class="stat-lbl">day streak</span>
+          </div>
+          <!-- Days/week cadence goal. -->
+          <div class="stat" id="stat-days">
+            <span class="stat-num"><span id="days-actual">—</span><span class="stat-of"> / <span id="days-target">—</span></span></span>
+            <span class="stat-lbl" id="days-lbl">days this week</span>
+          </div>
+          <!-- Problems/week volume goal. -->
+          <div class="stat" id="stat-problems">
+            <span class="stat-num"><span id="problems-actual">—</span><span class="stat-of"> / <span id="problems-target">—</span></span></span>
+            <span class="stat-lbl" id="problems-lbl">problems this week</span>
+          </div>
+        </div>
+      </section>
 
-    <!-- Library list (rows animate individually; see books loop) -->
-    <section class="library">
-      <div class="library-head animate-in" style="--i: 2">
-        <h2>Your library</h2>
-        <button class="edit-btn" id="library-edit" aria-label="Edit library" title="Edit library">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
-               stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 20h9" />
-            <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
-          </svg>
+      <!-- ===== Library ===== -->
+      <section class="library">
+        <div class="library-head animate-in" style="--i: 1">
+          <h2>Your library</h2>
+          <button class="edit-btn" id="library-edit" aria-label="Edit library" title="Edit library">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 20h9" />
+              <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+            </svg>
+          </button>
+        </div>
+        <div id="books"></div>
+
+        <!-- Add-a-book row at the end of the list -->
+        <button class="add-book" id="add-book">
+          <span class="plus" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 5v14" />
+              <path d="M5 12h14" />
+            </svg>
+          </span>
+          <span>Add a book to your library</span>
         </button>
-      </div>
-      <div id="books"></div>
-
-      <!-- Add-a-book row at the end of the list -->
-      <button class="add-book" id="add-book">
-        <span class="plus" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-               stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 5v14" />
-            <path d="M5 12h14" />
-          </svg>
-        </span>
-        <span>Add a book to your library</span>
-      </button>
-    </section>
+      </section>
+    </div>
   </div>
 
   <script>
+    // ====================================================================
+    // Demo data
+    // ====================================================================
+    // Calendar/streak/goal anchor to the real "today" so the window reads as
+    // lived-in. (The no-nondeterminism rule is scoped to the celebratory card
+    // variant — that hashes the isbn. Anchoring the calendar to new Date() is
+    // fine.) `attemptsByDayAgo` maps days-ago → attempt count; day 0 = today.
+    const activity = {
+      // A realistic scatter: most recent ~5 days active (the streak), older days
+      // sparse with gaps. Values are attempt counts that day.
+      attemptsByDayAgo: {
+        0: 2, 1: 4, 2: 1, 3: 3, 4: 2,        // current streak: 5 days
+        // (day 5 is a gap — streak stops at 5)
+        6: 1, 7: 5, 9: 2, 10: 1, 12: 3,
+        14: 2, 15: 1, 18: 4, 19: 1, 20: 2,
+        23: 1, 25: 3, 26: 2, 30: 1, 33: 2,
+        37: 4, 40: 1, 44: 2, 47: 1, 52: 3,
+        55: 1, 60: 2, 66: 1, 70: 3, 75: 1, 80: 2,
+      },
+      // TODO: user-defined — goal values AND windows come from a future settings
+      // UI. Placeholders below. Two weekly goals:
+      //   daysGoal     — cadence: study N days/week.
+      //   problemsGoal — volume: solve N problems/week.
+      daysGoal: { target: 3, window: 'days this week', actual: 3 },
+      problemsGoal: { target: 20, window: 'problems this week', actual: 12 },
+    };
+
     const data = {
-      revisitCount: 5,
-      learnNext: { context: 'Griffiths 2A', preview: 'How many quantized energy levels…' },
       books: [
-        { title: 'Introduction to Quantum Mechanics', author: 'David J. Griffiths', ready: 3, progress: 42, isbn: '9781107179868' },
-        { title: 'Calculus', author: 'Michael Spivak', ready: 2, progress: 68, isbn: '9780914098911' },
-        { title: 'Linear Algebra Done Right', author: 'Sheldon Axler', ready: 0, progress: 100, isbn: '9783319110790' },
-        { title: 'Classical Mechanics', author: 'John R. Taylor', ready: 0, progress: 15, isbn: '9781891389221' },
-        { title: 'Mathematical Methods for Physicists', author: 'Arfken & Weber', ready: 0, progress: 0, isbn: '9780123846549' },
+        // Book 1 — due-now reviews + still mid-learning.
+        {
+          title: 'Introduction to Quantum Mechanics', author: 'David J. Griffiths',
+          progress: 42, isbn: '9781107179868',
+          dueNow: 7,                       // ≥1 due → "7 problems ready to revisit"
+          learnNext: 'Chapter 3',          // a chapter was discovered
+        },
+        // Book 2 — nothing due yet but reviews scheduled → relative "come back".
+        {
+          title: 'Calculus', author: 'Michael Spivak',
+          progress: 68, isbn: '9780914098911',
+          dueNow: 0, nextReviewInDays: 2,  // earliest upcoming review → "in 2 days"
+          learnNext: 'Chapter 5, Section B',
+        },
+        // Book 3 — review-only: nothing left to learn, but reviews scheduled.
+        {
+          title: 'Linear Algebra Done Right', author: 'Sheldon Axler',
+          progress: 100, isbn: '9783319110790',
+          dueNow: 3, nextReviewInDays: null,
+          learnNext: null,                 // learn line omitted entirely
+        },
+        // Book 4 — mid-learning, nothing attempted yet (no revisit line at all).
+        {
+          title: 'Classical Mechanics', author: 'John R. Taylor',
+          progress: 15, isbn: '9781891389221',
+          dueNow: 0, nextReviewInDays: null,   // nothing attempted → no revisit line
+          learnNext: 'Chapter 1, Section A',
+        },
+        // Book 5 — finished: 100%, nothing to learn AND nothing due. Sinks to
+        // the bottom, ordered by completion date (`completedDaysAgo`).
+        {
+          title: 'Mathematical Methods for Physicists', author: 'Arfken & Weber',
+          progress: 100, isbn: '9780123846549',
+          dueNow: 0, nextReviewInDays: null,
+          learnNext: null, completedDaysAgo: 12,
+        },
+        // Book 6 — also finished, but completed more recently than book 5, so it
+        // sorts below it (more-recent completion last). Shows the ordering.
+        {
+          title: 'A First Course in Probability', author: 'Sheldon Ross',
+          progress: 100, isbn: '9780321794772',
+          dueNow: 0, nextReviewInDays: null,
+          learnNext: null, completedDaysAgo: 3,
+        },
       ],
     };
 
-    // ---- Revisit banner ----
-    const revisitBanner = document.getElementById('revisit-banner');
-    if (data.revisitCount > 0) {
-      const n = data.revisitCount;
-      document.getElementById('revisit-eyebrow').textContent =
-        `Revisit: ${n} problem${n === 1 ? '' : 's'} waiting`;
-      revisitBanner.addEventListener('click', () => { window.location.href = 'learn.html'; });
-    } else {
-      revisitBanner.classList.add('empty');
-      document.getElementById('revisit-eyebrow').textContent = 'Revisit';
-      document.getElementById('revisit-cta').textContent = 'All caught up';
+    // Finished = 100% learned AND nothing due/scheduled. These sink to the
+    // bottom, ordered by completion date (earliest completed first).
+    function isFinished(b) {
+      return b.progress === 100 && b.dueNow === 0 && b.nextReviewInDays == null;
+    }
+    data.books.sort((a, b) => {
+      const fa = isFinished(a), fb = isFinished(b);
+      if (fa !== fb) return fa ? 1 : -1;                 // finished books last
+      if (fa && fb) return b.completedDaysAgo - a.completedDaysAgo; // oldest completion first
+      return 0;                                          // else keep original order
+    });
+
+    // ====================================================================
+    // Activity header — streak + goal metrics
+    // ====================================================================
+
+    // Consecutive calendar days ending today (or yesterday) with ≥1 attempt.
+    function computeStreak(byDayAgo) {
+      let streak = 0;
+      for (let d = 0; d < 400; d++) {
+        if (byDayAgo[d]) streak++;
+        else if (d === 0) continue;   // today not yet active is OK; check from yesterday
+        else break;
+      }
+      return streak;
     }
 
-    // ---- Learn banner ----
-    const learnBanner = document.getElementById('learn-banner');
-    if (data.learnNext) {
-      document.getElementById('learn-eyebrow').textContent =
-        `Next up: ${data.learnNext.context}`;
-      learnBanner.addEventListener('click', () => { window.location.href = 'learn.html'; });
-    } else {
-      learnBanner.classList.add('empty');
-      document.getElementById('learn-eyebrow').textContent = 'Learn';
-      document.getElementById('learn-cta').textContent = 'Nothing new right now';
-    }
+    (function renderActivity() {
+      const byDayAgo = activity.attemptsByDayAgo;
 
-    // ---- Library ----
+      // ---- Streak (number) ----
+      const streak = computeStreak(byDayAgo);
+      document.getElementById('streak-num').textContent = streak;
+
+      // ---- Days/week + problems/week goals (actual / target inline) ----
+      function renderGoal(prefix, lblEl, goal) {
+        const { actual, target, window: win } = goal;
+        document.getElementById(prefix + '-actual').textContent = actual;
+        document.getElementById(prefix + '-target').textContent = target;
+        document.getElementById(lblEl).textContent = win;
+        if (actual >= target) document.getElementById('stat-' + prefix).classList.add('complete');
+      }
+      renderGoal('days', 'days-lbl', activity.daysGoal);
+      renderGoal('problems', 'problems-lbl', activity.problemsGoal);
+    })();
+
+    // ====================================================================
+    // Library — per-book cards
+    // ====================================================================
     const COVER_CACHE_PREFIX = 'qb-cover:';
 
-    /**
-     * Deterministic fallback color from the title, drawn from the brand orange
-     * ramp (not a random hue) so spines stay on-palette and a book always gets
-     * the same shade. Normalize first: lowercase and keep only letters/numbers
-     * of ANY script, dropping spaces and punctuation, then hash to a ramp step.
-     * Only the darker steps are used so white text stays readable.
-     */
+    /** Unsigned 32-bit rolling hash over a normalized string. Mirrors the
+     *  titleColor pattern; used both for cover color (by title) and the
+     *  celebratory variant (by isbn) so each is deterministic per input. */
+    function rollingHash(str) {
+      const norm = String(str).toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
+      let hash = 0;
+      for (const ch of norm) hash = (hash * 31 + ch.codePointAt(0)) >>> 0;
+      return hash;
+    }
+
     const ORANGE_STEPS = ['--orange-200', '--orange-300', '--orange-400', '--orange-500'];
     function titleColor(title) {
-      const norm = title.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
-      let hash = 0;
-      for (const ch of norm) {
-        hash = (hash * 31 + ch.codePointAt(0)) >>> 0; // unsigned 32-bit rolling hash
-      }
-      const token = ORANGE_STEPS[hash % ORANGE_STEPS.length];
+      const token = ORANGE_STEPS[rollingHash(title) % ORANGE_STEPS.length];
       return `var(${token})`;
     }
 
@@ -142,16 +223,10 @@
       return tile;
     }
 
-    /**
-     * Resolve a cover to a data URL: from localStorage cache if present,
-     * otherwise fetch from Open Library and cache it. Returns null on any
-     * failure (no cover / offline / OL placeholder).
-     */
     async function resolveCover(book) {
       const key = COVER_CACHE_PREFIX + book.isbn;
       const cached = localStorage.getItem(key);
       if (cached) return cached;
-
       const url = `https://covers.openlibrary.org/b/isbn/${book.isbn}-M.jpg?default=false`;
       try {
         const res = await fetch(url);
@@ -171,10 +246,6 @@
       }
     }
 
-    /**
-     * Show the fallback tile immediately, then swap in the real cover once it
-     * resolves (instant when cached). Leaves the fallback in place on failure.
-     */
     async function loadCover(placeholder, book) {
       const dataUrl = await resolveCover(book);
       if (!dataUrl) return; // keep the fallback already on screen
@@ -185,48 +256,118 @@
       placeholder.replaceWith(img);
     }
 
-    const booksHost = document.getElementById('books');
-    // Continue the load-in cascade after the banners (0,1) and library head (2).
-    const ROW_INDEX_OFFSET = 3;
-    data.books.forEach((b, i) => {
-      const row = document.createElement('div');
-      row.className = 'book animate-in';
-      row.style.setProperty('--i', ROW_INDEX_OFFSET + i);
+    // Small inline icons for the action lines (no emoji). The refresh glyph
+    // mirrors the old revisit banner; the play triangle is the learn cue.
+    const ICON_REVISIT =
+      `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+            stroke-linecap="round" stroke-linejoin="round">
+         <path d="M3 12a9 9 0 0 1 15.5-6.2L21 8" /><path d="M21 3v5h-5" />
+         <path d="M21 12a9 9 0 0 1-15.5 6.2L3 16" /><path d="M3 21v-5h5" />
+       </svg>`;
+    const ICON_LEARN =
+      `<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M8 5v14l11-7z" /></svg>`;
 
-      // Render the fallback tile immediately; loadCover swaps in the cover.
+    /** Relative "come back" phrasing from days until the earliest review. */
+    function comeBackText(days) {
+      if (days <= 0) return 'Ready today';
+      if (days === 1) return 'Ready tomorrow';
+      return `Ready in ${days} days`;
+    }
+
+    const booksHost = document.getElementById('books');
+    // Continue the load-in cascade after the activity header (0) and library head (1).
+    const ROW_INDEX_OFFSET = 2;
+
+    data.books.forEach((b, i) => {
+      const card = document.createElement('div');
+      card.className = 'book-card animate-in';
+      card.style.setProperty('--i', ROW_INDEX_OFFSET + i);
+
+      const finished = isFinished(b);
+      if (finished) card.classList.add('finished');
+
+      // ---- Card head: cover + title/author/progress (the view-book target) ----
+      const head = document.createElement('button');
+      head.className = 'bc-head tappable';
+      head.type = 'button';
+
       const placeholder = makeFallback(b);
 
       const text = document.createElement('div');
+      text.className = 'bc-text';
       text.innerHTML = `
-        <div class="b-title2">${b.title}</div>
-        <div class="b-author">${b.author}</div>`;
-      // unwrap the two text divs into the grid
-      const title = text.firstElementChild;
-      const author = title.nextElementSibling;
+        <div class="b-title2"></div>
+        <div class="b-author"></div>`;
+      text.querySelector('.b-title2').textContent = b.title;
+      text.querySelector('.b-author').textContent = b.author;
 
-      const num = document.createElement('div');
-      num.className = 'ready-num' + (b.progress === 0 ? ' none' : '');
-      num.textContent = `${b.progress}%`;
-      const lbl = document.createElement('div');
-      lbl.className = 'ready-lbl' + (b.ready === 0 ? ' none' : '');
-      lbl.textContent = b.ready === 0 ? '—' : `${b.ready} ready`;
+      const prog = document.createElement('div');
+      // 100% reads green (finished); 0% greyed out; otherwise muted.
+      prog.className = 'bc-progress' +
+        (b.progress === 0 ? ' none' : '') +
+        (b.progress === 100 ? ' complete' : '');
+      prog.innerHTML = `<span class="bc-pct"></span><span class="bc-pct-lbl">done</span>`;
+      prog.querySelector('.bc-pct').textContent = `${b.progress}%`;
 
-      row.append(placeholder, title, author, num, lbl);
-      // Tapping a book opens its read-only view (problem list + per-problem
-      // attempt history). The library row is the entry point into a book.
-      row.classList.add('tappable');
-      row.addEventListener('click', () => {
+      head.append(placeholder, text, prog);
+      head.addEventListener('click', () => {
         window.location.href = 'view-book.html?isbn=' + encodeURIComponent(b.isbn);
       });
-      booksHost.appendChild(row);
+      card.appendChild(head);
 
+      // Build a pill: tappable ones are <button>s (own stopPropagation so they
+      // don't trigger the card head's view-book nav); quiet ones are <span>s.
+      function makePill(kind, icon, label, { tappable }) {
+        const el = document.createElement(tappable ? 'button' : 'span');
+        el.className = `bc-pill bc-${kind}` + (tappable ? ' tappable' : '');
+        if (tappable) {
+          el.type = 'button';
+          el.addEventListener('click', (e) => {
+            e.stopPropagation();
+            window.location.href = 'learn.html';
+          });
+        }
+        el.innerHTML = `<span class="bc-pill-icon" aria-hidden="true">${icon}</span><span class="bc-pill-text"></span>`;
+        el.querySelector('.bc-pill-text').textContent = label;
+        return el;
+      }
+
+      // ---- Action pills (revisit + learn) ----
+      // Finished books (100% + nothing due) carry no pills — the green 100% is
+      // the whole story. Everything else gets its revisit/learn pills.
+      if (!finished) {
+        const actions = document.createElement('div');
+        actions.className = 'bc-actions';
+
+        // Revisit pill
+        if (b.dueNow > 0) {
+          actions.appendChild(makePill('revisit', ICON_REVISIT,
+            `${b.dueNow} to revisit`, { tappable: true }));
+        } else if (b.nextReviewInDays != null) {
+          // attempted, none due yet — quiet, non-tappable relative hint.
+          actions.appendChild(makePill('revisit-soon', ICON_REVISIT,
+            comeBackText(b.nextReviewInDays), { tappable: false }));
+        }
+        // (nothing attempted at all → no revisit pill)
+
+        // Learn pill
+        if (b.learnNext) {
+          actions.appendChild(makePill('learn', ICON_LEARN,
+            `Start learning ${b.learnNext}`, { tappable: true }));
+        }
+        // (nothing left to learn → learn pill omitted)
+
+        if (actions.childElementCount > 0) card.appendChild(actions);
+      }
+
+      booksHost.appendChild(card);
       void loadCover(placeholder, b);
     });
 
     document.getElementById('library-edit').addEventListener('click',
       () => { window.location.href = 'manage-books.html'; });
 
-    // Add-book row animates in last, after every book row.
+    // Add-book row animates in last, after every book card.
     const addBook = document.getElementById('add-book');
     addBook.classList.add('animate-in');
     addBook.style.setProperty('--i', ROW_INDEX_OFFSET + data.books.length);
@@ -234,10 +375,10 @@
 
     // Start at the top. The load-in cascade can leave the scroll container (and
     // the page) nudged down on some browsers / on back-forward restore; pin both
-    // to the top so the home screen always opens at the first row.
+    // to the top so the home screen always opens at the activity header.
     if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
-    const library = document.querySelector('.library');
-    requestAnimationFrame(() => { window.scrollTo(0, 0); if (library) library.scrollTop = 0; });
+    const scroller = document.querySelector('.home-scroll');
+    requestAnimationFrame(() => { window.scrollTo(0, 0); if (scroller) scroller.scrollTop = 0; });
   </script>
   <script src="footer.js" defer></script>
 </body>

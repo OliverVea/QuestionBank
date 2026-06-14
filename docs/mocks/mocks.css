@@ -27,6 +27,8 @@
   --revisit-dark: var(--purple-500);
   --learn: var(--green-200);           /* green */
   --learn-dark: var(--green-300);
+  --streak: var(--orange-100);         /* warm streak accent */
+  --streak-dark: var(--orange-200);
   /* --orange-* is the book/accent color used by the add/edit + book screens. */
 
   /* ---- Grade colors (one attempt's outcome) ----

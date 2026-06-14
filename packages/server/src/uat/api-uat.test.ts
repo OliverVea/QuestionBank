@@ -173,7 +173,9 @@ describe('UAT: API flows on the flat problems model', () => {
     expect(edited[1]).toMatchObject({ id: p1.id, canonicalText: 'Differentiate x^3' });
     expect(edited.map((q) => q.id)).not.toContain(p2.id);
 
-    // GET is the render authority and returns the reconciled order matching the last save.
+    // GET is the render authority and returns DERIVED path order (by label): the new
+    // '1' first, then p1 (relabelled '2') — which matches `edited` here since its
+    // labels are already in path order.
     const list = (await request(app).get(`/api/books/${book.id}/questions`)).body;
     expect(list.map((q: { id: string }) => q.id)).toEqual(edited.map((q) => q.id));
 
@@ -303,14 +305,14 @@ describe('UAT: API flows on the flat problems model', () => {
   //    and the count due for review. A freshly-attempted question is not yet
   //    due (SRS gating), so the revisit count stays 0 right after a first grade.
   // -------------------------------------------------------------------------
-  it('Queues: learn/next walks questionIds order; a just-attempted question is not yet practice-due', async () => {
+  it('Queues: learn/next walks derived path order; a just-attempted question is not yet practice-due', async () => {
     const book = await createBook();
     const [first, second] = await saveProblems(book.id, [
       { label: '1', canonicalText: 'first' },
       { label: '2', canonicalText: 'second' },
     ]);
 
-    // learn/next yields the first un-attempted question, in questionIds order.
+    // learn/next yields the first un-attempted question, in derived path order (by label).
     expect((await request(app).get('/api/learn/next')).body.question.id).toEqual(first.id);
 
     // Attempt the first → learn/next advances to the second; the first is not yet due.
@@ -324,6 +326,25 @@ describe('UAT: API flows on the flat problems model', () => {
     // count form backs the revisit banner number.
     expect((await request(app).get('/api/practice/due')).body).toEqual([]);
     expect((await request(app).get('/api/practice/due?count=true')).body).toEqual({ count: 0 });
+  });
+
+  // Display + learn order is DERIVED from the dotted-path label, NOT save order:
+  // save out-of-order and confirm both the questions GET and learn/next re-sort by path.
+  it('Ordering: questions GET and learn/next sort by dotted-path label, not save order', async () => {
+    const book = await createBook();
+    // Saved deliberately out of path order; numeric-aware so 1.A.2 precedes 1.A.10.
+    await saveProblems(book.id, [
+      { label: '2.3', canonicalText: 'chapter-2 loose' },
+      { label: '1.A.10', canonicalText: 'tenth' },
+      { label: '1.A.2', canonicalText: 'second' },
+      { label: '1.B.1', canonicalText: 'b-one' },
+    ]);
+
+    const list = (await request(app).get(`/api/books/${book.id}/questions`)).body;
+    expect(list.map((q: { label: string }) => q.label)).toEqual(['1.A.2', '1.A.10', '1.B.1', '2.3']);
+
+    // learn/next follows the same derived order: the path-first un-attempted problem.
+    expect((await request(app).get('/api/learn/next')).body.question.canonicalText).toEqual('second');
   });
 
   // -------------------------------------------------------------------------

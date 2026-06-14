@@ -1,5 +1,6 @@
 import type { Book, Question } from '../domain/types.js';
 import { activeSkippedIds } from '../routes/skip.js';
+import { compareProblems } from './problem-order.js';
 import type { Store } from '../storage/store.js';
 
 export interface LearnNext {
@@ -9,8 +10,9 @@ export interface LearnNext {
 
 /**
  * The next question to suggest: the first un-attempted question, scanning books in list
- * order and, within each book, in `questionIds` order. Returns undefined when nothing is
- * eligible. Excludes questions with active (non-expired) server-side skips.
+ * order and, within each book, in DERIVED PATH order (compareProblems) so "what to learn
+ * next" follows the book's structure — not the stored questionIds. Returns undefined when
+ * nothing is eligible. Excludes questions with active (non-expired) server-side skips.
  */
 export async function suggestNext(
   store: Store,
@@ -20,16 +22,19 @@ export async function suggestNext(
   const attempted = new Set((await store.attempts.getAll(customerId)).map((a) => a.questionId));
   const skipped = await activeSkippedIds(store, customerId);
   const books = await store.books.getAll(customerId);
-  const questionById = new Map(
-    (await store.questions.getAll(customerId)).map((q) => [q.id, q]),
-  );
+  const allQuestions = await store.questions.getAll(customerId);
+  const byBook = new Map<string, Question[]>();
+  for (const q of allQuestions) {
+    const list = byBook.get(q.bookId);
+    if (list) list.push(q);
+    else byBook.set(q.bookId, [q]);
+  }
 
   for (const book of books) {
-    for (const id of book.questionIds) {
-      if (attempted.has(id)) continue;
-      if (skipped.has(id)) continue;
-      const question = questionById.get(id);
-      if (question === undefined) continue;
+    const ordered = (byBook.get(book.id) ?? []).sort(compareProblems);
+    for (const question of ordered) {
+      if (attempted.has(question.id)) continue;
+      if (skipped.has(question.id)) continue;
       return { question, book };
     }
   }

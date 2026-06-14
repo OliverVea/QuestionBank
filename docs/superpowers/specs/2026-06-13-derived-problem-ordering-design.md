@@ -1,6 +1,20 @@
 # Derived Problem Ordering — Design Spec
 
-**Status:** Draft for review. Supersedes the earlier "chapter numbers + drag-and-drop reorder" request.
+**Status:** Decisions resolved 2026-06-14 (see "Resolved decisions" below). Ready for a plan.
+Supersedes the earlier "chapter numbers + drag-and-drop reorder" request.
+
+## Resolved decisions (2026-06-14)
+
+1. **Sort location: Option B (server-side).** The questions GET returns problems pre-sorted by the
+   comparator; practice/learn enumeration applies the same comparator. Single source of truth.
+2. **No tree endpoint.** The API does NOT return a `buildTree` projection — that gets complicated
+   fast. The BE owns **ordering only**; the FE keeps owning **grouping/presentation** (parsing the
+   dotted path into chapter ▸ section is display logic, done client-side over the pre-sorted list).
+   `buildTree` stays as-is for the extraction pipeline; it may later share the comparator (deferred).
+3. **Numeric-before-alpha** at the same depth (all-digit segments sort ahead of named segments).
+4. **`Book.questionIds[]` stays as storage**, ignored for display order. Membership + reconcile
+   self-heal still use it; the comparator decides order on read. (So `batch-save.ts` need not change
+   its order derivation now — `questionIds` simply stops being the *display* authority.)
 
 **Goal:** Stop storing/honoring an explicit problem order. Always present a book's problems
 ordered by **(path, createdAt, id)** with a natural/numeric-aware comparator. Remove

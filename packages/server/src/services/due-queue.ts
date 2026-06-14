@@ -1,5 +1,6 @@
 import type { Book, Question } from '../domain/types.js';
 import { activeSkippedIds } from '../routes/skip.js';
+import { compareProblems } from './problem-order.js';
 import { scheduleFor, type ReviewSchedule } from './srs.js';
 import type { Store } from '../storage/store.js';
 
@@ -40,12 +41,14 @@ export async function dueQueue(store: Store, customerId: string, now: string): P
     items.push({ question, book, schedule });
   }
 
+  // SRS-urgency surface: most overdue first (nextReviewDate ascending). Path order
+  // is only the tiebreak so items sharing a due date are deterministic.
   items.sort((a, b) =>
     a.schedule.nextReviewDate < b.schedule.nextReviewDate
       ? -1
       : a.schedule.nextReviewDate > b.schedule.nextReviewDate
         ? 1
-        : 0,
+        : compareProblems(a.question, b.question),
   );
   return items;
 }

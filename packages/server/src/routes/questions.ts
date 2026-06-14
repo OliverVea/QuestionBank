@@ -3,6 +3,7 @@ import { newId, nowIso } from '../domain/ids.js';
 import type { Attempt, Question, Relevance } from '../domain/types.js';
 import { requireCustomerId } from '../middleware/resolve-customer.js';
 import { planBatchSave, type IncomingQuestion } from '../services/batch-save.js';
+import { compareProblems } from '../services/problem-order.js';
 import { reconcileQuestionIds } from '../services/reconcile.js';
 import { deriveSummary } from '../services/summary.js';
 import type { Store } from '../storage/store.js';
@@ -57,9 +58,11 @@ export function bookQuestionsRouter(store: Store): Router {
     if (!same) {
       await store.books.update(customerId, bookId, { questionIds: healed });
     }
+    // Display order is DERIVED from the dotted-path label (compareProblems), not
+    // the stored questionIds — which survive only as membership + reconcile state.
     // Enrich each problem with its derived (never-persisted) summary so the
     // read-only book view renders the badge + CI strip from this one fetch.
-    const ordered = orderByIds(healed, questions);
+    const ordered = orderByIds(healed, questions).sort(compareProblems);
     const byQuestion = new Map<string, Attempt[]>();
     for (const a of await store.attempts.getAll(customerId)) {
       const list = byQuestion.get(a.questionId);

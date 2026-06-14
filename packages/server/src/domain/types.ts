@@ -92,6 +92,13 @@ export interface ProblemSummary {
   readiness: Readiness;
   /** Per-attempt grades, oldest first — backs the CI-history strip. */
   grades: Grade[];
+  /**
+   * ISO date the problem next becomes due — present only when readiness is
+   * 'waiting' (a future date). The client renders the relative "Ready in N days"
+   * from it; absent for ready/finalized. ISO (not a day-count) so it can't go
+   * stale if the response is cached or the page sits open past midnight.
+   */
+  nextReviewDate?: string;
 }
 
 /** A question plus its derived summary, as returned by the book-questions list. */

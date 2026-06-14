@@ -1,5 +1,5 @@
 import type { Attempt, Grade, Mastery, ProblemSummary, Readiness } from '../domain/types.js';
-import { scheduleFor } from './srs.js';
+import { scheduleFor, type ReviewSchedule } from './srs.js';
 
 /** Numeric weight per grade for the mastery average. */
 const GRADE_WEIGHT: Record<Grade, number> = { correct: 1, partial: 0.5, incorrect: 0 };
@@ -34,10 +34,11 @@ function masteryFrom(grades: Grade[]): Mastery {
  * Readiness drives the badge color. An excellent problem is graduated ('finalized'),
  * never scheduled. A problem with no attempts is always 'ready' (incl. brand-new).
  * Otherwise the SRS schedule decides: due at/before `now` ⇒ 'ready', else 'waiting'.
+ * `schedule` is the precomputed SRS schedule (null when never attempted) so the
+ * caller can derive it once and also surface its nextReviewDate.
  */
-function readinessFrom(attempts: Attempt[], mastery: Mastery, now: string): Readiness {
+function readinessFrom(schedule: ReviewSchedule | null, mastery: Mastery, now: string): Readiness {
   if (mastery === 'excellent') return 'finalized';
-  const schedule = scheduleFor(attempts, now);
   if (schedule === null) return 'ready';
   return schedule.nextReviewDate <= now ? 'ready' : 'waiting';
 }
@@ -45,7 +46,9 @@ function readinessFrom(attempts: Attempt[], mastery: Mastery, now: string): Read
 /**
  * Derive the full per-problem summary from its attempts. Pure and total: the
  * single source of truth for the status badge + CI-history strip. `attempts` may
- * be in any order; `now` is an ISO timestamp.
+ * be in any order; `now` is an ISO timestamp. `nextReviewDate` is included only
+ * when readiness is 'waiting' (a future due date) — the client renders the
+ * relative "Ready in N days" from it.
  */
 export function deriveSummary(attempts: Attempt[], now: string): ProblemSummary {
   const ordered = [...attempts].sort((a, b) =>
@@ -53,6 +56,12 @@ export function deriveSummary(attempts: Attempt[], now: string): ProblemSummary 
   );
   const grades = ordered.map((a) => a.rating);
   const mastery = masteryFrom(grades);
-  const readiness = readinessFrom(attempts, mastery, now);
-  return { mastery, readiness, grades };
+  const schedule = scheduleFor(attempts, now);
+  const readiness = readinessFrom(schedule, mastery, now);
+  return {
+    mastery,
+    readiness,
+    grades,
+    ...(readiness === 'waiting' && schedule ? { nextReviewDate: schedule.nextReviewDate } : {}),
+  };
 }

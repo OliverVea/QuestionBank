@@ -49,15 +49,90 @@
 .vb-listhead h2 { font-size: 1rem; margin: 0; }
 .vb-listhead .vb-n { font-size: 0.82rem; color: var(--muted); font-weight: 600; }
 
-/* ---- Problem rows ---- */
-.vb-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.6rem; }
+/* ---- Path groups ----
+   The dotted label is fanned out two levels (chapter ▸ section): a group header
+   carries the breadcrumb prefix and toggles its problems open/closed. Browse
+   nicety only — the header never navigates. Groups stack with a little more air
+   than the rows inside them. */
+.vb-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.9rem; }
+.vb-group { display: flex; flex-direction: column; gap: 0.5rem; }
 
+/* Header: tappable breadcrumb + count + caret. Quiet (no card chrome) so it
+   reads as a divider over its rows, not another tappable problem. */
+.vb-group-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  border: none;
+  background: none;
+  font: inherit;
+  text-align: left;
+  padding: 0.25rem 0.3rem 0.25rem 0.1rem;
+  border-radius: 9px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s ease, transform 0.08s ease;
+}
+.vb-group-head:active { transform: scale(0.99); background: var(--surface); }
+@media (hover: hover) { .vb-group-head:hover { background: var(--surface); } }
+
+/* Breadcrumb: the fanned-out path segments. Each level reads a touch quieter
+   than the last (chapter strongest), so depth is felt without a heavy tree. */
+.vb-crumb { display: inline-flex; align-items: center; gap: 0.3rem; min-width: 0; flex: 1; }
+.vb-crumb-seg {
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--fg);
+  white-space: nowrap;
+}
+.vb-crumb-seg.lvl-0 { font-size: 0.98rem; }
+.vb-crumb-seg.lvl-1 { font-size: 0.92rem; color: var(--grey-400); }
+.vb-crumb-seg.lvl-2 { font-size: 0.88rem; color: var(--grey-300); }
+.vb-crumb-seg.lvl-3 { font-size: 0.86rem; color: var(--grey-200); }
+.vb-crumb-seg.lvl-other { font-size: 0.92rem; color: var(--muted); font-weight: 600; }
+.vb-crumb-sep { color: var(--grey-200); font-size: 0.8rem; line-height: 1; }
+
+.vb-group-n {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--muted);
+  background: var(--surface);
+  border-radius: 999px;
+  padding: 0.1rem 0.45rem;
+  min-width: 1.3rem;
+  text-align: center;
+}
+.vb-group-caret {
+  color: var(--grey-200);
+  font-size: 1rem;
+  line-height: 1;
+  transition: transform 0.18s ease;
+}
+
+/* The rows belonging to a group; collapse hides them. Scoped to the group's OWN
+   body (direct child) so collapsing a chapter and collapsing one of its
+   subsections are independent — a subgroup hides via its own .collapsed. */
+.vb-group-rows { display: flex; flex-direction: column; gap: 0.6rem; }
+.vb-group.collapsed > .vb-group-rows,
+.vb-subgroup.collapsed > .vb-group-rows { display: none; }
+.vb-group.collapsed > .vb-group-head .vb-group-caret,
+.vb-subgroup.collapsed > .vb-group-head .vb-group-caret { transform: rotate(-90deg); }
+
+/* Nested subsection (chapter ▸ section): indented a touch, quieter header. */
+.vb-subgroup { display: flex; flex-direction: column; gap: 0.5rem; }
+.vb-group-head.is-sub { padding-left: 0.6rem; }
+.vb-group-head.is-sub .vb-crumb-seg { font-weight: 600; }
+
+/* ---- Problem rows ----
+   The bottom line carries the mastery pill + CI strip on the left and the
+   readiness/timing on the right. */
 .vb-row {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto 1fr auto auto;
   grid-template-areas:
-    "label body chev"
-    "label badge chev";
+    "label body  body  chev"
+    "label badge ready chev";
   column-gap: 0.6rem;
   row-gap: 0.4rem;
   align-items: center;
@@ -74,6 +149,8 @@
 .vb-row:active { transform: scale(0.99); background: var(--surface); }
 @media (hover: hover) { .vb-row:hover { background: var(--surface); } }
 
+/* The label chip carries the full dotted shortcode — a neutral identifier. The
+   green "how established" tint lives on the mastery pill, not here. */
 .vb-label {
   grid-area: label;
   align-self: center;
@@ -82,6 +159,7 @@
   color: var(--muted);
   background: var(--surface);
   border-radius: 7px;
+  white-space: nowrap;
   padding: 0.3rem 0.4rem;
   min-width: 2.4rem;
   text-align: center;
@@ -98,7 +176,7 @@
 }
 .vb-body .qbody-display { overflow-x: auto; max-width: 100%; }
 
-/* status badge + CI strip share the second line under the problem text */
+/* mastery pill + CI strip share the bottom-left of the row. */
 .vb-badge-row {
   grid-area: badge;
   display: flex;
@@ -107,5 +185,20 @@
   min-width: 0;
 }
 .vb-badge-row .ci-strip { flex-wrap: wrap; }
+
+/* Readiness / timing, bottom-right: when the problem next comes up.
+   ready = act now (purple), waiting = relative "Ready in N days" (grey),
+   finalized = graduated (green, but rendered empty — no next). */
+.vb-ready {
+  grid-area: ready;
+  justify-self: end;
+  align-self: center;
+  font-size: 0.74rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.vb-ready.r-ready { color: var(--ready); }
+.vb-ready.r-waiting { color: var(--muted); font-weight: 600; }
+.vb-ready.r-finalized { color: var(--finalized); }
 
 .vb-chev { grid-area: chev; align-self: center; color: var(--grey-200); font-size: 1.3rem; line-height: 1; }

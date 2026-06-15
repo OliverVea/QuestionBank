@@ -1,0 +1,18 @@
+/* Mastery word as a pill (New / Improving / Strong / Excellent). Tinted by a
+   green ramp — deeper green = better established. Ported from the mock's
+   .vb-mastery est-* rules. */
+.mastery-pill {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.16rem 0.5rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.mastery-pill.est-new       { background: var(--surface); color: var(--muted); }
+.mastery-pill.est-improving { background: color-mix(in srgb, var(--learn-dark) 14%, var(--surface)); color: var(--green-300); }
+.mastery-pill.est-strong    { background: color-mix(in srgb, var(--learn-dark) 32%, var(--surface)); color: var(--green-300); }
+.mastery-pill.est-excellent { background: color-mix(in srgb, var(--learn-dark) 55%, var(--surface)); color: #fff; }

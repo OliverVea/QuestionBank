@@ -19,6 +19,8 @@ export interface ProblemSummary {
   readiness: Readiness;
   /** Per-attempt grades, oldest first — backs the CI-history strip. */
   grades: Grade[];
+  /** ISO date the problem next becomes due — present only when readiness is 'waiting'. */
+  nextReviewDate?: string;
 }
 
 export type IssueSeverity = 'critical' | 'medium' | 'minor';

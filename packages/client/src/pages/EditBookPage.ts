@@ -254,8 +254,11 @@ export function EditBookPage(): HTMLElement {
     try {
       // Persist, then resync the in-memory rows to the server's saved list so the new
       // problems carry their assigned ids (otherwise a later manual Save would re-create
-      // them as duplicates and delete the originals).
-      const saved = await putProblems();
+      // them as duplicates and delete the originals). Re-fetch the GET (not the PUT
+      // response) so the rows land in DERIVED path order — the PUT echoes questionIds
+      // (insertion) order, which would show a scanned problem out of place.
+      await putProblems();
+      const saved: Question[] = await fetch(`/api/books/${bookId}/questions`).then((r) => r.json());
       const validRelevance = new Set<string>(['high', 'medium', 'low']);
       problemsList.setProblems(
         saved.map((q) => {

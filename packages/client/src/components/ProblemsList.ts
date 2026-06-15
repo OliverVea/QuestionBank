@@ -67,7 +67,6 @@ export function ProblemsList({ problems = [], onChange, getLearningGoal, bookId 
     rows.push(handle);
     rowIds.push(problem.id);
     list.appendChild(handle.el);
-    makeDraggable(handle);
     renumber();
     if (focus) handle.enterEdit();
   }
@@ -79,72 +78,6 @@ export function ProblemsList({ problems = [], onChange, getLearningGoal, bookId 
     rowIds.length = 0;
     for (const p of next) addRow(p);
     renumber();
-  }
-
-  function makeDraggable(row: ProblemRowHandle) {
-    const dragHandle = row.el.querySelector('.pr-handle') as HTMLElement;
-    if (!dragHandle) return;
-
-    dragHandle.addEventListener('pointerdown', (e) => {
-      e.preventDefault();
-      const startRect = row.el.getBoundingClientRect();
-      const grabOffsetY = e.clientY - startRect.top;
-      let moved = false;
-
-      const spacer = document.createElement('li');
-      spacer.className = 'pr-spacer';
-      spacer.style.height = startRect.height + 'px';
-      list.insertBefore(spacer, row.el);
-
-      row.el.classList.add('dragging');
-      row.el.style.width = startRect.width + 'px';
-      row.el.style.left = startRect.left + 'px';
-      row.el.style.top = startRect.top + 'px';
-      dragHandle.setPointerCapture(e.pointerId);
-
-      const onMove = (ev: PointerEvent) => {
-        if (!moved && Math.abs(ev.clientY - startRect.top - grabOffsetY) > 3) moved = true;
-        row.el.style.top = (ev.clientY - grabOffsetY) + 'px';
-        const dragCenter = ev.clientY - grabOffsetY + startRect.height / 2;
-        const others = [...list.querySelectorAll('.pr-row:not(.dragging)')] as HTMLElement[];
-        let placed = false;
-        for (const other of others) {
-          const box = other.getBoundingClientRect();
-          if (dragCenter < box.top + box.height / 2) {
-            if (spacer.nextElementSibling !== other) list.insertBefore(spacer, other);
-            placed = true;
-            break;
-          }
-        }
-        if (!placed && list.lastElementChild !== spacer) list.appendChild(spacer);
-      };
-
-      const onUp = (ev: PointerEvent) => {
-        dragHandle.releasePointerCapture(ev.pointerId);
-        list.insertBefore(row.el, spacer);
-        spacer.remove();
-        row.el.classList.remove('dragging');
-        row.el.style.width = '';
-        row.el.style.left = '';
-        row.el.style.top = '';
-        // Sync rows and rowIds arrays to match the new DOM order.
-        const children = [...list.children];
-        const order = rows.map((r) => children.indexOf(r.el));
-        const sortedRows = rows.map((_, i) => ({ row: rows[i]!, id: rowIds[i], order: order[i]! }));
-        sortedRows.sort((a, b) => a.order - b.order);
-        rows.length = 0;
-        rowIds.length = 0;
-        for (const s of sortedRows) { rows.push(s.row); rowIds.push(s.id); }
-        if (moved) notify();
-        dragHandle.removeEventListener('pointermove', onMove);
-        dragHandle.removeEventListener('pointerup', onUp);
-        dragHandle.removeEventListener('pointercancel', onUp);
-      };
-
-      dragHandle.addEventListener('pointermove', onMove);
-      dragHandle.addEventListener('pointerup', onUp);
-      dragHandle.addEventListener('pointercancel', onUp);
-    });
   }
 
   // --- Scan problems: navigate to the scan page ---
@@ -233,7 +166,6 @@ export function ProblemsList({ problems = [], onChange, getLearningGoal, bookId 
     old.el.replaceWith(handle.el);
     rows[i] = handle;
     rowIds[i] = id;
-    makeDraggable(handle);
     renumber();
   }
 

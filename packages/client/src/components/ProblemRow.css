@@ -8,29 +8,6 @@
   transition: opacity 0.15s ease, box-shadow 0.15s ease;
 }
 
-.pr-row.dragging {
-  position: fixed;
-  z-index: 100;
-  opacity: 0.9;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-  background: var(--bg);
-  border-radius: 8px;
-  border: 1px solid var(--border);
-}
-
-.pr-handle {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  cursor: grab;
-  color: var(--muted);
-  touch-action: none;
-  padding: 0.3rem;
-}
-
-.pr-handle:active { cursor: grabbing; }
-.pr-handle svg { width: 1.1rem; height: 1.1rem; }
-
 .pr-label {
   flex: none;
   width: 2.8rem;
@@ -105,10 +82,3 @@
 
 .pr-del:hover { color: #e74c3c; background: rgba(231, 76, 60, 0.08); }
 .pr-del svg { width: 1.1rem; height: 1.1rem; }
-
-.pr-spacer {
-  list-style: none;
-  border: 2px dashed var(--border);
-  border-radius: 8px;
-  opacity: 0.5;
-}

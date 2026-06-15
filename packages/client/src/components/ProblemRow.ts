@@ -60,13 +60,6 @@ export function ProblemRow({ label, latex, relevance, onChange, onDelete }: Prob
     if (relevanceSelect.value) relevanceSelect.classList.add(`rel-${relevanceSelect.value}`);
   }
 
-  const handle = html`<span class="pr-handle" aria-label="Drag to reorder">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <path d="M8 6h.01M8 12h.01M8 18h.01M16 6h.01M16 12h.01M16 18h.01" />
-    </svg>
-  </span>`;
-
   const del = html`<button class="pr-del" type="button" aria-label="Delete problem">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
          stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -77,7 +70,6 @@ export function ProblemRow({ label, latex, relevance, onChange, onDelete }: Prob
   </button>`;
 
   const row = html`<li class="pr-row">
-    ${handle}
     ${labelInput}
     ${latexEditor}
     ${relevanceSelect}

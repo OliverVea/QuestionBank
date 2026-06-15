@@ -103,3 +103,32 @@ export interface ProblemSummary {
 
 /** A question plus its derived summary, as returned by the book-questions list. */
 export type QuestionWithSummary = Question & { summary: ProblemSummary };
+
+/** Per-book derived aggregate for the landing read model (never persisted). */
+export interface BookSummary {
+  /** 0–100, mastery-weighted mean across the book's problems (0 when no problems). */
+  progress: number;
+  /** Count of the book's problems that are 'ready' and NOT actively skipped. */
+  dueNow: number;
+  /** ISO date of the earliest upcoming review among 'waiting' problems; null if none. */
+  nextReviewDate: string | null;
+  /** Next un-attempted problem (derived path order); null if nothing left to learn. */
+  learnNext: { label: string; pathPrefix: string } | null;
+}
+
+/** A book plus its landing summary, as returned by GET /api/books/summaries. */
+export type BookWithSummary = Book & { summary: BookSummary };
+
+/** Global activity metrics for the landing header (never persisted). */
+export interface Activity {
+  /** Consecutive calendar days ending today/yesterday with ≥1 attempt. */
+  streak: number;
+  /** Distinct active days within the rolling last-7-day window. */
+  daysActive: number;
+  /** Attempt count within the rolling last-7-day window. */
+  problemsThisWeek: number;
+  /** Hardcoded cadence target (days/week). */
+  daysGoal: number;
+  /** Hardcoded volume target (problems/week). */
+  problemsGoal: number;
+}

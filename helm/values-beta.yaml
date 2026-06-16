@@ -1,11 +1,32 @@
+# BETA profile for QuestionBank.
+#
+# Same self-sufficient shape as values-minimal.yaml — NO public Ingress and NO
+# Authentik forward-auth: routing and the auth SYSTEM are owned by the separate
+# Olve.Homelab pipeline, not by this app's deploy. Beta is reachable in-cluster via
+# the ClusterIP Service (.pipelines/scripts/deploy-beta.sh passes `-f values-beta.yaml`).
+#
+# Beta differs from minimal in ONE way: it wires its OWN Anthropic key so the LLM
+# routes (extract/transcribe/grade) are exercisable on beta. The minimal/prod profile
+# deliberately runs credential-free; beta does not.
+
+# No ingress in this profile — Olve.Homelab owns routing.
 ingress:
-  host: questionbank-beta.ovea.pro
-  forwardAuthMiddleware: "infra-beta-authentik-forward-auth@kubernetescrd"
-  # Beta stays Tailscale-only; override the public-via-Cloudflare defaults
-  # inherited from values.yaml.
-  externalDnsTarget: "100.100.117.17"
-  clusterIssuer: letsencrypt-prod
-  tls:
-    enabled: true
-    secretName: ""
-  annotations: {}
+  enabled: false
+
+# Strict multi-tenant: without an injected X-authentik-uid header (nothing injects it
+# here), /api/* returns 401 while /api/health stays open. Callers (e.g. the
+# after-beta smoke suite) supply their own X-authentik-uid header per request.
+config:
+  NODE_ENV: "production"
+  PORT: "3001"
+  QB_DATA_DIR: "/data"
+  QB_CUSTOMER_HEADER: "X-authentik-uid"
+  QB_ALLOW_DEFAULT_CUSTOMER: "0"
+
+# Beta has its OWN Anthropic key (k8s secret questionbank-secrets in apps-beta,
+# created out-of-band) so LLM routes work on beta. This is the one place beta
+# diverges from the credential-free minimal profile.
+secrets:
+  - name: questionbank-secrets
+    envMap:
+      ANTHROPIC_API_KEY: anthropic-api-key

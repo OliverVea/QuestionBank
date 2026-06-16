@@ -31,10 +31,10 @@ cat "${INPUT_DIR}image.tar" | ssh -o StrictHostKeyChecking=no "$HOST" \
 ssh -o StrictHostKeyChecking=no "$HOST" "rm -rf /tmp/$RELEASE-helm-beta"
 scp -o StrictHostKeyChecking=no -r "${INPUT_DIR}helm" "$HOST:/tmp/$RELEASE-helm-beta"
 
-# Helm upgrade with BETA values (values-beta.yaml: Tailscale-only ingress +
-# infra-beta-authentik-forward-auth). pullPolicy=Never — the image is local to the
-# node. Beta deliberately keeps the auth profile (its ingress injects
-# X-authentik-uid); the minimal-profile split applies to PROD, not beta.
+# Helm upgrade with BETA values (values-beta.yaml: minimal/self-sufficient — NO
+# ingress, NO forward-auth — but with beta's own Anthropic key for LLM routes).
+# pullPolicy=Never — the image is local to the node. Routing + the auth system are
+# owned by the separate Olve.Homelab pipeline; beta is reachable in-cluster only.
 ssh -o StrictHostKeyChecking=no "$HOST" \
   "helm upgrade --install $RELEASE /tmp/$RELEASE-helm-beta -n apps-beta \
      -f /tmp/$RELEASE-helm-beta/values-beta.yaml \
@@ -49,8 +49,7 @@ ssh -o StrictHostKeyChecking=no "$HOST" \
   "kubectl -n apps-beta rollout status deploy/$RELEASE --timeout=120s"
 
 # Health-gate the in-cluster Service directly FROM THIS POD (NOT over ssh on the
-# host, which can't resolve *.svc.cluster.local; NOT a public hostname, which would
-# 401/redirect through the ingress forward-auth). /api/health is open.
+# host, which can't resolve *.svc.cluster.local). /api/health is open (no auth).
 echo "Verifying beta /api/health..."
 for i in 1 2 3 4 5; do
   if curl -sf -o /dev/null http://questionbank.apps-beta.svc.cluster.local/api/health; then

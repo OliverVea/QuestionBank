@@ -1,0 +1,87 @@
+# In-repo CD pipeline for QuestionBank (Olve.Pipelines GitOps).
+#
+# This file is the single source of truth for how this app is built, tested, and
+# deployed. The pipeline is bound to this repo; the controller reconciles the live
+# pipeline to match this file (poll ~60s) and pushing a commit to `master`
+# auto-deploys — the deploy trigger is derived from the repo binding, so no
+# `triggers:` block is needed here (that list is purely additive).
+#
+# Shape (what the user asked for):
+#
+#   PRODUCTION (parallel — BOTH must succeed or NO deploy runs; a failed
+#   production step blocks every processing step, verified by the controller test
+#   `ProductionGroupFailed_NoProcessingTriggered`):
+#     - packaging        Kaniko build → image.tar + helm chart + version into the bundle
+#     - in-code-testing   npm ci → typecheck → offline unit/UAT suite (FakeProvider, no network)
+#
+#   PROCESSING (sequential — each gates the next):
+#     0. deploy-beta        deploy to apps-beta, wait for rollout, health-gate
+#     1. test-after-beta    HTTP smoke vs the LIVE beta Service (LLM-free, isolated tenant)
+#     2. deploy             deploy to prod (apps) in the MINIMAL profile
+#
+# Profile split (Tier-A decoupling, mirrors Olve.Pipelines):
+#   This pipeline deploys QuestionBank in a SELF-SUFFICIENT MINIMAL profile —
+#   no public Ingress, no Authentik forward-auth, reachable in-cluster only.
+#   The app's routing (Cloudflare ingress) and the Authentik auth SYSTEM are owned
+#   by the separate Olve.Homelab pipeline, which deploys them as separate k8s
+#   resources (no helm-release conflict). The app flipping ITSELF on/off
+#   (QB_ALLOW_DEFAULT_CUSTOMER) is a deploy-time value this pipeline owns — see the
+#   QB_PROD_ALLOW_DEFAULT_CUSTOMER secret below.
+#
+# Secrets are declared by NAME only; values live in this pipeline's own k8s secret
+# (olve-pipeline-{id}) and never in the repo. Steps reference them as ordinary env
+# vars ($GITHUB_TOKEN, etc.) — they are mounted into every job.
+apiVersion: "0.0"
+name: questionbank
+description: Build + test, deploy to homelab (beta gates prod) with Helm, minimal profile.
+version: "1"
+
+secrets:
+  - name: GITHUB_TOKEN
+    description: GitHub read token used to fetch the repo tarball in every step.
+  - name: SSH_PRIVATE_KEY
+    description: SSH key for importing the image and running helm on the homelab host.
+  # NOT a real secret — it is a per-pipeline OPERATIONAL TOGGLE riding the secret
+  # mechanism on purpose. A step env var here would be gitops (reconcile would
+  # diff/overwrite it, so changing it would need a commit); only a declared secret
+  # can be updated per-pipeline via the secrets API WITHOUT a commit and is never
+  # pruned by reconcile. So the prod tenancy switch lives here.
+  #
+  # Controls QuestionBank's prod (minimal-profile) tenancy:
+  #   "0" (DEFAULT, incl. when UNSET) — strict multi-tenant: no X-authentik-uid
+  #        header ⇒ 401 on /api/*. Prod is reachable in-cluster but its data surface
+  #        stays gated until Olve.Homelab wires the Authentik forward-auth + ingress.
+  #   "1" — single default tenant: prod is fully usable in-cluster as one tenant
+  #        before Homelab is wired (use for an internal-only / pre-auth prod).
+  # The deploy step coerces unset→"0" (--set ...=${QB_PROD_ALLOW_DEFAULT_CUSTOMER:-0})
+  # AND values-minimal.yaml baselines it to "0", so unset can never mean "allow".
+  - name: QB_PROD_ALLOW_DEFAULT_CUSTOMER
+    description: Prod tenancy toggle ("0"=strict default, "1"=single default tenant). Unset⇒"0".
+
+# Production steps run in parallel and write to bundle/<step-name>/. BOTH must
+# succeed before any processing (deploy) step runs.
+productionSteps:
+  - name: packaging
+    configuration:
+      image: gcr.io/kaniko-project/executor:debug
+      scriptFile: scripts/package.sh
+  - name: in-code-testing
+    configuration:
+      image: node:22
+      scriptFile: scripts/test-in-code.sh
+
+# Processing steps run sequentially (order = list position), each receiving the
+# bundle. deploy-beta gates test-after-beta gates deploy (prod).
+processingSteps:
+  - name: deploy-beta
+    configuration:
+      image: alpine:latest
+      scriptFile: scripts/deploy-beta.sh
+  - name: test-after-beta
+    configuration:
+      image: node:22
+      scriptFile: scripts/test-after-beta.sh
+  - name: deploy
+    configuration:
+      image: alpine:latest
+      scriptFile: scripts/deploy.sh

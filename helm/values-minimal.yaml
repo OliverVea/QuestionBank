@@ -1,0 +1,36 @@
+# MINIMAL / self-sufficient profile for QuestionBank (Tier-A decoupling).
+#
+# This profile deploys the app + its own deps ONLY: no public Ingress, no Authentik
+# forward-auth, reachable in-cluster via the ClusterIP Service. It is what the
+# QuestionBank self-deploy pipeline's prod stage uses (.pipelines/scripts/deploy.sh
+# passes `-f values-minimal.yaml`), and what a cold `pl install`-style bring-up
+# would use.
+#
+# The shared infrastructure this app CONSUMES — Cloudflare ingress/DNS routing and
+# the Authentik auth SYSTEM — is owned by the separate Olve.Homelab pipeline, which
+# deploys it as separate k8s resources (no helm-release conflict). The app flipping
+# ITSELF on (pointing at that auth) is a deploy-time value this pipeline owns:
+# QB_ALLOW_DEFAULT_CUSTOMER, baselined to "0" here and overridable per-deploy via
+# --set (driven by the QB_PROD_ALLOW_DEFAULT_CUSTOMER pipeline secret).
+
+# No public ingress in the minimal profile — Olve.Homelab owns routing.
+ingress:
+  enabled: false
+
+# Tenancy/auth defaults for an auth-OFF deploy. "0" = strict multi-tenant: without
+# an X-authentik-uid header (nothing injects it here), /api/* returns 401 while
+# /api/health stays open. The deploy step can override via
+# --set config.QB_ALLOW_DEFAULT_CUSTOMER=... (pipeline-owned toggle); baselining "0"
+# here guarantees unset can never silently fall back to the Dockerfile's "1".
+config:
+  NODE_ENV: "production"
+  PORT: "3001"
+  QB_DATA_DIR: "/data"
+  QB_CUSTOMER_HEADER: "X-authentik-uid"
+  QB_ALLOW_DEFAULT_CUSTOMER: "0"
+
+# No LLM secret wired in the minimal profile (no real ANTHROPIC_API_KEY): keep the
+# self-sufficient deploy free of external-credential dependencies. LLM routes are
+# unavailable until a profile that mounts the secret is used. Override `secrets`
+# in a richer profile (or via Olve.Homelab) to enable them.
+secrets: []

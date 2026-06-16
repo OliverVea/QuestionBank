@@ -44,7 +44,10 @@ export function summarizeBooks(
       const summary = deriveSummary(qAttempts, now);
       weightSum += MASTERY_WEIGHT[summary.mastery];
 
-      if (summary.readiness === 'ready' && !skippedIds.has(q.id)) dueNow += 1;
+      // "Revisit" means previously seen: a never-attempted problem is 'ready' but is
+      // NOT due-for-revisit (it's learn material). Require ≥1 attempt so dueNow matches
+      // the revisit queue (dueQueue) the card's pill links to — never-attempted are excluded there.
+      if (summary.readiness === 'ready' && qAttempts.length > 0 && !skippedIds.has(q.id)) dueNow += 1;
       if (summary.nextReviewDate && (earliestNext === null || summary.nextReviewDate < earliestNext)) {
         earliestNext = summary.nextReviewDate;
       }

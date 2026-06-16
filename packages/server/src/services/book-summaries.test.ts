@@ -41,6 +41,15 @@ describe('summarizeBooks', () => {
     expect(skipped[0]!.summary.dueNow).toBe(1);
   });
 
+  it('dueNow excludes never-attempted problems (they are learn material, not revisit)', () => {
+    const b = book('b', ['q1', 'q2']);
+    const qs = [q('q1', 'b', '1'), q('q2', 'b', '2')];
+    // q1 attempted-and-due (ready); q2 never attempted (also 'ready', but not revisit).
+    const attempts = [attempt('q1', 'correct', 10)];
+    const [s] = summarizeBooks([b], qs, attempts, new Set(), NOW);
+    expect(s!.summary.dueNow).toBe(1); // only q1 — q2 is new, excluded
+  });
+
   it('nextReviewDate is the earliest among waiting problems; null when none waiting', () => {
     const b = book('b', ['q1', 'q2']);
     const qs = [q('q1', 'b', '1'), q('q2', 'b', '2')];

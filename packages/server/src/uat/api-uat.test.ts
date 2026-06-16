@@ -367,9 +367,10 @@ describe('UAT: API flows on the flat problems model', () => {
     const mine = summaries.find((b: { id: string }) => b.id === book.id);
     expect(mine.summary.progress).toBeGreaterThan(0);                 // one improving/strong problem
     expect(mine.summary.learnNext).toEqual({ label: '1.A.2', pathPrefix: '1' }); // second is next
-    // dueNow counts 'ready' problems: the freshly-attempted `first` is scheduled into the
-    // future (waiting, not counted), but the un-attempted `second` is brand-new ⇒ ready ⇒ 1.
-    expect(mine.summary.dueNow).toBe(1);
+    // dueNow = attempted-and-due (matches the revisit queue): `first` is freshly attempted
+    // (scheduled into the future ⇒ waiting), `second` is never-attempted (learn material, not
+    // revisit). Neither is due-for-revisit ⇒ 0.
+    expect(mine.summary.dueNow).toBe(0);
     void second;
 
     const activity = (await request(app).get('/api/activity')).body;

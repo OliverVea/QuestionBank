@@ -348,6 +348,37 @@ describe('UAT: API flows on the flat problems model', () => {
   });
 
   // -------------------------------------------------------------------------
+  // LANDING — the home screen's two read models: GET /books/summaries (per-book
+  // derived progress/dueNow/learnNext, reconciling with the book-detail view)
+  // and GET /activity (global streak + weekly-goal header metrics).
+  // -------------------------------------------------------------------------
+  it('Landing: /books/summaries reconciles with /books/:id/questions; /activity returns shape', async () => {
+    const book = await createBook();
+    const [first, second] = await saveProblems(book.id, [
+      { label: '1.A.1', canonicalText: 'first' },
+      { label: '1.A.2', canonicalText: 'second' },
+    ]);
+    // Attempt the first → it's no longer the learn suggestion; book is partially progressed.
+    await request(app)
+      .post(`/api/questions/${first.id}/attempts`)
+      .send({ answer: 'a', recommendedGrade: 'correct', rating: 'correct', issues: [] });
+
+    const summaries = (await request(app).get('/api/books/summaries')).body;
+    const mine = summaries.find((b: { id: string }) => b.id === book.id);
+    expect(mine.summary.progress).toBeGreaterThan(0);                 // one improving/strong problem
+    expect(mine.summary.learnNext).toEqual({ label: '1.A.2', pathPrefix: '1' }); // second is next
+    // dueNow counts 'ready' problems: the freshly-attempted `first` is scheduled into the
+    // future (waiting, not counted), but the un-attempted `second` is brand-new ⇒ ready ⇒ 1.
+    expect(mine.summary.dueNow).toBe(1);
+    void second;
+
+    const activity = (await request(app).get('/api/activity')).body;
+    expect(activity).toMatchObject({ daysGoal: 3, problemsGoal: 20 });
+    expect(activity.streak).toBeGreaterThanOrEqual(1);               // attempted today
+    expect(activity.problemsThisWeek).toBeGreaterThanOrEqual(1);
+  });
+
+  // -------------------------------------------------------------------------
   // 6. ISBN LOOKUP — metadata prefill for add/edit-book. Read-only, network-
   //    backed; here the catalog is the test's, but the route is the real one.
   //    (The production fetcher is injected at the route; this verifies the

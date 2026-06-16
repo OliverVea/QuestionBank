@@ -2,8 +2,10 @@ import { Router } from 'express';
 import { newId, nowIso } from '../domain/ids.js';
 import type { Book } from '../domain/types.js';
 import { requireCustomerId } from '../middleware/resolve-customer.js';
+import { summarizeBooks } from '../services/book-summaries.js';
 import { deleteBookCascade } from '../services/cascade.js';
 import type { Store } from '../storage/store.js';
+import { activeSkippedIds } from './skip.js';
 
 /** Trim a string body field; returns undefined when not a non-empty string. */
 function trimmed(value: unknown): string | undefined {
@@ -55,6 +57,17 @@ export function booksRouter(store: Store): Router {
     const valid = [...new Set(bookIds as string[])].filter((id) => owned.has(id));
     await store.books.reorder(customerId, valid);
     res.status(204).end();
+  });
+
+  router.get('/summaries', async (req, res) => {
+    const customerId = requireCustomerId(req);
+    const [books, questions, attempts, skipped] = await Promise.all([
+      store.books.getAll(customerId),
+      store.questions.getAll(customerId),
+      store.attempts.getAll(customerId),
+      activeSkippedIds(store, customerId),
+    ]);
+    res.json(summarizeBooks(books, questions, attempts, skipped, nowIso()));
   });
 
   router.get('/:id', async (req, res) => {

@@ -34,12 +34,13 @@
 .bc-head:active { background: var(--surface); }
 @media (hover: hover) { .bc-head:hover { background: var(--surface); } }
 
-/* CoverSlot renders into .cover-slot; size it into the icon column. */
+/* CoverSlot renders into .cover-slot; size it into the icon column as a book-shaped
+   spine (~2:3), not the square the fixed 64px box was forcing. */
 .bc-head .cover-slot {
   grid-area: icon;
   align-self: center;
   justify-self: center;
-  width: 64px;
+  width: 48px;
   height: 68px;
   border-radius: 3px;
   box-shadow: 3px 4px 7px rgba(0, 0, 0, 0.3);

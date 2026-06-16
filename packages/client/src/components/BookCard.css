@@ -1,0 +1,112 @@
+/* Per-book card — head (cover + title + progress) opens the book; folded-in
+   revisit/learn pills replace the old global banners. Ported from the mock's
+   .book-card / .bc-* rules (docs/mocks/single-screen.css). */
+.book-card {
+  border-bottom: 1px solid var(--border);
+  padding: 0.4rem 0 0.7rem;
+}
+.book-card.finished {
+  background: color-mix(in srgb, var(--learn) 9%, var(--bg));
+}
+.book-card.finished .bc-head:active,
+.book-card.finished .bc-head:hover {
+  background: color-mix(in srgb, var(--learn) 16%, var(--bg));
+}
+.book-card.finished .b-title2 { color: var(--learn-dark); }
+
+.bc-head {
+  display: grid;
+  grid-template-columns: 64px 1fr auto;
+  grid-template-areas: "icon text progress";
+  column-gap: 1rem;
+  align-items: center;
+  width: 100%;
+  border: none;
+  background: none;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  padding: 0.5rem 1.25rem;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s ease;
+}
+.bc-head:active { background: var(--surface); }
+@media (hover: hover) { .bc-head:hover { background: var(--surface); } }
+
+/* CoverSlot renders into .cover-slot; size it into the icon column. */
+.bc-head .cover-slot {
+  grid-area: icon;
+  align-self: center;
+  justify-self: center;
+  width: 64px;
+  height: 68px;
+  border-radius: 3px;
+  box-shadow: 3px 4px 7px rgba(0, 0, 0, 0.3);
+  flex: none;
+}
+
+.bc-text { grid-area: text; min-width: 0; }
+.bc-text .b-title2 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.bc-text .b-author { font-size: 0.85rem; color: var(--muted); margin-top: 0.15rem; }
+
+.bc-progress {
+  grid-area: progress;
+  justify-self: end;
+  text-align: right;
+  line-height: 1.05;
+}
+.bc-pct { display: block; font-size: 1.05rem; font-weight: 700; color: var(--muted); }
+.bc-pct-lbl {
+  display: block;
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin-top: 0.1rem;
+}
+.bc-progress.none .bc-pct,
+.bc-progress.none .bc-pct-lbl { color: var(--border); }
+.bc-progress.complete .bc-pct,
+.bc-progress.complete .bc-pct-lbl { color: var(--learn-dark); }
+
+.bc-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0.15rem 1.25rem 0.2rem calc(1.25rem + 64px + 1rem);
+}
+.bc-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--fg);
+  padding: 0.3rem 0.65rem;
+  border-radius: 999px;
+  line-height: 1;
+}
+.bc-pill .bc-pill-icon { flex: none; width: 0.9rem; height: 0.9rem; line-height: 0; }
+.bc-pill .bc-pill-icon svg { width: 100%; height: 100%; display: block; }
+.bc-pill .bc-pill-text { white-space: nowrap; }
+.bc-pill.tappable {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.08s ease, filter 0.12s ease, background 0.12s ease;
+}
+.bc-pill.tappable:active { transform: scale(0.97); }
+.bc-revisit { color: #fff; background: var(--revisit); border-color: var(--revisit-dark); }
+.bc-learn { color: #fff; background: var(--learn); border-color: var(--learn-dark); }
+@media (hover: hover) {
+  .bc-revisit:hover, .bc-learn:hover { filter: brightness(1.06); }
+}
+.bc-revisit-soon { color: var(--muted); background: var(--bg); }

@@ -8,12 +8,11 @@ const activity: Activity = {
 
 const future = new Date(Date.now() + 3 * 86_400_000).toISOString();
 const books: BookWithSummary[] = [
-  { id: 'b1', customerId: 'local', title: 'Quantum', author: 'Griffiths', isbn: '9781107179868',
-    questionIds: [], createdAt: '2026-01-01T00:00:00Z',
+  { id: 'b1', title: 'Quantum', author: 'Griffiths', isbn: '9781107179868',
     summary: { progress: 42, dueNow: 7, nextReviewDate: null, learnNext: { label: '3.1', pathPrefix: '3' } } },
-  { id: 'b2', customerId: 'local', title: 'Calculus', questionIds: [], createdAt: '2026-01-01T00:00:00Z',
+  { id: 'b2', title: 'Calculus',
     summary: { progress: 68, dueNow: 0, nextReviewDate: future, learnNext: { label: '5.B.1', pathPrefix: '5' } } },
-  { id: 'b3', customerId: 'local', title: 'Done Book', questionIds: [], createdAt: '2026-01-01T00:00:00Z',
+  { id: 'b3', title: 'Done Book',
     summary: { progress: 100, dueNow: 0, nextReviewDate: null, learnNext: null } },
 ];
 

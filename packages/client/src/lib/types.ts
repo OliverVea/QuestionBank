@@ -60,3 +60,22 @@ export interface Book {
   publisher?: string;
   year?: number;
 }
+
+/** Per-book landing summary, from GET /api/books/summaries. Mirrors the server. */
+export interface BookSummary {
+  progress: number;
+  dueNow: number;
+  nextReviewDate: string | null;
+  learnNext: { label: string; pathPrefix: string } | null;
+}
+
+export type BookWithSummary = Book & { summary: BookSummary };
+
+/** Global activity metrics, from GET /api/activity. Mirrors the server. */
+export interface Activity {
+  streak: number;
+  daysActive: number;
+  problemsThisWeek: number;
+  daysGoal: number;
+  problemsGoal: number;
+}

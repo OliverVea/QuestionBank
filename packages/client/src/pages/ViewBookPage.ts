@@ -6,6 +6,7 @@ import { MasteryPill } from '@/components/MasteryPill';
 import { CiStrip } from '@/components/CiStrip';
 import { renderLatex } from '@/lib/latex';
 import { groupByPath, chapterTotal, type Chapter, type IndexedProblem } from '@/lib/problem-grouping';
+import { daysUntil } from '@/lib/dates';
 import type { Book, QuestionWithSummary } from '@/lib/types';
 import './ViewBookPage.css';
 
@@ -209,11 +210,4 @@ function applyReadiness(el: HTMLElement, readiness: string, nextReviewDate?: str
   }
   el.classList.add('r-ready');
   el.textContent = 'Ready now';
-}
-
-/** Whole days from now until `iso` (≥ 1 by construction for a waiting problem), as "N days". */
-function daysUntil(iso: string): string {
-  const ms = new Date(iso).getTime() - Date.now();
-  const days = Math.max(1, Math.ceil(ms / 86_400_000));
-  return `${days} day${days === 1 ? '' : 's'}`;
 }

@@ -1,98 +1,82 @@
-import { describe, test, expect, beforeEach, vi } from 'vitest';
+import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import { LandingPage } from '@/pages/LandingPage';
+import type { Activity, BookWithSummary } from '@/lib/types';
 
-const mockBooks = [
-  {
-    id: '1',
-    title: 'Introduction to Quantum Mechanics',
-    author: 'David J. Griffiths',
-    questionIds: ['q1', 'q2', 'q3'],
-    isbn: '9781107179868',
-    customerId: 'local',
-    createdAt: '2024-01-01T00:00:00Z',
-  },
-];
-
-const mockDue = { count: 5 };
-const mockLearnNext = {
-  question: { id: 'q1', bookId: '1' },
-  book: { id: '1', title: 'Introduction to Quantum Mechanics', questionIds: ['q1', 'q2', 'q3'] },
+const activity: Activity = {
+  streak: 5, daysActive: 3, problemsThisWeek: 12, daysGoal: 3, problemsGoal: 20,
 };
 
-function mockFetch(url: string): Promise<Response> {
-  let body: unknown;
-  if (url === '/api/books') body = mockBooks;
-  else if (url === '/api/practice/due?count=true') body = mockDue;
-  else if (url === '/api/learn/next') body = mockLearnNext;
-  else body = {};
+const future = new Date(Date.now() + 3 * 86_400_000).toISOString();
+const books: BookWithSummary[] = [
+  { id: 'b1', customerId: 'local', title: 'Quantum', author: 'Griffiths', isbn: '9781107179868',
+    questionIds: [], createdAt: '2026-01-01T00:00:00Z',
+    summary: { progress: 42, dueNow: 7, nextReviewDate: null, learnNext: { label: '3.1', pathPrefix: '3' } } },
+  { id: 'b2', customerId: 'local', title: 'Calculus', questionIds: [], createdAt: '2026-01-01T00:00:00Z',
+    summary: { progress: 68, dueNow: 0, nextReviewDate: future, learnNext: { label: '5.B.1', pathPrefix: '5' } } },
+  { id: 'b3', customerId: 'local', title: 'Done Book', questionIds: [], createdAt: '2026-01-01T00:00:00Z',
+    summary: { progress: 100, dueNow: 0, nextReviewDate: null, learnNext: null } },
+];
 
+function mockFetch(url: string): Promise<Response> {
+  const body = url === '/api/activity' ? activity : books;
   return Promise.resolve(new Response(JSON.stringify(body), {
-    status: 200,
-    headers: { 'Content-Type': 'application/json' },
+    status: 200, headers: { 'Content-Type': 'application/json' },
   }));
 }
 
 describe('LandingPage', () => {
   beforeEach(() => {
+    window.location.hash = '#/';
     document.body.innerHTML = '<div id="app"></div>';
     vi.stubGlobal('fetch', vi.fn(mockFetch));
   });
+  afterEach(() => { document.body.innerHTML = ''; vi.unstubAllGlobals(); });
 
-  test('renders banners and populates book rows after data loads', async () => {
-    const page = LandingPage();
-    document.getElementById('app')!.appendChild(page);
-
-    // Wait for async data to populate.
-    await vi.waitFor(() => {
-      expect(document.querySelector('.book')).not.toBeNull();
-    });
-
-    // Revisit banner should show count (replaced from empty state).
-    const revisit = document.querySelector('.banner.revisit');
-    expect(revisit).not.toBeNull();
-    expect(revisit!.textContent).toContain('5');
-    expect(revisit!.textContent).toContain('problems waiting');
-    expect(revisit!.classList.contains('empty')).toBe(false);
-
-    // Learn banner should show book title.
-    const learn = document.querySelector('.banner.learn');
-    expect(learn).not.toBeNull();
-    expect(learn!.textContent).toContain('Quantum Mechanics');
-    expect(learn!.classList.contains('empty')).toBe(false);
-
-    // Book row should appear with title and question count.
-    const bookRow = document.querySelector('.book');
-    expect(bookRow).not.toBeNull();
-    expect(bookRow!.textContent).toContain('Introduction to Quantum Mechanics');
-    expect(bookRow!.textContent).toContain('3 questions');
+  test('renders the activity header with streak and goal metrics', async () => {
+    document.getElementById('app')!.appendChild(LandingPage());
+    await vi.waitFor(() => expect(document.querySelector('.activity')).not.toBeNull());
+    expect(document.querySelector('#stat-streak')!.textContent).toContain('5');
+    const days = document.querySelector('#stat-days')!;
+    expect(days.textContent).toContain('3');
+    expect(days.classList.contains('complete')).toBe(true); // 3 >= 3
+    expect(document.querySelector('#stat-problems')!.classList.contains('complete')).toBe(false); // 12 < 20
   });
 
-  test('renders empty-state banners when no data', async () => {
-    vi.stubGlobal('fetch', vi.fn((url: string) => {
-      if (url === '/api/books') return Promise.resolve(new Response('[]'));
-      if (url === '/api/practice/due?count=true') return Promise.resolve(new Response(JSON.stringify({ count: 0 })));
-      if (url === '/api/learn/next') return Promise.resolve(new Response(JSON.stringify({ question: null })));
-      return Promise.resolve(new Response('{}'));
-    }));
+  test('renders one card per book with progress and pills', async () => {
+    document.getElementById('app')!.appendChild(LandingPage());
+    await vi.waitFor(() => expect(document.querySelectorAll('.book-card').length).toBe(3));
 
-    const page = LandingPage();
-    document.getElementById('app')!.appendChild(page);
+    const cardFor = (title: string): HTMLElement =>
+      [...document.querySelectorAll('.book-card')].find(
+        (c) => c.querySelector('.b-title2')!.textContent === title,
+      ) as HTMLElement;
 
-    // Wait a tick for the async load to complete.
-    await new Promise(r => setTimeout(r, 10));
+    // Book 1: due now → "7 to revisit" tappable pill + learn pill.
+    const c1 = cardFor('Quantum');
+    expect(c1.querySelector('.bc-pct')!.textContent).toBe('42%');
+    expect(c1.querySelector('.bc-revisit')!.textContent).toContain('7 to revisit');
+    expect(c1.querySelector('.bc-learn')!.textContent).toContain('Start learning 3');
 
-    // Banners should remain in empty state.
-    const revisit = document.querySelector('.banner.revisit');
-    expect(revisit).not.toBeNull();
-    expect(revisit!.classList.contains('empty')).toBe(true);
-    expect(revisit!.textContent).toContain('All caught up');
+    // Book 2: nothing due but scheduled → quiet "Ready in N days" pill.
+    const c2 = cardFor('Calculus');
+    expect(c2.querySelector('.bc-revisit-soon')!.textContent).toMatch(/Ready in \d+ days?/);
+    expect(c2.querySelector('.bc-revisit')).toBeNull();
+  });
 
-    const learn = document.querySelector('.banner.learn');
-    expect(learn).not.toBeNull();
-    expect(learn!.classList.contains('empty')).toBe(true);
-    expect(learn!.textContent).toContain('Nothing new');
+  test('finished book sinks to the bottom and shows no pills', async () => {
+    document.getElementById('app')!.appendChild(LandingPage());
+    await vi.waitFor(() => expect(document.querySelectorAll('.book-card').length).toBe(3));
+    const cards = [...document.querySelectorAll('.book-card')];
+    const last = cards[cards.length - 1]!;
+    expect(last.querySelector('.b-title2')!.textContent).toBe('Done Book');
+    expect(last.classList.contains('finished')).toBe(true);
+    expect(last.querySelector('.bc-actions')).toBeNull();
+  });
 
-    // No book rows should appear.
-    expect(document.querySelector('.book')).toBeNull();
+  test('revisit pill navigates without triggering the card head', async () => {
+    document.getElementById('app')!.appendChild(LandingPage());
+    await vi.waitFor(() => expect(document.querySelector('.bc-revisit')).not.toBeNull());
+    (document.querySelector('.bc-revisit') as HTMLButtonElement).click();
+    expect(window.location.hash).toBe('#/revisit');
   });
 });

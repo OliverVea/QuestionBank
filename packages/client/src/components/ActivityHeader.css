@@ -1,0 +1,41 @@
+/* Global activity header — three metrics in a row. Ported from the mock's
+   .activity / .stat rules (docs/mocks/single-screen.css). */
+.activity {
+  margin: 0.85rem 1rem;
+  padding: 0.85rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+}
+.activity-head { display: flex; align-items: stretch; }
+.stat {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: 0 0.35rem;
+}
+.stat + .stat { border-left: 1px solid var(--border); }
+.stat-num {
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--fg);
+}
+.stat-of { font-size: 1rem; font-weight: 700; color: var(--muted); }
+.stat-lbl {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.25;
+}
+#stat-streak .stat-num { color: var(--streak-dark); }
+.stat.complete .stat-num { color: var(--learn-dark); }
+.stat.complete .stat-of { color: color-mix(in srgb, var(--learn-dark) 60%, var(--muted)); }

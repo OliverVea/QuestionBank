@@ -190,8 +190,16 @@ describe('beta deployment smoke (LLM-free surface)', () => {
     // This hits an EXTERNAL catalog (Open Library), so reachability from the cluster is not
     // guaranteed and is not what we are smoking. Accept any well-formed outcome: a 200 with
     // metadata shape, a 404 (no match), or a 502 (upstream unreachable). A 401/500 would mean
-    // the route itself is broken on the deployed instance.
-    const res = await authed('get', '/api/lookup/isbn/9780262033848');
+    // the route itself is broken on the deployed instance. A slow/hung upstream is also not a
+    // failure of this route, so bound the request and treat a client-side timeout like a 502 —
+    // otherwise the external catalog hanging would fail the deploy.
+    let res;
+    try {
+      res = await authed('get', '/api/lookup/isbn/9780262033848').timeout(4000);
+    } catch (err) {
+      if ((err as { timeout?: number }).timeout !== undefined) return; // upstream too slow — not our route
+      throw err;
+    }
     expect([200, 404, 502]).toContain(res.status);
     if (res.status === 200) {
       expect(res.body).toEqual(expect.objectContaining({ title: expect.any(String) }));

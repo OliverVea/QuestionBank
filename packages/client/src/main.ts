@@ -16,6 +16,7 @@ import { AttemptsPage } from '@/pages/AttemptsPage';
 import { LearnPage } from '@/pages/LearnPage';
 import { RevisitPage } from '@/pages/RevisitPage';
 import { GradePage } from '@/pages/GradePage';
+import { SettingsPage } from '@/pages/SettingsPage';
 
 const app = document.getElementById('app')!;
 const router = new Navigo('/', { hash: true });
@@ -35,4 +36,5 @@ router
   .on('/learn', () => mount(LearnPage))
   .on('/revisit', () => mount(RevisitPage))
   .on('/grade', () => mount(GradePage))
+  .on('/settings', () => mount(SettingsPage))
   .resolve();

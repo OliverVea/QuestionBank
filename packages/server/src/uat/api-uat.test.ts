@@ -380,6 +380,40 @@ describe('UAT: API flows on the flat problems model', () => {
   });
 
   // -------------------------------------------------------------------------
+  // SETTINGS — user-editable weekly goals. GET defaults to the constants until a
+  // customer saves; PUT upserts the per-customer record and the new targets then
+  // flow through to the activity header. Invalid goals are rejected (400).
+  // -------------------------------------------------------------------------
+  it('Settings: GET defaults, PUT upserts goals, and /activity reflects the new targets', async () => {
+    // No record yet ⇒ GET returns the defaults the header would otherwise hardcode.
+    const initial = (await request(app).get('/api/settings')).body;
+    expect(initial).toEqual({ daysGoal: 3, problemsGoal: 20 });
+    expect((await request(app).get('/api/activity')).body).toMatchObject({ daysGoal: 3, problemsGoal: 20 });
+
+    // Upsert new goals (insert path) — the saved values come straight back.
+    const saved = await request(app).put('/api/settings').send({ daysGoal: 5, problemsGoal: 40 });
+    expect(saved.status).toEqual(200);
+    expect(saved.body).toEqual({ daysGoal: 5, problemsGoal: 40 });
+
+    // GET now reads the stored record, and the new targets flow into the activity header.
+    expect((await request(app).get('/api/settings')).body).toEqual({ daysGoal: 5, problemsGoal: 40 });
+    expect((await request(app).get('/api/activity')).body).toMatchObject({ daysGoal: 5, problemsGoal: 40 });
+
+    // A second PUT (update path) overwrites in place, not a duplicate row.
+    const updated = await request(app).put('/api/settings').send({ daysGoal: 2, problemsGoal: 15 });
+    expect(updated.body).toEqual({ daysGoal: 2, problemsGoal: 15 });
+    expect((await request(app).get('/api/activity')).body).toMatchObject({ daysGoal: 2, problemsGoal: 15 });
+
+    // Guards: days out of 1–7, problems < 1, and non-integers are all 400; nothing persists.
+    expect((await request(app).put('/api/settings').send({ daysGoal: 0, problemsGoal: 15 })).status).toEqual(400);
+    expect((await request(app).put('/api/settings').send({ daysGoal: 8, problemsGoal: 15 })).status).toEqual(400);
+    expect((await request(app).put('/api/settings').send({ daysGoal: 3, problemsGoal: 0 })).status).toEqual(400);
+    expect((await request(app).put('/api/settings').send({ daysGoal: 3.5, problemsGoal: 15 })).status).toEqual(400);
+    // The last good save is intact after the rejected ones.
+    expect((await request(app).get('/api/settings')).body).toEqual({ daysGoal: 2, problemsGoal: 15 });
+  });
+
+  // -------------------------------------------------------------------------
   // 6. ISBN LOOKUP — metadata prefill for add/edit-book. Read-only, network-
   //    backed; here the catalog is the test's, but the route is the real one.
   //    (The production fetcher is injected at the route; this verifies the
@@ -808,6 +842,19 @@ describe('UAT (security): customer segmentation is airtight', () => {
     // A's due queue is empty — B's seeded attempt never crosses the boundary.
     const aDue = await as(request(segApp).get('/api/practice/due'), A);
     expect(aDue.body).toEqual([]);
+  });
+
+  it('settings goals are per-customer: A\'s saved goals never leak into B\'s', async () => {
+    // A saves custom goals; B never does.
+    expect(
+      (await as(request(segApp).put('/api/settings'), A).send({ daysGoal: 6, problemsGoal: 50 })).status,
+    ).toEqual(200);
+
+    // A reads back A's goals; B still sees the untouched defaults.
+    expect((await as(request(segApp).get('/api/settings'), A)).body).toEqual({ daysGoal: 6, problemsGoal: 50 });
+    expect((await as(request(segApp).get('/api/settings'), B)).body).toEqual({ daysGoal: 3, problemsGoal: 20 });
+    // ...and the boundary holds through the activity header too.
+    expect((await as(request(segApp).get('/api/activity'), B)).body).toMatchObject({ daysGoal: 3, problemsGoal: 20 });
   });
 
   it('cascade delete is customer-scoped: A deleting B\'s book id is a no-op for B', async () => {

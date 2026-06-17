@@ -1,5 +1,5 @@
 import { join } from 'node:path';
-import type { Attempt, Book, Question, Skip } from '../domain/types.js';
+import type { Attempt, Book, Question, Settings, Skip } from '../domain/types.js';
 import { JsonCollection } from './json-collection.js';
 import type { Repository } from './repository.js';
 
@@ -10,15 +10,17 @@ export class Store {
     readonly questions: Repository<Question>,
     readonly attempts: Repository<Attempt>,
     readonly skips: Repository<Skip>,
+    readonly settings: Repository<Settings>,
   ) {}
 
   static async open(dataDir: string): Promise<Store> {
-    const [books, questions, attempts, skips] = await Promise.all([
+    const [books, questions, attempts, skips, settings] = await Promise.all([
       JsonCollection.open<Book>(join(dataDir, 'books.json')),
       JsonCollection.open<Question>(join(dataDir, 'questions.json')),
       JsonCollection.open<Attempt>(join(dataDir, 'attempts.json')),
       JsonCollection.open<Skip>(join(dataDir, 'skips.json')),
+      JsonCollection.open<Settings>(join(dataDir, 'settings.json')),
     ]);
-    return new Store(books, questions, attempts, skips);
+    return new Store(books, questions, attempts, skips, settings);
   }
 }

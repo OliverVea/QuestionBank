@@ -1,6 +1,7 @@
 import { html } from '@/lib/html';
 import { TopBar } from '@/components/TopBar';
 import { CoverSlot } from '@/components/CoverSlot';
+import '@/styles/forms.css';
 import './AddBookPage.css';
 
 export function AddBookPage(): HTMLElement {

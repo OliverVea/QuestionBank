@@ -79,3 +79,9 @@ export interface Activity {
   daysGoal: number;
   problemsGoal: number;
 }
+
+/** The customer's editable weekly goals, from GET/PUT /api/settings. */
+export interface Settings {
+  daysGoal: number;
+  problemsGoal: number;
+}

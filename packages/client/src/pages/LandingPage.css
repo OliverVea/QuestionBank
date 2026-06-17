@@ -29,6 +29,11 @@
   letter-spacing: 0.06em;
   color: var(--muted);
 }
+.head-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+}
 .edit-btn {
   flex: none;
   border: none;

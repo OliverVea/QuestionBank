@@ -1,0 +1,83 @@
+/* Shared form primitives — fields, the sticky action bar, and the primary
+   button. Lifted out of AddBookPage.css so any form page (add-book, settings, …)
+   can reuse them without depending on another page's stylesheet being bundled.
+   Page-specific layout still lives in each page's own CSS. */
+
+/* Fields */
+.field {
+  display: block;
+  margin-bottom: 1rem;
+}
+
+.field-block { display: block; }
+
+.field-lbl {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+  color: var(--fg);
+}
+
+.field-opt {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.field-in {
+  display: block;
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--fg);
+  font: inherit;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.12s ease;
+}
+
+.field-in:focus {
+  border-color: var(--revisit);
+}
+
+textarea.field-in {
+  resize: vertical;
+  min-height: 3rem;
+}
+
+/* Sticky footer action bar */
+.add-actions {
+  position: sticky;
+  bottom: 0;
+  padding: 0.8rem 1.1rem;
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+}
+
+.primary-btn {
+  display: block;
+  width: 100%;
+  padding: 0.8rem;
+  border: none;
+  border-radius: 12px;
+  background: var(--revisit);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: transform 0.08s ease, filter 0.12s ease, opacity 0.15s ease;
+}
+
+.primary-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.primary-btn:not(:disabled):active { transform: scale(0.98); filter: brightness(0.95); }
+
+@media (hover: hover) {
+  .primary-btn:not(:disabled):hover { filter: brightness(1.05); }
+}

@@ -127,8 +127,23 @@ export interface Activity {
   daysActive: number;
   /** Attempt count within the rolling last-7-day window. */
   problemsThisWeek: number;
-  /** Hardcoded cadence target (days/week). */
+  /** Cadence target (days/week), from the customer's settings or the default. */
   daysGoal: number;
-  /** Hardcoded volume target (problems/week). */
+  /** Volume target (problems/week), from the customer's settings or the default. */
+  problemsGoal: number;
+}
+
+/**
+ * A customer's editable preferences — currently just the two weekly goals that
+ * the activity header counts toward. One record per customer; `id === customerId`
+ * so the singleton falls out of the id-keyed repository. Absent ⇒ defaults apply.
+ */
+export interface Settings {
+  /** Equals customerId — the per-customer singleton key. */
+  id: string;
+  customerId: string;
+  /** Cadence target: study N days/week. */
+  daysGoal: number;
+  /** Volume target: solve N problems/week. */
   problemsGoal: number;
 }

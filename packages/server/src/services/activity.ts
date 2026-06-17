@@ -22,12 +22,26 @@ function dayDelta(now: string, then: string): number {
   return Math.round((nMid - tMid) / 86_400_000);
 }
 
+/** The two weekly goal targets the activity header counts toward. */
+export interface Goals {
+  daysGoal: number;
+  problemsGoal: number;
+}
+
+/** The fallback goals, used when a customer has no stored settings record. */
+export const DEFAULT_GOALS: Goals = { daysGoal: DAYS_GOAL, problemsGoal: PROBLEMS_GOAL };
+
 /**
  * Streak + rolling-week actuals from attempts. Streak = consecutive calendar days
  * ending today (or yesterday, if today not yet active) with ≥1 attempt. Week window =
- * the last WEEK_DAYS days, bucketed by server-local date. Pure.
+ * the last WEEK_DAYS days, bucketed by server-local date. The `goals` are echoed back
+ * onto the result (sourced from the customer's settings, defaulting to the constants). Pure.
  */
-export function computeActivity(attempts: Attempt[], now: string): Activity {
+export function computeActivity(
+  attempts: Attempt[],
+  now: string,
+  goals: Goals = DEFAULT_GOALS,
+): Activity {
   const activeDays = new Set<number>();
   let problemsThisWeek = 0;
   const weekDays = new Set<string>();
@@ -53,7 +67,7 @@ export function computeActivity(attempts: Attempt[], now: string): Activity {
     streak,
     daysActive: weekDays.size,
     problemsThisWeek,
-    daysGoal: DAYS_GOAL,
-    problemsGoal: PROBLEMS_GOAL,
+    daysGoal: goals.daysGoal,
+    problemsGoal: goals.problemsGoal,
   };
 }

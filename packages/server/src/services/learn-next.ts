@@ -1,4 +1,4 @@
-import type { Book, Question } from '../domain/types.js';
+import type { Book, Question, Relevance } from '../domain/types.js';
 import { activeSkippedIds } from '../routes/skip.js';
 import { compareProblems } from './problem-order.js';
 import type { Store } from '../storage/store.js';
@@ -9,10 +9,20 @@ export interface LearnNext {
 }
 
 /**
- * The next question to suggest: the first un-attempted question, scanning books in list
- * order and, within each book, in DERIVED PATH order (compareProblems) so "what to learn
- * next" follows the book's structure — not the stored questionIds. Returns undefined when
- * nothing is eligible. Excludes questions with active (non-expired) server-side skips.
+ * Relevance rank for ordering: high learns before medium before low. A question with no
+ * stored relevance is treated as medium — neither prioritized nor postponed (TODO 7d).
+ */
+const RELEVANCE_RANK: Record<Relevance, number> = { high: 0, medium: 1, low: 2 };
+function relevanceRank(q: Question): number {
+  return RELEVANCE_RANK[q.relevance ?? 'medium'];
+}
+
+/**
+ * The next question to suggest: the most-relevant un-attempted question, scanning books in
+ * list order and, within each book, ordered by relevance (high→medium→low) and then DERIVED
+ * PATH order (compareProblems) as the tiebreak. Low-relevance questions are thus postponed
+ * until every higher-relevance question in the book is attempted (TODO 7d). Returns undefined
+ * when nothing is eligible. Excludes questions with active (non-expired) server-side skips.
  */
 export async function suggestNext(
   store: Store,
@@ -31,12 +41,14 @@ export async function suggestNext(
   }
 
   for (const book of books) {
-    const ordered = (byBook.get(book.id) ?? []).sort(compareProblems);
-    for (const question of ordered) {
-      if (attempted.has(question.id)) continue;
-      if (skipped.has(question.id)) continue;
-      return { question, book };
-    }
+    const eligible = (byBook.get(book.id) ?? []).filter(
+      (q) => !attempted.has(q.id) && !skipped.has(q.id),
+    );
+    if (eligible.length === 0) continue;
+    // Relevance is the primary key so a high-relevance question outranks a lower one earlier
+    // in the path; compareProblems (derived path) breaks ties within a relevance band.
+    eligible.sort((a, b) => relevanceRank(a) - relevanceRank(b) || compareProblems(a, b));
+    return { question: eligible[0]!, book };
   }
   return undefined;
 }

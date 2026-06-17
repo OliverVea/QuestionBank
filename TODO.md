@@ -41,7 +41,7 @@ Olve.Diagrams flowchart tool to render it as a Mermaid graph. Each task must be 
   a. Add a learning goal to a book [1c]
   b. (done) Judge each question relevance to the book learning goal high medium low stored on Question and set by extraction [7a][2a]
   c. (done) Relevance editing UI in the Edit book problems list [7b]
-  d. Postpone low relevance questions in Learn and Practice ordering so they only surface once higher relevance questions are exhausted [7c][6c]
+  d. (done) Postpone low relevance questions in Learn ordering so they only surface once higher relevance questions in the book are attempted Practice due ordering keeps SRS urgency unchanged [7c][6c]
 
 8. Single screen layout
   b. Single screen with a top banner toggling Learn and Practice [2h][6c][8a]

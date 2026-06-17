@@ -57,6 +57,10 @@ secrets:
   # AND values-minimal.yaml baselines it to "0", so unset can never mean "allow".
   - name: QB_PROD_ALLOW_DEFAULT_CUSTOMER
     description: Prod tenancy toggle ("0"=strict default, "1"=single default tenant). Unset⇒"0".
+  # Anthropic key for prod LLM routes; deploy.sh materializes it into
+  # questionbank-secrets in `apps`. Set the value via the secrets API before deploy.
+  - name: ANTHROPIC_API_KEY
+    description: Anthropic API key for prod LLM routes. Materialized into questionbank-secrets in apps by deploy.sh.
 
 # Production steps run in parallel and write to bundle/<step-name>/. BOTH must
 # succeed before any processing (deploy) step runs.

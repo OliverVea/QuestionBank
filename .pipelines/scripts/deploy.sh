@@ -31,6 +31,15 @@ ALLOW_DEFAULT="${QB_PROD_ALLOW_DEFAULT_CUSTOMER:-0}"
 
 echo "Deploying $RELEASE:$VERSION to prod (minimal profile, QB_ALLOW_DEFAULT_CUSTOMER=$ALLOW_DEFAULT)"
 
+# Materialize the prod LLM key into questionbank-secrets in `apps` (values-minimal.yaml
+# mounts it as ANTHROPIC_API_KEY). Fail loud on an unset key — an empty secret would
+# let the pod come up healthy but still 502 on grading.
+[ -n "$ANTHROPIC_API_KEY" ] || { echo "ANTHROPIC_API_KEY unset" >&2; exit 1; }
+ssh -o StrictHostKeyChecking=no "$HOST" \
+  "kubectl -n apps create secret generic questionbank-secrets \
+     --from-literal=anthropic-api-key='$ANTHROPIC_API_KEY' \
+     --dry-run=client -o yaml | kubectl apply -f -"
+
 # Import the image into k3s containerd (the k3s socket, not the default one).
 cat "${INPUT_DIR}image.tar" | ssh -o StrictHostKeyChecking=no "$HOST" \
   "sudo nerdctl --address /run/k3s/containerd/containerd.sock --namespace k8s.io load"

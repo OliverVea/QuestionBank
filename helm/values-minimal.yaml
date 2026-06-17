@@ -29,8 +29,9 @@ config:
   QB_CUSTOMER_HEADER: "X-authentik-uid"
   QB_ALLOW_DEFAULT_CUSTOMER: "0"
 
-# No LLM secret wired in the minimal profile (no real ANTHROPIC_API_KEY): keep the
-# self-sufficient deploy free of external-credential dependencies. LLM routes are
-# unavailable until a profile that mounts the secret is used. Override `secrets`
-# in a richer profile (or via Olve.Homelab) to enable them.
-secrets: []
+# Prod LLM key. deploy.sh materializes questionbank-secrets in `apps` from the
+# ANTHROPIC_API_KEY pipeline secret before the helm upgrade; mounted here (mirrors beta).
+secrets:
+  - name: questionbank-secrets
+    envMap:
+      ANTHROPIC_API_KEY: anthropic-api-key

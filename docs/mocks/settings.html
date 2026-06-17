@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <!-- PWA: installable, runs in its own window (standalone). -->
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#f9ae60" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icon.svg" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="QuestionBank" />
+  <title>Question Bank — Settings Mock</title>
+  <link rel="stylesheet" href="mocks.css" />
+  <link rel="stylesheet" href="settings.css" />
+</head>
+<body class="anim-cascade">
+  <div class="app">
+    <!-- Top bar: Back (left). No secondary action. -->
+    <header class="topbar">
+      <button class="topbar-btn" id="back-btn">
+        <span aria-hidden="true">←</span> Back
+      </button>
+    </header>
+
+    <form class="settings-stage" id="settings-form" autocomplete="off">
+      <h1 class="settings-title animate-in" style="--i: 0">Settings</h1>
+
+      <!-- ===== Weekly goals ===== -->
+      <!-- These targets feed the activity header on the home screen. Today they
+           are hardcoded in the server; this screen makes them user-editable. -->
+      <section class="goals animate-in" style="--i: 1">
+        <div class="section-head">
+          <h2>Weekly goals</h2>
+          <p class="section-sub">What the activity header on your home screen counts toward.</p>
+        </div>
+
+        <!-- Cadence: study N days/week -->
+        <label class="field">
+          <span class="field-lbl">Study days <span class="field-opt">per week</span></span>
+          <input class="field-in" id="days-in" type="number" inputmode="numeric"
+                 min="1" max="7" data-goal="days" value="3" />
+        </label>
+
+        <!-- Volume: solve N problems/week -->
+        <label class="field field-block">
+          <span class="field-lbl">Problems <span class="field-opt">per week</span></span>
+          <input class="field-in" id="problems-in" type="number" inputmode="numeric"
+                 min="1" data-goal="problems" value="20" />
+        </label>
+      </section>
+    </form>
+
+    <!-- Sticky bottom action; enabled once a goal actually changed. -->
+    <footer class="add-actions">
+      <button class="primary-btn" id="save-btn" type="submit" form="settings-form" disabled>
+        Save changes
+      </button>
+    </footer>
+  </div>
+
+  <script>
+    // The values the server would have stored. The Save button only enables
+    // once the working values diverge from these.
+    const SAVED = { days: 3, problems: 20 };
+    const value = { ...SAVED };
+
+    const saveBtn = document.getElementById('save-btn');
+    const inputs = { days: document.getElementById('days-in'), problems: document.getElementById('problems-in') };
+
+    function syncSave() {
+      const dirty = value.days !== SAVED.days || value.problems !== SAVED.problems;
+      saveBtn.disabled = !dirty;
+    }
+
+    // Each goal is a bare number field. Empty/invalid input just leaves the
+    // save state untouched until a real number is typed.
+    Object.entries(inputs).forEach(([goal, el]) => {
+      el.addEventListener('input', () => {
+        const n = parseInt(el.value, 10);
+        if (Number.isNaN(n)) return;
+        value[goal] = n;
+        syncSave();
+      });
+    });
+
+    document.getElementById('settings-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      // Real client: PUT /api/settings { daysGoal, problemsGoal }.
+      alert('→ save goals: ' + value.days + ' days/week, ' + value.problems + ' problems/week');
+      SAVED.days = value.days; SAVED.problems = value.problems;
+      syncSave();
+      window.location.href = 'index.html';
+    });
+
+    document.getElementById('back-btn').addEventListener('click',
+      () => { window.location.href = 'index.html'; });
+
+    syncSave();
+  </script>
+  <script src="footer.js" defer></script>
+</body>
+</html>

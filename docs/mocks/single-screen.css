@@ -82,6 +82,8 @@
   justify-content: space-between;
   padding: 0.9rem 1.25rem 0.4rem;
 }
+/* Right-side icon group: edit-library pencil + settings person. */
+.head-actions { display: flex; align-items: center; gap: 0.15rem; }
 .library h2 {
   margin: 0;
   font-size: 0.78rem;

@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <title>Question Bank — Session Pause Mock</title>
+  <link rel="stylesheet" href="mocks.css" />
+  <link rel="stylesheet" href="session-pause.css" />
+</head>
+<body class="anim-cascade">
+  <div class="app" id="app" data-mode="learn">
+    <!-- Top bar mirrors Learn/Practice: Back only (no Skip on the pause). -->
+    <header class="topbar">
+      <button class="topbar-btn" id="back-btn">
+        <span aria-hidden="true">←</span> Back
+      </button>
+    </header>
+
+    <!-- The pause "stage": a celebratory checkpoint between items. It replaces the
+         question card in the Learn/Practice stage when a boundary is crossed.
+         Two variants share this markup; only the count line + headline differ. -->
+    <main class="pause-stage gridpad">
+      <div class="pause-card animate-in" style="--i: 0">
+        <div class="pause-badge" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+               stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+
+        <h1 class="pause-title" id="pause-title">Chapter 1 done!</h1>
+        <p class="pause-sub" id="pause-sub">Nice work — take a breather or keep the momentum going.</p>
+
+        <!-- The session tally so far. The number is the running session count. -->
+        <div class="pause-count">
+          <span class="pc-num" id="pc-num">5</span>
+          <span class="pc-lbl" id="pc-lbl">problems this session</span>
+        </div>
+
+        <!-- Two actions, side by side as rounded cards: continue the loop
+             (primary, colored) vs end the session (grey). -->
+        <div class="pause-actions">
+          <button class="pause-btn pb-break" id="break-btn">Take a break</button>
+          <button class="pause-btn pb-continue" id="continue-btn">Keep going</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Mock-only: flip between the Learn (chapter) and Practice (count) variants. -->
+  <div class="variant-toggle" role="group" aria-label="Mock variant">
+    <button id="v-learn" class="vt-btn active">Learn · chapter</button>
+    <button id="v-practice" class="vt-btn">Practice · every N</button>
+  </div>
+
+  <script>
+    const title = document.getElementById('pause-title');
+    const sub = document.getElementById('pause-sub');
+    const num = document.getElementById('pc-num');
+    const lbl = document.getElementById('pc-lbl');
+
+    // The two pause variants. Learn pauses at a chapter seam; Practice every N.
+    const VARIANTS = {
+      learn: {
+        title: 'Chapter 1 done!',
+        sub: 'Nice work — take a breather or move on to Chapter 2.',
+        num: 5,
+        lbl: 'problems this session',
+      },
+      practice: {
+        title: 'Nice — 10 reviews done!',
+        sub: 'Good rhythm. Rest your brain, or keep clearing the queue.',
+        num: 10,
+        lbl: 'reviews this session',
+      },
+    };
+
+    function show(which) {
+      const v = VARIANTS[which];
+      title.textContent = v.title;
+      sub.textContent = v.sub;
+      num.textContent = String(v.num);
+      lbl.textContent = v.lbl;
+      // Theme the whole screen by mode: learn=green, practice=purple.
+      document.getElementById('app').dataset.mode = which;
+      document.getElementById('v-learn').classList.toggle('active', which === 'learn');
+      document.getElementById('v-practice').classList.toggle('active', which === 'practice');
+    }
+
+    document.getElementById('v-learn').addEventListener('click', () => show('learn'));
+    document.getElementById('v-practice').addEventListener('click', () => show('practice'));
+
+    // Continue → next item (mock returns to the learn screen). Break → home.
+    document.getElementById('continue-btn').addEventListener('click', () => { window.location.href = 'learn.html'; });
+    document.getElementById('break-btn').addEventListener('click', () => { window.location.href = 'index.html'; });
+    document.getElementById('back-btn').addEventListener('click', () => { window.location.href = 'index.html'; });
+
+    // ?v=practice opens the Practice variant directly.
+    show(new URLSearchParams(location.search).get('v') === 'practice' ? 'practice' : 'learn');
+  </script>
+  <script src="footer.js" defer></script>
+</body>
+</html>

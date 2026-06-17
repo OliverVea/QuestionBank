@@ -58,3 +58,8 @@ as TODO.md. Open tasks in TODO.md still reference these by qualified name
   b. (done) LLM generates a delta of updates and additions against the current problems list [17a]
   c. (done) Polish the proposed delta in a conversation before accepting [17b]
   d. (done) Accept applies the delta to the problems list and reject discards it [17c]
+
+20. Streak and goals future (20d notifications remains open in TODO.md)
+  a. (done) Track a streak of days in a row with practice or learning activity [2c][6c]
+  b. (done) Let the user set a cadence goal such as practice every 3 days [20a]
+  c. (done) Track whether the user is fulfilling their goal and surface it [20b]

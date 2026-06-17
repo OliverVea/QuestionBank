@@ -97,9 +97,6 @@ Olve.Diagrams flowchart tool to render it as a Mermaid graph. Each task must be 
   e. Make the N item pause limit configurable [19d]
 
 20. Streak and goals future
-  a. Track a streak of days in a row with practice or learning activity [2c][6c]
-  b. Let the user set a cadence goal such as practice every 3 days [20a]
-  c. Track whether the user is fulfilling their goal and surface it [20b]
   d. Notifications reminding the user to keep the streak or meet the goal [20c]
 
 21. Accessibility

@@ -2,20 +2,18 @@
 # PROCESSING 1: exercise the ACTUALLY-DEPLOYED beta instance over HTTP and gate
 # prod. Runs the `beta` vitest project (npm run test:beta) against the live beta
 # Service. LLM-FREE only (extract/transcribe/grade cost real money on beta and are
-# already proven for free by the in-process api-uat suite). A failure here stops
-# the chain so the prod deploy never runs.
+# already proven for free by the in-process api-uat suite). A failure here stops the
+# chain so the prod deploy never runs.
 set -e
 
-REPO=OliverVea/QuestionBank
-BRANCH=master
+# Fetch the shared helper library from Olve.Pipelines for the repo-fetch helper. Swap `main` to pin.
+mkdir -p /tmp
+wget --no-check-certificate -qO /tmp/olve-lib.sh \
+  https://raw.githubusercontent.com/OliverVea/Olve.Pipelines/main/.pipelines/scripts/olve-lib.sh
+. /tmp/olve-lib.sh
 
-# Fresh container — fetch the repo tarball ourselves before installing.
-mkdir -p /src
-cd /src
-wget -q --header="Authorization: token $GITHUB_TOKEN" \
-  -O repo.tar.gz "https://api.github.com/repos/$REPO/tarball/$BRANCH"
-tar xzf repo.tar.gz --strip-components=1
-rm repo.tar.gz
+# Fetch QuestionBank's own code (fresh container, no git checkout).
+olve_fetch_repo OliverVea/QuestionBank master /src
 
 npm ci
 

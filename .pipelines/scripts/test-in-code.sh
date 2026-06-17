@@ -10,18 +10,16 @@
 # explicit, parallel, and independently reportable.
 set -e
 
-REPO=OliverVea/QuestionBank
-BRANCH=master
+# Fetch the shared helper library from Olve.Pipelines for the repo-fetch helper. The
+# node image ships GNU wget, which accepts --no-check-certificate harmlessly (the flag
+# is needed by the Kaniko busybox wget in package.sh, not here). Swap `main` to pin.
+mkdir -p /tmp
+wget --no-check-certificate -qO /tmp/olve-lib.sh \
+  https://raw.githubusercontent.com/OliverVea/Olve.Pipelines/main/.pipelines/scripts/olve-lib.sh
+. /tmp/olve-lib.sh
 
-# Each step runs in a fresh container, so fetch the repo tarball ourselves before
-# installing. (Official node image ships GNU wget — no --no-check-certificate
-# needed, unlike the Kaniko busybox wget in package.sh.)
-mkdir -p /src
-cd /src
-wget -q --header="Authorization: token $GITHUB_TOKEN" \
-  -O repo.tar.gz "https://api.github.com/repos/$REPO/tarball/$BRANCH"
-tar xzf repo.tar.gz --strip-components=1
-rm repo.tar.gz
+# Fetch QuestionBank's own code (each step runs in a fresh container, no git checkout).
+olve_fetch_repo OliverVea/QuestionBank master /src
 
 # Dependencies are pure-JS (no native/gyp); .npmrc pins the public registry.
 npm ci

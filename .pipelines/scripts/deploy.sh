@@ -6,21 +6,22 @@
 # MINIMAL profile (Tier-A decoupling): no public Ingress, no Authentik forward-auth.
 # Routing (Cloudflare ingress) and the Authentik auth SYSTEM are owned by the
 # separate Olve.Homelab pipeline. This deploy stays self-sufficient and reachable
-# in-cluster only.
+# in-cluster only. The ssh/import/helm footguns live in the shared olve-lib.sh
+# (Olve.Pipelines #17).
 set -e
-apk add --no-cache openssh-client curl
-# kubectl runs over ssh on the host; the health curl runs HERE in the job pod —
+
+# Fetch the shared helper library from Olve.Pipelines (the LIBRARY repo, distinct from
+# this app). mkdir -p /tmp for parity with the build images. Swap `main` to pin.
+mkdir -p /tmp
+wget --no-check-certificate -qO /tmp/olve-lib.sh \
+  https://raw.githubusercontent.com/OliverVea/Olve.Pipelines/main/.pipelines/scripts/olve-lib.sh
+. /tmp/olve-lib.sh
+
+# curl is needed by the in-pod health loop below; olve_ssh_host installs only the ssh
+# client. kubectl runs over ssh on the host; the health curl runs HERE in the job pod —
 # only the pod resolves *.svc.cluster.local.
+apk add --no-cache curl
 
-mkdir -p ~/.ssh
-echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
-chmod 600 ~/.ssh/id_ed25519
-ssh-keyscan -H bulwark-m2 >> ~/.ssh/known_hosts 2>/dev/null || true
-
-# Two production steps write to /input (packaging + in-code-testing); find the
-# packaging bundle by content (the dir with version.txt), not by position.
-INPUT_DIR=$(dirname "$(find /input -name version.txt | head -1)")/
-VERSION=$(cat "${INPUT_DIR}version.txt")
 HOST=oliver@bulwark-m2
 RELEASE=questionbank
 
@@ -28,6 +29,11 @@ RELEASE=questionbank
 # Coerce UNSET → "0" (strict) so an unset secret can never mean "allow default
 # customer". values-minimal.yaml also baselines this to "0" as defense-in-depth.
 ALLOW_DEFAULT="${QB_PROD_ALLOW_DEFAULT_CUSTOMER:-0}"
+
+olve_ssh_host bulwark-m2
+
+INPUT_DIR=$(olve_bundle_input)
+VERSION=$(cat "$INPUT_DIR/version.txt")
 
 echo "Deploying $RELEASE:$VERSION to prod (minimal profile, QB_ALLOW_DEFAULT_CUSTOMER=$ALLOW_DEFAULT)"
 
@@ -40,27 +46,15 @@ ssh -o StrictHostKeyChecking=no "$HOST" \
      --from-literal=anthropic-api-key='$ANTHROPIC_API_KEY' \
      --dry-run=client -o yaml | kubectl apply -f -"
 
-# Import the image into k3s containerd (the k3s socket, not the default one).
-cat "${INPUT_DIR}image.tar" | ssh -o StrictHostKeyChecking=no "$HOST" \
-  "sudo nerdctl --address /run/k3s/containerd/containerd.sock --namespace k8s.io load"
+olve_image_import "$INPUT_DIR/image.tar" "$HOST"
 
 # Verify the image is visible to CRI.
 ssh -o StrictHostKeyChecking=no "$HOST" "sudo crictl images | grep $RELEASE"
 
-# Copy the helm chart (clean destination first to avoid scp nesting).
-ssh -o StrictHostKeyChecking=no "$HOST" "rm -rf /tmp/$RELEASE-helm"
-scp -o StrictHostKeyChecking=no -r "${INPUT_DIR}helm" "$HOST:/tmp/$RELEASE-helm"
-
-# Helm upgrade with the MINIMAL values profile. pullPolicy=Never — the image is
-# local to the node. The tenancy toggle is passed at deploy time (pipeline-owned),
-# not baked into the chart.
-ssh -o StrictHostKeyChecking=no "$HOST" \
-  "helm upgrade --install $RELEASE /tmp/$RELEASE-helm -n apps \
-     -f /tmp/$RELEASE-helm/values-minimal.yaml \
-     --set image.repository=docker.io/library/$RELEASE \
-     --set image.tag=$VERSION --set image.pullPolicy=Never \
-     --set config.QB_ALLOW_DEFAULT_CUSTOMER=$ALLOW_DEFAULT \
-   && rm -rf /tmp/$RELEASE-helm"
+# Helm upgrade with the MINIMAL values profile. The tenancy toggle is passed at deploy
+# time (pipeline-owned), not baked into the chart.
+olve_helm_deploy "$HOST" "$RELEASE" apps "$INPUT_DIR/helm" "$VERSION" \
+  -f values-minimal.yaml --set config.QB_ALLOW_DEFAULT_CUSTOMER=$ALLOW_DEFAULT
 
 # Wait for the rollout and health-gate the in-cluster Service (minimal prod has no
 # ingress, so the Service is the only reachable endpoint).

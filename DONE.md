@@ -38,6 +38,14 @@ as TODO.md. Open tasks in TODO.md still reference these by qualified name
 
 3c. (done) Text input extraction modality alongside image [2a]
 
+4. (done) Past attempt visibility on the question card
+  a. (done) Show past attempts on the question card book view rows link to the attempts subpage [2c]
+  b. (done) Show a small pass fail history graph like a CI pipeline CiStrip on each problem row [4a]
+
+5. (done) Stats and progress (per book progress is surfaced on the landing library via BookCard not the Manage tab; 5b more detailed stats remains open in TODO.md)
+  a. (done) Show book stats as percent completed [2c]
+    a. (done) Library list API view with derived per book progress percent and ready count GET books summaries [5a]
+
 5c. (done) Record activity in v0 for backwards compatible history attempts and reviews carry createdAt so future stats read real history [2c]
 
 6. (done) Spaced repetition Practice tab core

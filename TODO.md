@@ -24,13 +24,7 @@ Olve.Diagrams flowchart tool to render it as a Mermaid graph. Each task must be 
   f. Markdown beyond the observed subset such as lists headings and tables [1e]
   g. Edit an earlier chat message and revert the conversation to that point then regrade [2h]
 
-4. Past attempt visibility on the question card
-  a. Show past attempts on the question card [2c]
-  b. Show a small pass fail history graph like a CI pipeline [4a]
-
 5. Stats and progress
-  a. Show book stats in Manage as percent completed [2c]
-    a. Library list API view with derived per book progress percent and ready count GET books view library deferred from the flat problems v0 [5a]
   b. Show more detailed per book stats [5a]
 
 6. Spaced repetition Practice tab tuning

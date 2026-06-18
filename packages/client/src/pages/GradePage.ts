@@ -7,6 +7,8 @@ import { ChatBubble } from '@/components/ChatBubble';
 import { ReplyRow } from '@/components/ReplyRow';
 import { ThinkingBubble } from '@/components/ThinkingBubble';
 import { ImageSourcePicker } from '@/components/ImageSourcePicker';
+import { recordCompleted } from '@/lib/session';
+import { splitLabel } from '@/lib/problem-grouping';
 import '@/styles/gridpad.css';
 import './GradePage.css';
 
@@ -27,6 +29,7 @@ export function GradePage(): HTMLElement {
   let lastRecommendedGrade: Grade | null = null;
   let lastIssues: GradingIssue[] = [];
   let firstAnswer = '';
+  let completedChapter: string | null = null;
 
   const chat = ChatContainer();
   chat.el.classList.add('gridpad');
@@ -198,6 +201,7 @@ export function GradePage(): HTMLElement {
           issues: lastIssues,
         }),
       });
+      recordCompleted(from, completedChapter);
       window.location.hash = `#/${from}`;
     } catch {
       const err = ChatBubble('agent');
@@ -289,6 +293,7 @@ export function GradePage(): HTMLElement {
       ].filter(Boolean));
       if (!qRes || !qRes.ok) throw new Error('question not found');
       const question = await qRes.json() as { canonicalText: string; label: string; bookId: string };
+      completedChapter = splitLabel(question.label)?.chapter ?? null;
       renderLatex(qBody, question.canonicalText);
 
       // Fetch book for eyebrow

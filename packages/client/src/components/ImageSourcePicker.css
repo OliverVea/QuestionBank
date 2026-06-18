@@ -1,0 +1,37 @@
+/* ImageSourcePicker: a Camera / Device pair of buttons feeding one file input. */
+
+.img-src-picker {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.img-src-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 0.9rem 0.6rem;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.08s ease, filter 0.12s ease;
+}
+.img-src-btn:active { transform: scale(0.97); filter: brightness(0.94); }
+@media (hover: hover) { .img-src-btn:hover { filter: brightness(1.05); } }
+
+/* Camera is the primary path (mobile-first); Device is the quieter alternative. */
+.img-src-camera { background: var(--learn); color: #fff; }
+.img-src-device {
+  background: var(--bg);
+  color: var(--learn-dark);
+  box-shadow: inset 0 0 0 2px var(--learn), var(--shadow);
+}
+
+.img-src-icon { display: flex; width: 1.5rem; height: 1.5rem; }
+.img-src-icon svg { width: 100%; height: 100%; }

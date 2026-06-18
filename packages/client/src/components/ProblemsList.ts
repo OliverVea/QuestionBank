@@ -2,6 +2,7 @@ import { html } from '@/lib/html';
 import { ProblemRow, type ProblemRowHandle } from '@/components/ProblemRow';
 import type { Relevance } from '@/lib/types';
 import { PhotoReviewModal } from '@/components/PhotoReviewModal';
+import { ImageSourcePicker } from '@/components/ImageSourcePicker';
 import { stashPhotos } from '@/lib/photo-transfer';
 import './ProblemsList.css';
 
@@ -80,32 +81,9 @@ export function ProblemsList({ problems = [], onChange, getLearningGoal, bookId 
     renumber();
   }
 
-  // --- Scan problems: navigate to the scan page ---
-  const fileInput = document.createElement('input');
-  fileInput.type = 'file';
-  fileInput.accept = 'image/*';
-  fileInput.multiple = true;
-  fileInput.hidden = true;
-
-  const scanBtn = html`<button class="scan-problems" type="button">
-    <span class="cam" aria-hidden="true">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
-           stroke-linecap="round" stroke-linejoin="round">
-        <path d="M3 8a2 2 0 0 1 2-2h2l1.2-1.6A2 2 0 0 1 11.8 4h.4a2 2 0 0 1 1.6.8L15 6h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />
-        <circle cx="12" cy="12.5" r="3.2" />
-      </svg>
-    </span>
-    Scan a problems page
-  </button>`;
-
-  scanBtn.addEventListener('click', () => fileInput.click());
-
-  fileInput.addEventListener('change', () => {
-    const files = fileInput.files;
-    if (!files?.length) return;
-    const selected = [...files];
-    fileInput.value = '';
-
+  // --- Scan problems: pick from camera or device, review, then navigate ---
+  function openReview(selected: File[]) {
+    if (!selected.length) return;
     const modal = PhotoReviewModal({
       initialFiles: selected,
       onPost({ files: posted, notes }) {
@@ -117,7 +95,11 @@ export function ProblemsList({ problems = [], onChange, getLearningGoal, bookId 
       onCancel() { /* stay on page */ },
     });
     document.body.appendChild(modal);
-  });
+  }
+
+  const scanHead = html`<div class="scan-problems-head">Scan a problems page</div>`;
+  const scanPicker = ImageSourcePicker({ onFiles: openReview });
+  const scanBlock = html`<div class="scan-problems">${scanHead}${scanPicker}</div>`;
 
   // Apply problems handed back from the scan page. An `edit` (targetId set) replaces the
   // existing row with that id; everything else is a new row. relevance rides through.
@@ -187,8 +169,7 @@ export function ProblemsList({ problems = [], onChange, getLearningGoal, bookId 
 
   const wrapper = html`<div class="problems">
     <div class="problems-head"><h2>Problems</h2></div>
-    ${scanBtn}
-    ${fileInput}
+    ${scanBlock}
     ${list}
     ${addBtn}
   </div>`;

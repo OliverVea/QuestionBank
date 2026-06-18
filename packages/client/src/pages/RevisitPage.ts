@@ -3,6 +3,7 @@ import { TopBar } from '@/components/TopBar';
 import { QuestionCard } from '@/components/QuestionCard';
 import { Spinner } from '@/components/Spinner';
 import { PhotoReviewModal } from '@/components/PhotoReviewModal';
+import { ImageSourcePicker } from '@/components/ImageSourcePicker';
 import { stashPhotos } from '@/lib/photo-transfer';
 import '@/styles/gridpad.css';
 import './LearnPage.css';
@@ -20,29 +21,16 @@ export function RevisitPage(): HTMLElement {
   qscroll.appendChild(Spinner());
   const stage = html`<main class="learn-stage gridpad">${eyebrow}${qscroll}</main>`;
 
-  const fileInput = document.createElement('input');
-  fileInput.type = 'file';
-  fileInput.accept = 'image/*';
-  fileInput.multiple = true;
-  fileInput.hidden = true;
-
-  const uploadBtn = html`<button class="solution-btn">
-    <span class="sb-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8a2 2 0 0 1 2-2h2l1.2-1.6A2 2 0 0 1 11.8 4h.4a2 2 0 0 1 1.6.8L15 6h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><circle cx="12" cy="12.5" r="3.2"/></svg></span>
-    Upload picture of solution
-  </button>`;
+  const picker = ImageSourcePicker({
+    cameraLabel: 'Camera',
+    deviceLabel: 'Device',
+    onFiles(selected) {
+      if (!selected.length || !currentQuestion || loading) return;
+      showPhotoModal(selected);
+    },
+  });
   const typeBtn = html`<button class="type-link">or type it instead</button>`;
-  const footer = html`<footer class="learn-actions">${uploadBtn}${typeBtn}${fileInput}</footer>`;
-
-  uploadBtn.addEventListener('click', () => {
-    if (currentQuestion && !loading) fileInput.click();
-  });
-  fileInput.addEventListener('change', () => {
-    const files = fileInput.files;
-    if (!files?.length || !currentQuestion || loading) return;
-    const selected = [...files];
-    fileInput.value = '';
-    showPhotoModal(selected);
-  });
+  const footer = html`<footer class="learn-actions">${picker}${typeBtn}</footer>`;
 
   function showPhotoModal(initialFiles: File[]) {
     const modal = PhotoReviewModal({
@@ -73,7 +61,7 @@ export function RevisitPage(): HTMLElement {
   const page = html`<div class="learn-page anim-cascade">${topBar}${stage}${footer}</div>`;
 
   function setActionsEnabled(enabled: boolean) {
-    (uploadBtn as HTMLButtonElement).disabled = !enabled;
+    picker.querySelectorAll('button').forEach((b) => { b.disabled = !enabled; });
     (typeBtn as HTMLButtonElement).disabled = !enabled;
     (skipBtn as HTMLButtonElement).disabled = !enabled;
   }

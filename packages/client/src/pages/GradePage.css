@@ -155,28 +155,19 @@
 }
 
 /* ---- Photo capture ---- */
-.photo-capture { align-self: center; padding: 1rem 0; }
-.solution-btn {
+.photo-capture {
+  align-self: stretch;
+  padding: 1rem 0;
   display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  font: inherit;
-  font-weight: 700;
-  font-size: 1rem;
-  padding: 0.9rem 1.2rem;
-  border-radius: 12px;
-  border: none;
-  background: var(--learn);
-  color: #fff;
-  cursor: pointer;
-  box-shadow: var(--shadow);
-  -webkit-tap-highlight-color: transparent;
-  transition: transform 0.08s ease, filter 0.12s ease;
+  flex-direction: column;
+  gap: 0.7rem;
 }
-.solution-btn:active { transform: scale(0.98); filter: brightness(0.94); }
-@media (hover: hover) { .solution-btn:hover { filter: brightness(1.05); } }
-.sb-icon { display: flex; width: 1.4rem; height: 1.4rem; }
-.sb-icon svg { width: 100%; height: 100%; }
+.photo-capture-prompt {
+  text-align: center;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--muted);
+}
 
 /* Photo thumbnail in user bubble */
 .photo-bubble { padding: 0.4rem; display: flex; flex-wrap: wrap; gap: 0.4rem; }

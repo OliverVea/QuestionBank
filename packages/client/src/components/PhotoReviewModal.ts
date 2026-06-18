@@ -1,4 +1,5 @@
 import { html } from '@/lib/html';
+import { ImageSourcePicker } from '@/components/ImageSourcePicker';
 import './PhotoReviewModal.css';
 
 export interface PhotoReviewResult {
@@ -38,20 +39,17 @@ export function PhotoReviewModal({ initialFiles, onPost, onCancel }: PhotoReview
 
   const postBtn = html`<button class="photo-post-btn" type="button">Post this</button>`;
 
-  // Hidden file input for adding more
-  const addInput = document.createElement('input');
-  addInput.type = 'file';
-  addInput.accept = 'image/*';
-  addInput.multiple = true;
-  addInput.hidden = true;
-
-  addInput.addEventListener('change', () => {
-    if (addInput.files) {
-      for (const f of addInput.files) files.push(f);
-      addInput.value = '';
+  // Camera / Device picker for adding more pages. Disabled once the page limit
+  // is reached (toggled in renderGrid via .photo-add-disabled on the wrapper).
+  const addPicker = ImageSourcePicker({
+    cameraLabel: 'Add (camera)',
+    deviceLabel: 'Add (device)',
+    onFiles(picked) {
+      for (const f of picked) files.push(f);
       renderGrid();
-    }
+    },
   });
+  const addRow = html`<div class="photo-add-row">${addPicker}</div>`;
 
   function renderGrid() {
     grid.innerHTML = '';
@@ -74,18 +72,10 @@ export function PhotoReviewModal({ initialFiles, onPost, onCancel }: PhotoReview
       grid.appendChild(item);
     });
 
-    // "Add more" tile — disabled once the page limit is reached.
+    // Add-more picker — disabled once the page limit is reached.
     const atLimit = files.length >= MAX_PHOTOS;
-    const addTile = html`<button class="photo-add-more" type="button">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-           stroke-linecap="round" stroke-linejoin="round">
-        <path d="M12 5v14"/><path d="M5 12h14"/>
-      </svg>
-      Add more
-    </button>`;
-    (addTile as HTMLButtonElement).disabled = atLimit;
-    addTile.addEventListener('click', () => { if (!atLimit) addInput.click(); });
-    grid.appendChild(addTile);
+    addRow.classList.toggle('photo-add-disabled', atLimit);
+    addRow.querySelectorAll('button').forEach((b) => { b.disabled = atLimit; });
 
     const overLimit = files.length > MAX_PHOTOS;
     warning.hidden = !overLimit;
@@ -108,9 +98,9 @@ export function PhotoReviewModal({ initialFiles, onPost, onCancel }: PhotoReview
     </div>
     <div class="photo-modal-body">
       ${grid}
+      ${addRow}
       ${warning}
       ${notes}
-      ${addInput}
     </div>
     <div class="photo-modal-foot">
       ${postBtn}

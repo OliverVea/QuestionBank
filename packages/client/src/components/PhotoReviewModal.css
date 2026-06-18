@@ -83,27 +83,8 @@
 }
 .photo-grid-del:active { background: rgba(0,0,0,0.85); }
 
-/* Add more button in grid */
-.photo-add-more {
-  aspect-ratio: 3/4;
-  border-radius: 10px;
-  border: 2px dashed var(--border);
-  background: none;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.3rem;
-  color: var(--muted);
-  font: inherit;
-  font-size: 0.75rem;
-  font-weight: 600;
-  -webkit-tap-highlight-color: transparent;
-}
-.photo-add-more:active { background: var(--grey-50); }
-.photo-add-more svg { width: 1.4rem; height: 1.4rem; }
-.photo-add-more:disabled { opacity: 0.4; cursor: not-allowed; }
+/* Add-more picker row (Camera / Device) */
+.photo-add-disabled { opacity: 0.4; pointer-events: none; }
 
 /* Over-limit warning (more than the per-scan page cap selected) */
 .photo-warning {

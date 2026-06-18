@@ -6,6 +6,7 @@ import { ChatContainer } from '@/components/ChatContainer';
 import { ChatBubble } from '@/components/ChatBubble';
 import { ReplyRow } from '@/components/ReplyRow';
 import { ThinkingBubble } from '@/components/ThinkingBubble';
+import { ImageSourcePicker } from '@/components/ImageSourcePicker';
 import '@/styles/gridpad.css';
 import './GradePage.css';
 
@@ -219,25 +220,17 @@ export function GradePage(): HTMLElement {
   function showPhotoCapture() {
     const wrapper = document.createElement('div');
     wrapper.className = 'photo-capture';
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.multiple = true;
-    input.hidden = true;
-    const label = html`<button class="solution-btn" type="button">
-      <span class="sb-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8a2 2 0 0 1 2-2h2l1.2-1.6A2 2 0 0 1 11.8 4h.4a2 2 0 0 1 1.6.8L15 6h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><circle cx="12" cy="12.5" r="3.2"/></svg></span>
-      Take a photo of your solution
-    </button>`;
-    label.addEventListener('click', () => input.click());
-    wrapper.append(input, label);
-    chat.append(wrapper);
-
-    input.addEventListener('change', () => {
-      const files = input.files;
-      if (!files?.length) return;
-      wrapper.remove();
-      void transcribePhotos([...files], '');
+    const prompt = document.createElement('div');
+    prompt.className = 'photo-capture-prompt';
+    prompt.textContent = 'Add a photo of your solution';
+    const picker = ImageSourcePicker({
+      onFiles(files) {
+        wrapper.remove();
+        void transcribePhotos(files, '');
+      },
     });
+    wrapper.append(prompt, picker);
+    chat.append(wrapper);
   }
 
   async function transcribePhotos(files: File[], notes: string) {

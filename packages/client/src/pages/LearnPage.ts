@@ -5,6 +5,9 @@ import { Spinner } from '@/components/Spinner';
 import { PhotoReviewModal } from '@/components/PhotoReviewModal';
 import { ImageSourcePicker } from '@/components/ImageSourcePicker';
 import { stashPhotos } from '@/lib/photo-transfer';
+import { shouldPause, getCount, getLastChapter, reset } from '@/lib/session';
+import { splitLabel } from '@/lib/problem-grouping';
+import { SessionPause } from '@/components/SessionPause';
 import '@/styles/gridpad.css';
 import './LearnPage.css';
 
@@ -69,7 +72,9 @@ export function LearnPage(): HTMLElement {
 
   function render(data: LearnNextResponse) {
     loading = false;
-    if (!data.question || !data.book) {
+    const { question, book } = data;
+    if (!question || !book) {
+      reset('learn'); // "All caught up!" is a natural session end — start fresh next visit.
       currentQuestion = null;
       eyebrow.querySelector('span')!.textContent = '';
       qscroll.replaceChildren(html`<div class="learn-empty animate-in" style="--i: 0">All caught up! No new questions to learn.</div>`);
@@ -77,9 +82,33 @@ export function LearnPage(): HTMLElement {
       skipBtn.hidden = true;
       return;
     }
-    currentQuestion = data.question;
-    eyebrow.querySelector('span')!.textContent = `${data.book.title} · ${data.question.label}`;
-    const card = QuestionCard({ canonicalText: data.question.canonicalText });
+    const nextChapter = splitLabel(question.label)?.chapter ?? null;
+    if (shouldPause('learn', { nextChapter })) {
+      showPause(question, book);
+      return;
+    }
+    renderQuestion(question, book);
+  }
+
+  function showPause(question: Question, book: Book) {
+    currentQuestion = null; // suppress upload/type/skip while paused
+    eyebrow.querySelector('span')!.textContent = '';
+    footer.hidden = true;
+    skipBtn.hidden = true;
+    const pause = SessionPause({
+      mode: 'learn',
+      count: getCount('learn'),
+      title: `Chapter ${getLastChapter('learn')} done!`,
+      onContinue: () => renderQuestion(question, book),
+      onBreak: () => { reset('learn'); window.location.hash = '#/'; },
+    });
+    qscroll.replaceChildren(pause);
+  }
+
+  function renderQuestion(question: Question, book: Book) {
+    currentQuestion = question;
+    eyebrow.querySelector('span')!.textContent = `${book.title} · ${question.label}`;
+    const card = QuestionCard({ canonicalText: question.canonicalText });
     card.classList.add('animate-in');
     card.style.setProperty('--i', '0');
     qscroll.replaceChildren(card);

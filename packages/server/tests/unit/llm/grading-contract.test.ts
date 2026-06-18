@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { deriveGrade, type GradingIssue } from '@/llm/grading-contract.js';
+import { deriveGrade, validateGradingTurn, type GradingIssue } from '@/llm/grading-contract.js';
+import { LlmError } from '@/llm/provider.js';
 
 function issue(severity: GradingIssue['severity']): GradingIssue {
   return { severity, description: `${severity} issue` };
@@ -28,5 +29,44 @@ describe('deriveGrade', () => {
 
   it('critical outranks medium and minor → incorrect', () => {
     expect(deriveGrade([issue('minor'), issue('medium'), issue('critical')])).toBe('incorrect');
+  });
+});
+
+describe('validateGradingTurn', () => {
+  it('accepts a well-formed turn', () => {
+    const raw = { reasoning: 'checked', issues: [{ severity: 'medium', description: 'sign error' }] };
+    expect(validateGradingTurn(raw)).toEqual(raw);
+  });
+
+  it('accepts an empty issues list', () => {
+    expect(validateGradingTurn({ reasoning: 'all good', issues: [] })).toEqual({
+      reasoning: 'all good',
+      issues: [],
+    });
+  });
+
+  // The prod 500: the model returned `issues` as a non-array, crashing deriveGrade with
+  // "issues.some is not a function". Must now surface as a handled LlmError (→ 502).
+  it('rejects non-array issues', () => {
+    expect(() => validateGradingTurn({ reasoning: 'x', issues: {} })).toThrow(LlmError);
+  });
+
+  it('rejects a non-object result', () => {
+    expect(() => validateGradingTurn('nope')).toThrow(LlmError);
+    expect(() => validateGradingTurn(null)).toThrow(LlmError);
+  });
+
+  it('rejects missing reasoning', () => {
+    expect(() => validateGradingTurn({ issues: [] })).toThrow(LlmError);
+  });
+
+  it('rejects an issue with an unknown severity', () => {
+    const raw = { reasoning: 'x', issues: [{ severity: 'fatal', description: 'd' }] };
+    expect(() => validateGradingTurn(raw)).toThrow(LlmError);
+  });
+
+  it('rejects an issue missing its description', () => {
+    const raw = { reasoning: 'x', issues: [{ severity: 'minor' }] };
+    expect(() => validateGradingTurn(raw)).toThrow(LlmError);
   });
 });

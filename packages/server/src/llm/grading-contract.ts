@@ -1,4 +1,5 @@
 import { LATEX_DELIMITER_INSTRUCTION } from './latex-format.js';
+import { LlmError } from './provider.js';
 
 /** Context the grader is given about the question being answered. */
 export interface GradingContext {
@@ -24,6 +25,43 @@ export interface GradingIssue {
 export interface GradingTurnResult {
   reasoning: string;
   issues: GradingIssue[];
+}
+
+const VALID_SEVERITIES = new Set<IssueSeverity>(['critical', 'medium', 'minor']);
+
+/**
+ * Validate the model's forced tool_use input against {@link gradingTurnSchema}. The
+ * Anthropic API does not strictly enforce the input schema, so a stray response (e.g.
+ * `issues` as an object instead of an array) would otherwise crash {@link deriveGrade}
+ * with an uncaught TypeError → 500. Throwing {@link LlmError} here routes a malformed
+ * grade through the grade route's existing 502 path instead. Mirrors the extraction
+ * envelope validator.
+ */
+export function validateGradingTurn(raw: unknown): GradingTurnResult {
+  if (typeof raw !== 'object' || raw === null) {
+    throw new LlmError('grading result is not an object');
+  }
+  const { reasoning, issues } = raw as { reasoning?: unknown; issues?: unknown };
+  if (typeof reasoning !== 'string') {
+    throw new LlmError('grading result missing reasoning');
+  }
+  if (!Array.isArray(issues)) {
+    throw new LlmError('grading result issues must be an array');
+  }
+  const validated: GradingIssue[] = issues.map((item) => {
+    if (typeof item !== 'object' || item === null) {
+      throw new LlmError('grading issue is not an object');
+    }
+    const { severity, description } = item as { severity?: unknown; description?: unknown };
+    if (typeof severity !== 'string' || !VALID_SEVERITIES.has(severity as IssueSeverity)) {
+      throw new LlmError(`grading issue has invalid severity: ${String(severity)}`);
+    }
+    if (typeof description !== 'string') {
+      throw new LlmError('grading issue missing description');
+    }
+    return { severity: severity as IssueSeverity, description };
+  });
+  return { reasoning, issues: validated };
 }
 
 /**

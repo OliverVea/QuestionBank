@@ -3,8 +3,8 @@ import {
   buildGradingPrompt,
   deriveGrade,
   gradingTurnSchema,
+  validateGradingTurn,
   type GradingContext,
-  type GradingTurnResult,
 } from '../llm/grading-contract.js';
 import { LlmError, type LlmProvider, type Message, type Role } from '../llm/provider.js';
 import { requireCustomerId } from '../middleware/resolve-customer.js';
@@ -59,7 +59,8 @@ export function questionGradeRouter(store: Store, provider: LlmProvider): Router
     log.info('grading turn', { question: questionId, turns: transcript.length });
 
     try {
-      const turn = await provider.completeStructured<GradingTurnResult>(messages, gradingTurnSchema);
+      const raw = await provider.completeStructured<unknown>(messages, gradingTurnSchema);
+      const turn = validateGradingTurn(raw);
       const recommendedGrade = deriveGrade(turn.issues);
       log.info('grading complete', {
         question: questionId,

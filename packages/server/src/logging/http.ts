@@ -26,14 +26,42 @@ export function requestLogger(req: Request, res: Response, next: NextFunction): 
 }
 
 /**
+ * Pull a client-error status off a thrown value. Express's body-parser tags malformed
+ * input (e.g. unparseable JSON) with `status`/`statusCode` in the 4xx range and
+ * `expose: true`; honoring it turns those into a 400 instead of a misleading 500.
+ * Anything without a 4xx status is treated as a genuine server fault (500).
+ */
+function clientErrorStatus(err: unknown): number | undefined {
+  if (typeof err !== 'object' || err === null) return undefined;
+  const e = err as { status?: unknown; statusCode?: unknown };
+  const status = typeof e.status === 'number' ? e.status : e.statusCode;
+  if (typeof status === 'number' && status >= 400 && status < 500) return status;
+  return undefined;
+}
+
+/**
  * Terminal error handler. Express routes that call `next(err)` (or throw in an async
- * wrapper) land here. We log the full error — message, cause chain, and stack — so a
- * 502 finally explains itself, then return a clean JSON body to the client.
+ * wrapper) land here, as do body-parser failures on malformed request bodies. Client
+ * errors (4xx) are logged as warnings and echo their message back; everything else is
+ * a server fault — logged in full (message, cause chain, stack) and returned as a 500.
  *
  * Must be registered LAST, after all routes.
  */
 export function errorLogger(err: unknown, req: Request, res: Response, _next: NextFunction): void {
   const detail = describeError(err);
+  const clientStatus = clientErrorStatus(err);
+
+  if (clientStatus !== undefined) {
+    log.warn(`✗ ${req.method} ${req.originalUrl}`, {
+      status: clientStatus,
+      message: detail.message,
+    });
+    if (!res.headersSent) {
+      res.status(clientStatus).json({ error: detail.message });
+    }
+    return;
+  }
+
   log.error(`✗ ${req.method} ${req.originalUrl}`, {
     message: detail.message,
     cause: detail.cause,

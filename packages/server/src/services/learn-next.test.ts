@@ -78,6 +78,18 @@ describe('suggestNext — relevance-aware next-to-learn', () => {
     expect(order).toEqual(['q3', 'q2', 'q1']); // high, then untagged (medium), then low
   });
 
+  it('defers low book-wide, not per-chapter: a ch.1 low waits behind a ch.2 high', async () => {
+    const store = fakeStore(
+      [book('b', ['q1', 'q2'])],
+      [q('q1', 'b', '1.A.1', 'low'), q('q2', 'b', '2.A.1', 'high')],
+      [],
+    );
+    const next = await suggestNext(store, 'c', NOW);
+    // If deferral were per-chapter, ch.1's low (q1) would surface before ch.2 (q2).
+    // It is book-wide, so the ch.2 high wins.
+    expect(next?.question.id).toBe('q2');
+  });
+
   it('scans books in list order; relevance does not reorder across books', async () => {
     const store = fakeStore(
       [book('b1', ['q1']), book('b2', ['q2'])],

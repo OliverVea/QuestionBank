@@ -53,7 +53,10 @@ as TODO.md. Open tasks in TODO.md still reference these by qualified name
   b. (done) ReviewEntry immutable history with derived nextReviewDate on Question [2c]
   c. (done) Due queue and Practice tab UI that surfaces what to review now [6a][6b]
 
-8a. (done) Page outline is always one screen and anything scrollable is a sub element [1a]
+8. (done) Single screen layout
+  a. (done) Page outline is always one screen and anything scrollable is a sub element [1a]
+  b. (done) Single screen with a top banner toggling Learn and Practice [2h][6c][8a]
+  c. (done) Switch the active book for Learn and Practice with arrows that show only when alternative books exist [8b]
 
 16. (done) Flat problems model replacing chapters
   a. (done) A book is a flat ordered list of problems with no chapters [1c]
@@ -66,6 +69,13 @@ as TODO.md. Open tasks in TODO.md still reference these by qualified name
   b. (done) LLM generates a delta of updates and additions against the current problems list [17a]
   c. (done) Polish the proposed delta in a conversation before accepting [17b]
   d. (done) Accept applies the delta to the problems list and reject discards it [17c]
+
+19. (done) Session looping through pending content v0
+  a. (done) Loop Learn through all available lessons one after another until none remain [2h]
+  b. (done) Loop Practice through all due repetitions one after another until none remain [6c]
+  c. (done) Track how many lessons and repetitions the user has completed in the current session [19a][19b]
+  d. (done) Pause screen at N completed items saying good job and offering a break or continue [19c]
+  e. (done) Make the N item pause limit configurable [19d]
 
 20. Streak and goals future (20d notifications remains open in TODO.md)
   a. (done) Track a streak of days in a row with practice or learning activity [2c][6c]

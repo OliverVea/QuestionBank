@@ -18,7 +18,6 @@ Olve.Diagrams flowchart tool to render it as a Mermaid graph. Each task must be 
 ---
 
 3. Grading polish and robustness
-  a. Extraction modal with spinner and true full stack cancel [2d]
   b. Persist the full critique transcript on the Attempt [2c][2f]
   d. Extraction review gate before commit if misreads prove noisy [1d]
   f. Markdown beyond the observed subset such as lists headings and tables [1e]
@@ -36,10 +35,6 @@ Olve.Diagrams flowchart tool to render it as a Mermaid graph. Each task must be 
   b. (done) Judge each question relevance to the book learning goal high medium low stored on Question and set by extraction [7a][2a]
   c. (done) Relevance editing UI in the Edit book problems list [7b]
   d. (done) Postpone low relevance questions in Learn ordering so they only surface once higher relevance questions in the book are attempted Practice due ordering keeps SRS urgency unchanged [7c][6c]
-
-8. Single screen layout
-  b. Single screen with a top banner toggling Learn and Practice [2h][6c][8a]
-  c. Switch the active book for Learn and Practice with arrows that show only when alternative books exist [8b]
 
 9. Book metadata ingestion
   a. (done) Scrape book title author year publisher from ISBN edition deferred Open Library jscmd data has no clean edition field and Book has no edition column [1c]
@@ -77,18 +72,6 @@ Olve.Diagrams flowchart tool to render it as a Mermaid graph. Each task must be 
 
 16. Flat problems model replacing chapters
   d. (blocked) Drag to reorder problems and renumber auto labels superseded by derived path ordering server owns order from the label path [16a]
-
-18. Dark mode
-  a. Define dark theme values for the semantic tokens in the root palette [1a]
-  b. Follow the system color scheme by default via prefers color scheme [18a]
-  c. Optional manual light dark toggle that overrides the system preference [18b]
-
-19. Session looping through pending content v0
-  a. Loop Learn through all available lessons one after another until none remain [2h]
-  b. Loop Practice through all due repetitions one after another until none remain [6c]
-  c. Track how many lessons and repetitions the user has completed in the current session [19a][19b]
-  d. Pause screen at N completed items saying good job and offering a break or continue [19c]
-  e. Make the N item pause limit configurable [19d]
 
 20. Streak and goals future
   d. Notifications reminding the user to keep the streak or meet the goal [20c]

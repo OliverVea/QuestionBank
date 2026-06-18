@@ -167,7 +167,9 @@
     document.getElementById('skip-btn').addEventListener('click', () => {
       showSample(cur + 1);
     });
-    document.getElementById('upload-btn').addEventListener('click', () => { window.location.href = 'grade.html'; });
+    // Upload runs the photo→transcribe flow; "type it instead" goes straight to
+    // the typed chat (matches prod's grade `mode` param).
+    document.getElementById('upload-btn').addEventListener('click', () => { window.location.href = 'grade.html?mode=photo'; });
     document.getElementById('type-btn').addEventListener('click', () => { window.location.href = 'grade.html'; });
 
     // ?q=N opens a specific sample (used for review screenshots); defaults to 0.

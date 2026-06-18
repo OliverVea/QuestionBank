@@ -42,7 +42,7 @@ Olve.Diagrams flowchart tool to render it as a Mermaid graph. Each task must be 
   c. Switch the active book for Learn and Practice with arrows that show only when alternative books exist [8b]
 
 9. Book metadata ingestion
-  a. Scrape book title author year and edition from ISBN [1c]
+  a. (done) Scrape book title author year publisher from ISBN edition deferred Open Library jscmd data has no clean edition field and Book has no edition column [1c]
   b. Scan book sections from index pages when ISBN lookup is insufficient [2a][9a]
   c. Take pictures of index or contents pages and have the LLM populate chapters and sections [2a][9b]
 

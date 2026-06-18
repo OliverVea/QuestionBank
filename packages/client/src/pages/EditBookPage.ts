@@ -12,6 +12,8 @@ interface Book {
   author?: string;
   learningGoal?: string;
   isbn?: string;
+  publisher?: string;
+  year?: number;
 }
 
 interface Question {
@@ -36,6 +38,15 @@ export function EditBookPage(): HTMLElement {
   const authorInput = document.createElement('input');
   authorInput.className = 'field-in';
   authorInput.placeholder = 'Author';
+
+  const publisherInput = document.createElement('input');
+  publisherInput.className = 'field-in';
+  publisherInput.placeholder = 'Publisher';
+
+  const yearInput = document.createElement('input');
+  yearInput.className = 'field-in';
+  yearInput.inputMode = 'numeric';
+  yearInput.placeholder = 'Year';
 
   const goalInput = document.createElement('textarea');
   goalInput.className = 'field-in';
@@ -78,6 +89,8 @@ export function EditBookPage(): HTMLElement {
       const data = await res.json();
       if (data.title) { titleInput.value = data.title; markDirty(); }
       if (data.author) { authorInput.value = data.author; markDirty(); }
+      if (data.publisher) { publisherInput.value = data.publisher; markDirty(); }
+      if (data.year) { yearInput.value = String(data.year); markDirty(); }
       const newCover = CoverSlot({ title: data.title, isbn });
       coverSlot.replaceWith(newCover);
       coverSlot = newCover;
@@ -94,6 +107,8 @@ export function EditBookPage(): HTMLElement {
   isbnInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') doLookup(); });
   titleInput.addEventListener('input', () => { markDirty(); updateSaveState(); });
   authorInput.addEventListener('input', markDirty);
+  publisherInput.addEventListener('input', markDirty);
+  yearInput.addEventListener('input', markDirty);
   goalInput.addEventListener('input', markDirty);
 
   /**
@@ -125,6 +140,7 @@ export function EditBookPage(): HTMLElement {
     saveBtn.textContent = 'Saving…';
 
     try {
+      const yearNum = Number.parseInt(yearInput.value.trim(), 10);
       await fetch(`/api/books/${bookId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -133,6 +149,8 @@ export function EditBookPage(): HTMLElement {
           author: authorInput.value.trim(),
           learningGoal: goalInput.value.trim(),
           isbn: isbnInput.value.trim(),
+          publisher: publisherInput.value.trim(),
+          ...(Number.isNaN(yearNum) ? {} : { year: yearNum }),
         }),
       });
 
@@ -174,6 +192,14 @@ export function EditBookPage(): HTMLElement {
           <label class="field">
             <span class="field-lbl">Author</span>
             ${authorInput}
+          </label>
+          <label class="field">
+            <span class="field-lbl">Publisher</span>
+            ${publisherInput}
+          </label>
+          <label class="field">
+            <span class="field-lbl">Year</span>
+            ${yearInput}
           </label>
         </div>
       </div>
@@ -218,6 +244,8 @@ export function EditBookPage(): HTMLElement {
 
       titleInput.value = book.title;
       authorInput.value = book.author ?? '';
+      publisherInput.value = book.publisher ?? '';
+      yearInput.value = book.year !== undefined ? String(book.year) : '';
       goalInput.value = book.learningGoal ?? '';
       isbnInput.value = book.isbn ?? '';
 

@@ -214,7 +214,11 @@
       "Bash(kubectl config *)",
       "Bash(helm template *)",
       "Bash(scp -o StrictHostKeyChecking=no -r helm oliver@bulwark-m2:/tmp/qb-render/)",
-      "Bash(rm /tmp/qb-settings-msg.txt)"
+      "Bash(rm /tmp/qb-settings-msg.txt)",
+      "PowerShell(npx vitest run --project client packages/client/tests/integration/EditBookPage.test.ts 2>&1 | Select-Object -Last 40; Write-Output \"exit: $LASTEXITCODE\")",
+      "PowerShell(cd C:\\\\Users\\\\olive\\\\QuestionBank\\\\packages\\\\client; npx tsc -b 2>&1 | Select-Object -First 40; Write-Output \"EXIT: $LASTEXITCODE\")",
+      "PowerShell(cd C:\\\\Users\\\\olive\\\\QuestionBank; npx vitest run --project client 2>&1 | Select-Object -Last 12; Write-Output \"exit: $LASTEXITCODE\")",
+      "Bash(rm /tmp/qb-9a-msg.txt)"
     ],
     "deny": [
       "Read(//c/Users/olive/QuestionBank/node_modules/**)",

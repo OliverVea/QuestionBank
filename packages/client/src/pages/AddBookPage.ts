@@ -18,6 +18,17 @@ export function AddBookPage(): HTMLElement {
   authorInput.id = 'f-author';
   authorInput.placeholder = 'Author';
 
+  const publisherInput = document.createElement('input');
+  publisherInput.className = 'field-in';
+  publisherInput.id = 'f-publisher';
+  publisherInput.placeholder = 'Publisher';
+
+  const yearInput = document.createElement('input');
+  yearInput.className = 'field-in';
+  yearInput.id = 'f-year';
+  yearInput.inputMode = 'numeric';
+  yearInput.placeholder = 'Year';
+
   const goalInput = document.createElement('textarea');
   goalInput.className = 'field-in';
   goalInput.id = 'f-goal';
@@ -53,6 +64,8 @@ export function AddBookPage(): HTMLElement {
       const data = await res.json();
       if (data.title) { titleInput.value = data.title; updateSaveState(); }
       if (data.author) { authorInput.value = data.author; }
+      if (data.publisher) { publisherInput.value = data.publisher; }
+      if (data.year) { yearInput.value = String(data.year); }
       const newCover = CoverSlot({ title: data.title, isbn });
       coverSlot.replaceWith(newCover);
       coverSlot = newCover;
@@ -77,6 +90,7 @@ export function AddBookPage(): HTMLElement {
     saveBtn.textContent = 'Saving…';
 
     try {
+      const yearNum = Number.parseInt(yearInput.value.trim(), 10);
       const res = await fetch('/api/books', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -85,6 +99,8 @@ export function AddBookPage(): HTMLElement {
           author: authorInput.value.trim() || undefined,
           learningGoal: goalInput.value.trim() || undefined,
           isbn: isbnInput.value.trim() || undefined,
+          publisher: publisherInput.value.trim() || undefined,
+          year: Number.isNaN(yearNum) ? undefined : yearNum,
         }),
       });
       if (!res.ok) throw new Error('Failed to create book');
@@ -121,6 +137,14 @@ export function AddBookPage(): HTMLElement {
           <label class="field">
             <span class="field-lbl">Author</span>
             ${authorInput}
+          </label>
+          <label class="field">
+            <span class="field-lbl">Publisher</span>
+            ${publisherInput}
+          </label>
+          <label class="field">
+            <span class="field-lbl">Year</span>
+            ${yearInput}
           </label>
         </div>
       </div>

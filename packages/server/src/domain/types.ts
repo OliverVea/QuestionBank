@@ -146,4 +146,6 @@ export interface Settings {
   daysGoal: number;
   /** Volume target: solve N problems/week. */
   problemsGoal: number;
+  /** Practice pause cadence: show the session pause every N reviews. */
+  pauseEvery: number;
 }

@@ -384,33 +384,35 @@ describe('UAT: API flows on the flat problems model', () => {
   // customer saves; PUT upserts the per-customer record and the new targets then
   // flow through to the activity header. Invalid goals are rejected (400).
   // -------------------------------------------------------------------------
-  it('Settings: GET defaults, PUT upserts goals, and /activity reflects the new targets', async () => {
-    // No record yet ⇒ GET returns the defaults the header would otherwise hardcode.
+  it('Settings: GET defaults, PUT upserts goals + pauseEvery, and /activity reflects the new targets', async () => {
+    // No record yet ⇒ GET returns the defaults the header would otherwise hardcode (pauseEvery defaults to 10).
     const initial = (await request(app).get('/api/settings')).body;
-    expect(initial).toEqual({ daysGoal: 3, problemsGoal: 20 });
+    expect(initial).toEqual({ daysGoal: 3, problemsGoal: 20, pauseEvery: 10 });
     expect((await request(app).get('/api/activity')).body).toMatchObject({ daysGoal: 3, problemsGoal: 20 });
 
-    // Upsert new goals (insert path) — the saved values come straight back.
+    // Upsert goals WITHOUT pauseEvery (back-compat body) — pauseEvery defaults to 10 in the response.
     const saved = await request(app).put('/api/settings').send({ daysGoal: 5, problemsGoal: 40 });
     expect(saved.status).toEqual(200);
-    expect(saved.body).toEqual({ daysGoal: 5, problemsGoal: 40 });
+    expect(saved.body).toEqual({ daysGoal: 5, problemsGoal: 40, pauseEvery: 10 });
 
-    // GET now reads the stored record, and the new targets flow into the activity header.
-    expect((await request(app).get('/api/settings')).body).toEqual({ daysGoal: 5, problemsGoal: 40 });
+    // GET now reads the stored record, and the new targets flow into the activity header (which ignores pauseEvery).
+    expect((await request(app).get('/api/settings')).body).toEqual({ daysGoal: 5, problemsGoal: 40, pauseEvery: 10 });
     expect((await request(app).get('/api/activity')).body).toMatchObject({ daysGoal: 5, problemsGoal: 40 });
 
-    // A second PUT (update path) overwrites in place, not a duplicate row.
-    const updated = await request(app).put('/api/settings').send({ daysGoal: 2, problemsGoal: 15 });
-    expect(updated.body).toEqual({ daysGoal: 2, problemsGoal: 15 });
-    expect((await request(app).get('/api/activity')).body).toMatchObject({ daysGoal: 2, problemsGoal: 15 });
+    // PUT WITH pauseEvery stores it; GET reflects it.
+    const withPause = await request(app).put('/api/settings').send({ daysGoal: 2, problemsGoal: 15, pauseEvery: 5 });
+    expect(withPause.body).toEqual({ daysGoal: 2, problemsGoal: 15, pauseEvery: 5 });
+    expect((await request(app).get('/api/settings')).body).toEqual({ daysGoal: 2, problemsGoal: 15, pauseEvery: 5 });
 
-    // Guards: days out of 1–7, problems < 1, and non-integers are all 400; nothing persists.
+    // Guards: days out of 1–7, problems < 1, non-integers, and bad pauseEvery are all 400; nothing persists.
     expect((await request(app).put('/api/settings').send({ daysGoal: 0, problemsGoal: 15 })).status).toEqual(400);
     expect((await request(app).put('/api/settings').send({ daysGoal: 8, problemsGoal: 15 })).status).toEqual(400);
     expect((await request(app).put('/api/settings').send({ daysGoal: 3, problemsGoal: 0 })).status).toEqual(400);
     expect((await request(app).put('/api/settings').send({ daysGoal: 3.5, problemsGoal: 15 })).status).toEqual(400);
+    expect((await request(app).put('/api/settings').send({ daysGoal: 3, problemsGoal: 15, pauseEvery: 0 })).status).toEqual(400);
+    expect((await request(app).put('/api/settings').send({ daysGoal: 3, problemsGoal: 15, pauseEvery: 2.5 })).status).toEqual(400);
     // The last good save is intact after the rejected ones.
-    expect((await request(app).get('/api/settings')).body).toEqual({ daysGoal: 2, problemsGoal: 15 });
+    expect((await request(app).get('/api/settings')).body).toEqual({ daysGoal: 2, problemsGoal: 15, pauseEvery: 5 });
   });
 
   // -------------------------------------------------------------------------
@@ -851,8 +853,8 @@ describe('UAT (security): customer segmentation is airtight', () => {
     ).toEqual(200);
 
     // A reads back A's goals; B still sees the untouched defaults.
-    expect((await as(request(segApp).get('/api/settings'), A)).body).toEqual({ daysGoal: 6, problemsGoal: 50 });
-    expect((await as(request(segApp).get('/api/settings'), B)).body).toEqual({ daysGoal: 3, problemsGoal: 20 });
+    expect((await as(request(segApp).get('/api/settings'), A)).body).toEqual({ daysGoal: 6, problemsGoal: 50, pauseEvery: 10 });
+    expect((await as(request(segApp).get('/api/settings'), B)).body).toEqual({ daysGoal: 3, problemsGoal: 20, pauseEvery: 10 });
     // ...and the boundary holds through the activity header too.
     expect((await as(request(segApp).get('/api/activity'), B)).body).toMatchObject({ daysGoal: 3, problemsGoal: 20 });
   });

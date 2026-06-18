@@ -29,6 +29,13 @@ export function SettingsPage(): HTMLElement {
   problemsInput.inputMode = 'numeric';
   problemsInput.min = '1';
 
+  const pauseInput = document.createElement('input');
+  pauseInput.className = 'field-in';
+  pauseInput.id = 'pause-in';
+  pauseInput.type = 'number';
+  pauseInput.inputMode = 'numeric';
+  pauseInput.min = '1';
+
   const saveBtn = html`<button class="primary-btn" type="submit" form="settings-form" disabled>
     Save changes
   </button>`;
@@ -53,15 +60,20 @@ export function SettingsPage(): HTMLElement {
     }
     const days = readValue(daysInput, saved.daysGoal);
     const problems = readValue(problemsInput, saved.problemsGoal);
-    const dirty = days !== saved.daysGoal || problems !== saved.problemsGoal;
+    const pause = readValue(pauseInput, saved.pauseEvery);
+    const dirty = days !== saved.daysGoal || problems !== saved.problemsGoal || pause !== saved.pauseEvery;
     (saveBtn as HTMLButtonElement).disabled = !dirty;
   }
 
   daysInput.addEventListener('input', syncSave);
   problemsInput.addEventListener('input', syncSave);
+  pauseInput.addEventListener('input', syncSave);
 
   const fieldsHost = html`<div class="settings-fields"></div>`;
   fieldsHost.appendChild(Spinner());
+
+  const pauseHost = html`<div class="settings-fields"></div>`;
+  pauseHost.appendChild(Spinner());
 
   const form = html`<form class="settings-stage" id="settings-form" autocomplete="off">
     <h1 class="settings-title">Settings</h1>
@@ -73,6 +85,14 @@ export function SettingsPage(): HTMLElement {
       </div>
       ${fieldsHost}
     </section>
+
+    <section class="goals">
+      <div class="section-head">
+        <h2>Practice</h2>
+        <p class="section-sub">How often a Practice session pauses to let you take a break.</p>
+      </div>
+      ${pauseHost}
+    </section>
   </form>`;
 
   form.addEventListener('submit', async (e) => {
@@ -80,6 +100,7 @@ export function SettingsPage(): HTMLElement {
     if (!saved) return;
     const daysGoal = readValue(daysInput, saved.daysGoal);
     const problemsGoal = readValue(problemsInput, saved.problemsGoal);
+    const pauseEvery = readValue(pauseInput, saved.pauseEvery);
 
     (saveBtn as HTMLButtonElement).disabled = true;
     saveBtn.textContent = 'Saving…';
@@ -88,7 +109,7 @@ export function SettingsPage(): HTMLElement {
       const res = await fetch('/api/settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ daysGoal, problemsGoal }),
+        body: JSON.stringify({ daysGoal, problemsGoal, pauseEvery }),
       });
       if (!res.ok) throw new Error('Failed to save settings');
       window.location.hash = '#/';
@@ -117,9 +138,10 @@ export function SettingsPage(): HTMLElement {
       .then((r) => (r.ok ? (r.json() as Promise<Settings>) : null))
       .catch(() => null);
     // Fall back to the defaults the server would apply, so the form is still usable offline.
-    saved = fetched ?? { daysGoal: 3, problemsGoal: 20 };
+    saved = fetched ?? { daysGoal: 3, problemsGoal: 20, pauseEvery: 10 };
     daysInput.value = String(saved.daysGoal);
     problemsInput.value = String(saved.problemsGoal);
+    pauseInput.value = String(saved.pauseEvery);
 
     fieldsHost.replaceChildren(
       html`<label class="field">
@@ -129,6 +151,12 @@ export function SettingsPage(): HTMLElement {
       html`<label class="field field-block">
         <span class="field-lbl">Problems <span class="field-opt">per week</span></span>
         ${problemsInput}
+      </label>`,
+    );
+    pauseHost.replaceChildren(
+      html`<label class="field field-block">
+        <span class="field-lbl">Pause every <span class="field-opt">reviews</span></span>
+        ${pauseInput}
       </label>`,
     );
     saveBtn.textContent = 'Save changes';

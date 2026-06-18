@@ -80,8 +80,9 @@ export interface Activity {
   problemsGoal: number;
 }
 
-/** The customer's editable weekly goals, from GET/PUT /api/settings. */
+/** The customer's editable settings, from GET/PUT /api/settings. */
 export interface Settings {
   daysGoal: number;
   problemsGoal: number;
+  pauseEvery: number;
 }

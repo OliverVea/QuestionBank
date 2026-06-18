@@ -57,7 +57,7 @@ Each increment follows this loop:
 4. **Seed data (optional)** — populate demo data when it helps show the change.
 5. **User tests** — the user exercises it in the browser.
 6. **Iterate** — refine based on what the user sees.
-7. **Finish** — commit the work.
+7. **Finish** — commit the work and push directly to `master`. No feature branches or PRs unless the user asks; commit straight onto `master` and `git push`.
 
 ## What not to do
 

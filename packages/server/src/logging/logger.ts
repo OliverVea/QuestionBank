@@ -71,3 +71,21 @@ export function describeError(err: unknown): { message: string; stack?: string; 
   }
   return { message: String(err) };
 }
+
+/**
+ * Walk the `.cause` chain and return the first system error `code` (e.g. "ETIMEDOUT",
+ * "ECONNREFUSED", "ENOTFOUND"). Transport failures surface this code several causes deep —
+ * the Anthropic SDK wraps it as APIConnectionError("Connection error.") → TypeError("fetch
+ * failed") → { code }. describeError only reads each level's `.message`, so the code is
+ * invisible there; this is what turns "request failed" into "request failed: ETIMEDOUT".
+ */
+export function errorCode(err: unknown): string | undefined {
+  let current: unknown = err;
+  // Bound the walk so a self-referential cause can't loop forever.
+  for (let depth = 0; current != null && depth < 10; depth++) {
+    const code = (current as { code?: unknown }).code;
+    if (typeof code === 'string') return code;
+    current = (current as { cause?: unknown }).cause;
+  }
+  return undefined;
+}

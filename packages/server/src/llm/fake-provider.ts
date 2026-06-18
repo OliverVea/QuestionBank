@@ -1,10 +1,12 @@
-import type { CompleteOpts, LlmProvider, Message } from './provider.js';
+import type { CompleteOpts, ConnectivityResult, LlmProvider, Message } from './provider.js';
 
 export interface FakeProviderConfig {
   /** Text returned by every `complete` call. */
   completeText?: string;
   /** Object returned by every `completeStructured` call. */
   structured?: unknown;
+  /** Result returned by `checkConnectivity` (defaults to a healthy `ok`). */
+  connectivity?: ConnectivityResult;
 }
 
 /**
@@ -42,5 +44,11 @@ export class FakeProvider implements LlmProvider {
       return { questions: [] } as T;
     }
     return this.config.structured as T;
+  }
+
+  async checkConnectivity(): Promise<ConnectivityResult> {
+    return (
+      this.config.connectivity ?? { status: 'ok', detail: 'fake provider is always reachable', ms: 0 }
+    );
   }
 }

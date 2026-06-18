@@ -43,9 +43,25 @@ export function createApp(
   app.use(requestLogger);
   app.use(express.json());
 
-  // Health is unauthenticated so a proxy/uptime check needs no identity.
+  // Health is unauthenticated so a proxy/uptime check needs no identity. This is the
+  // liveness check: the process is up and serving. It says nothing about whether the
+  // LLM backend is reachable — see /api/health/connectivity for that.
   app.get('/api/health', (_req, res) => {
     res.json({ status: 'ok' });
+  });
+
+  // Deep health: does this pod actually reach the LLM backend right now? Probes via the
+  // same client extraction uses (no tokens billed) and reports exactly what's wrong —
+  // `down` with a system error code (egress dead), `auth` (key rejected), or `ok`.
+  // Unauthenticated and registered before resolveCustomer so a probe needs no identity.
+  // 200 when reachable, 503 otherwise, so an automated check can gate on the status code.
+  app.get('/api/health/connectivity', async (_req, res) => {
+    const anthropic = await provider.checkConnectivity();
+    const healthy = anthropic.status === 'ok';
+    res.status(healthy ? 200 : 503).json({
+      status: healthy ? 'ok' : 'degraded',
+      anthropic,
+    });
   });
 
   // Every /api route below resolves the owning customer first.

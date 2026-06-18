@@ -1,0 +1,106 @@
+/* Session pause checkpoint card. Lives inside the Learn/Practice scroll area in
+   place of the question card. Accent is themed per mode (Learn green / Practice
+   purple) from the design tokens. Ported from docs/mocks/session-pause.css. */
+.session-pause {
+  --accent: var(--learn);
+  --accent-dark: var(--learn-dark);
+  width: 100%;
+  max-width: 30rem;
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.5rem;
+}
+.session-pause[data-mode="revisit"] {
+  --accent: var(--revisit);
+  --accent-dark: var(--revisit-dark);
+}
+
+/* Check medallion — ties the celebration to the mode accent. */
+.pause-badge {
+  width: 4.5rem;
+  height: 4.5rem;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: var(--accent);
+  box-shadow: var(--shadow);
+  margin-bottom: 0.6rem;
+}
+.pause-badge svg { width: 2.2rem; height: 2.2rem; display: block; }
+
+.pause-title {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--fg);
+}
+.pause-sub {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  color: var(--muted);
+  max-width: 24rem;
+}
+
+/* The running session tally. Big number over a quiet label. */
+.pause-count {
+  margin-top: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.9rem 1.6rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+.pc-num {
+  font-size: 2.4rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--accent-dark);
+}
+.pc-lbl {
+  margin-top: 0.3rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+/* Actions: two rounded cards side by side. Continue colored (primary), break grey. */
+.pause-actions {
+  margin-top: 1.4rem;
+  width: 100%;
+  display: flex;
+  gap: 0.7rem;
+}
+.pause-btn {
+  flex: 1;
+  border: none;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  padding: 0.95rem 1rem;
+  border-radius: 16px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: var(--shadow);
+  transition: transform 0.08s ease, filter 0.12s ease, box-shadow 0.12s ease;
+}
+.pause-btn:active { transform: scale(0.97); filter: brightness(0.96); }
+@media (hover: hover) {
+  .pause-btn:hover { filter: brightness(1.04); }
+}
+.pb-continue { background: var(--accent); color: #fff; }
+.pb-break {
+  background: var(--surface);
+  color: var(--muted);
+  box-shadow: none;
+  border: 1px solid var(--border);
+}

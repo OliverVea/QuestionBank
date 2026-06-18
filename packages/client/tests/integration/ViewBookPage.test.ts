@@ -14,9 +14,9 @@ const mockBook = {
 // Already in DERIVED path order (the server sorts; the page only groups).
 const future = new Date(Date.now() + 6 * 86_400_000).toISOString();
 const mockQuestions: QuestionWithSummary[] = [
-  { id: 'q-1.5', bookId: 'b1', label: '1.5', canonicalText: 'Loose chapter-1 problem',
+  { id: 'q-1.5', bookId: 'b1', label: '1.5', canonicalText: 'Loose chapter-1 problem', relevance: 'high',
     summary: { mastery: 'strong', readiness: 'ready', grades: ['correct'] } },
-  { id: 'q-1.A.1', bookId: 'b1', label: '1.A.1', canonicalText: 'Normalize $\\Psi$',
+  { id: 'q-1.A.1', bookId: 'b1', label: '1.A.1', canonicalText: 'Normalize $\\Psi$', relevance: 'low',
     summary: { mastery: 'improving', readiness: 'waiting', grades: ['incorrect', 'partial'], nextReviewDate: future } },
   { id: 'q-1.A.2', bookId: 'b1', label: '1.A.2', canonicalText: 'Show $d\\langle x\\rangle/dt$',
     summary: { mastery: 'strong', readiness: 'waiting', grades: ['correct'], nextReviewDate: future } },
@@ -82,6 +82,25 @@ describe('ViewBookPage', () => {
     expect(rowFor('1.5').querySelector('.vb-ready')!.textContent).toBe('Ready now');
     expect(rowFor('1.A.1').querySelector('.vb-ready')!.textContent).toMatch(/^Ready in \d+ days?$/);
     expect(rowFor('1.B.1').querySelector('.vb-ready')!.textContent).toBe(''); // finalized → empty
+  });
+
+  test('renders a relevance badge only when the question has relevance set', async () => {
+    document.getElementById('app')!.appendChild(ViewBookPage());
+    await vi.waitFor(() => expect(document.querySelector('.vb-row')).not.toBeNull());
+
+    const rowFor = (label: string): HTMLElement =>
+      [...document.querySelectorAll('.vb-row')].find(
+        (r) => r.querySelector('.vb-label')!.textContent === label,
+      ) as HTMLElement;
+
+    // Badge carries the word + rel-* tint class when relevance is set.
+    const high = rowFor('1.5').querySelector('.relevance-badge')!;
+    expect(high.textContent).toBe('High');
+    expect(high.classList.contains('rel-high')).toBe(true);
+    expect(rowFor('1.A.1').querySelector('.relevance-badge')!.classList.contains('rel-low')).toBe(true);
+
+    // No relevance → no badge.
+    expect(rowFor('1.B.1').querySelector('.relevance-badge')).toBeNull();
   });
 
   test('group headers toggle collapse, independently of subsections', async () => {

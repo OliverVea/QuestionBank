@@ -1,0 +1,17 @@
+/* Relevance to the book's learning goal as a pill (High / Medium / Low). Tinted
+   green→orange→grey, mirroring the edit dropdown's rel-* colors (ProblemRow.css)
+   but in the compact pill shape used by the mastery pill on the book view. */
+.relevance-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.16rem 0.5rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.relevance-badge.rel-high   { background: color-mix(in srgb, var(--green-100) 25%, var(--surface)); color: var(--green-300); }
+.relevance-badge.rel-medium { background: color-mix(in srgb, var(--orange-100) 25%, var(--surface)); color: var(--orange-400); }
+.relevance-badge.rel-low    { background: var(--surface); color: var(--muted); }

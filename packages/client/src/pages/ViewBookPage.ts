@@ -3,6 +3,7 @@ import { TopBar } from '@/components/TopBar';
 import { CoverSlot } from '@/components/CoverSlot';
 import { Spinner } from '@/components/Spinner';
 import { MasteryPill } from '@/components/MasteryPill';
+import { RelevanceBadge } from '@/components/RelevanceBadge';
 import { CiStrip } from '@/components/CiStrip';
 import { renderLatex } from '@/lib/latex';
 import { groupByPath, chapterTotal, type Chapter, type IndexedProblem } from '@/lib/problem-grouping';
@@ -163,7 +164,7 @@ export function ViewBookPage(): HTMLElement {
     });
   }
 
-  /** One problem row: label chip + clamped body + mastery/CI + readiness + chevron. */
+  /** One problem row: label chip + clamped body + relevance/mastery/CI + readiness + chevron. */
   function makeRow({ p, i }: IndexedProblem): HTMLElement {
     const label = html`<span class="vb-label"></span>`;
     label.textContent = p.label !== '' ? p.label : String(i + 1);
@@ -172,6 +173,7 @@ export function ViewBookPage(): HTMLElement {
     renderLatex(body, p.canonicalText, '');
 
     const badgeRow = html`<div class="vb-badge-row"></div>`;
+    if (p.relevance) badgeRow.appendChild(RelevanceBadge(p.relevance));
     badgeRow.appendChild(MasteryPill(p.summary.mastery));
     if (p.summary.grades.length > 0) {
       badgeRow.appendChild(CiStrip(p.summary.grades, { cap: 8 }));

@@ -5,6 +5,8 @@ import { Spinner } from '@/components/Spinner';
 import { PhotoReviewModal } from '@/components/PhotoReviewModal';
 import { ImageSourcePicker } from '@/components/ImageSourcePicker';
 import { stashPhotos } from '@/lib/photo-transfer';
+import { shouldPause, getCount, reset } from '@/lib/session';
+import { SessionPause } from '@/components/SessionPause';
 import '@/styles/gridpad.css';
 import './LearnPage.css';
 
@@ -15,6 +17,7 @@ interface DueItem { question: Question; book: Book }
 export function RevisitPage(): HTMLElement {
   let currentQuestion: Question | null = null;
   let loading = false;
+  let pauseEvery = 10;
 
   const eyebrow = html`<div class="qcard-eyebrow"><span></span></div>`;
   const qscroll = html`<div class="qscroll"></div>`;
@@ -69,6 +72,7 @@ export function RevisitPage(): HTMLElement {
   function render(item: DueItem | null) {
     loading = false;
     if (!item) {
+      reset('revisit'); // "All caught up!" is a natural session end.
       currentQuestion = null;
       eyebrow.querySelector('span')!.textContent = '';
       qscroll.replaceChildren(html`<div class="learn-empty animate-in" style="--i: 0">All caught up! Nothing to revisit.</div>`);
@@ -76,6 +80,29 @@ export function RevisitPage(): HTMLElement {
       skipBtn.hidden = true;
       return;
     }
+    if (shouldPause('revisit', { pauseEvery })) {
+      showPause(item);
+      return;
+    }
+    renderQuestion(item);
+  }
+
+  function showPause(item: DueItem) {
+    currentQuestion = null; // suppress upload/type/skip while paused
+    eyebrow.querySelector('span')!.textContent = '';
+    footer.hidden = true;
+    skipBtn.hidden = true;
+    const pause = SessionPause({
+      mode: 'revisit',
+      count: getCount('revisit'),
+      title: `Nice — ${getCount('revisit')} reviews done!`,
+      onContinue: () => renderQuestion(item),
+      onBreak: () => { reset('revisit'); window.location.hash = '#/'; },
+    });
+    qscroll.replaceChildren(pause);
+  }
+
+  function renderQuestion(item: DueItem) {
     currentQuestion = item.question;
     eyebrow.querySelector('span')!.textContent = `${item.book.title} · ${item.question.label}`;
     const card = QuestionCard({ canonicalText: item.question.canonicalText });
@@ -111,6 +138,10 @@ export function RevisitPage(): HTMLElement {
     }
   }
 
+  void fetch('/api/settings')
+    .then((r) => (r.ok ? (r.json() as Promise<{ pauseEvery?: number }>) : null))
+    .then((s) => { if (s && typeof s.pauseEvery === 'number') pauseEvery = s.pauseEvery; })
+    .catch(() => { /* keep the default 10 */ });
   void loadNext();
   return page;
 }

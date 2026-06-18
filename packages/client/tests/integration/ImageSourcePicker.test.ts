@@ -4,7 +4,7 @@ import { ImageSourcePicker } from '@/components/ImageSourcePicker';
 function setup() {
   const onFiles = vi.fn();
   const el = ImageSourcePicker({ onFiles });
-  const [camera, device] = [...el.querySelectorAll('button')] as HTMLButtonElement[];
+  const [camera, device] = [...el.querySelectorAll('button')] as [HTMLButtonElement, HTMLButtonElement];
   const input = el.querySelector('input[type=file]') as HTMLInputElement;
   return { el, onFiles, camera, device, input };
 }
@@ -47,7 +47,7 @@ describe('ImageSourcePicker', () => {
   test('custom labels override the defaults', () => {
     const onFiles = vi.fn();
     const el = ImageSourcePicker({ onFiles, cameraLabel: 'Add (camera)', deviceLabel: 'Add (device)' });
-    const [camera, device] = [...el.querySelectorAll('button')] as HTMLButtonElement[];
+    const [camera, device] = [...el.querySelectorAll('button')] as [HTMLButtonElement, HTMLButtonElement];
     expect(camera.textContent).toContain('Add (camera)');
     expect(device.textContent).toContain('Add (device)');
   });

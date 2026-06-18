@@ -218,7 +218,9 @@
       "PowerShell(npx vitest run --project client packages/client/tests/integration/EditBookPage.test.ts 2>&1 | Select-Object -Last 40; Write-Output \"exit: $LASTEXITCODE\")",
       "PowerShell(cd C:\\\\Users\\\\olive\\\\QuestionBank\\\\packages\\\\client; npx tsc -b 2>&1 | Select-Object -First 40; Write-Output \"EXIT: $LASTEXITCODE\")",
       "PowerShell(cd C:\\\\Users\\\\olive\\\\QuestionBank; npx vitest run --project client 2>&1 | Select-Object -Last 12; Write-Output \"exit: $LASTEXITCODE\")",
-      "Bash(rm /tmp/qb-9a-msg.txt)"
+      "Bash(rm /tmp/qb-9a-msg.txt)",
+      "PowerShell(npx vitest run packages/server/src/services/learn-next.test.ts 2>&1 | Select-Object -Last 20)",
+      "PowerShell(npx vitest run -t \"relevance-aware\" 2>&1 | Select-Object -Last 30)"
     ],
     "deny": [
       "Read(//c/Users/olive/QuestionBank/node_modules/**)",

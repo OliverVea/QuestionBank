@@ -37,12 +37,17 @@ export function summarizeBooks(
     let weightSum = 0;
     let dueNow = 0;
     let earliestNext: string | null = null;
-    let learnNext: { label: string; pathPrefix: string } | null = null;
+    let learnNext: { label: string; pathPrefix: string; started: boolean } | null = null;
+    // Chapters (pathPrefix) with ≥1 attempt anywhere — used to decide whether learnNext
+    // begins a chapter or continues one. Built across the whole book before we read it,
+    // since an attempted problem may sit after learnNext in path order.
+    const startedChapters = new Set<string>();
 
     for (const q of bookQuestions) {
       const qAttempts = attemptsByQuestion.get(q.id) ?? [];
       const summary = deriveSummary(qAttempts, now);
       weightSum += MASTERY_WEIGHT[summary.mastery];
+      if (qAttempts.length > 0) startedChapters.add(q.label.split('.')[0] ?? q.label);
 
       // "Revisit" means previously seen: a never-attempted problem is 'ready' but is
       // NOT due-for-revisit (it's learn material). Require ≥1 attempt so dueNow matches
@@ -52,9 +57,10 @@ export function summarizeBooks(
         earliestNext = summary.nextReviewDate;
       }
       if (learnNext === null && qAttempts.length === 0) {
-        learnNext = { label: q.label, pathPrefix: q.label.split('.')[0] ?? q.label };
+        learnNext = { label: q.label, pathPrefix: q.label.split('.')[0] ?? q.label, started: false };
       }
     }
+    if (learnNext !== null) learnNext.started = startedChapters.has(learnNext.pathPrefix);
 
     const total = bookQuestions.length;
     const progress = total === 0 ? 0 : Math.round((weightSum / total) * 100);

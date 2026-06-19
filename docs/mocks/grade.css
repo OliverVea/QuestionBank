@@ -8,18 +8,45 @@
    `.reply-input`, `.thinking-bubble`, the photo-capture/photo-bubble flow — so
    the eventual port is near 1:1. Prod behavior wins where mock and prod drift. */
 
-/* White page with the shared engineering-pad grid behind the chat only. The
-   shell clips (overflow:hidden); `.gridpad` sits on the chat container so the
-   rotated grid layer shows through the transparent chat and never adds scroll. */
+/* Page shell: topbar / question / phase bar / chat / actions, the chat scrolling
+   between the pinned chrome (it clips itself with overflow:hidden). The phase-bar
+   row collapses to 0 when hidden (typed flow has no transcription step). */
 .grade-page {
   height: 100dvh;
   display: grid;
-  grid-template-rows: auto auto 1fr auto;   /* topbar / question / chat / actions */
+  grid-template-rows: auto auto auto 1fr auto;   /* topbar / question / phase / chat / actions */
   overflow: hidden;
   max-width: 760px;
   margin: 0 auto;
 }
 .grade-page > .topbar { background: var(--bg); }
+
+/* ---- Two-step indicator (photo flow) ---- */
+.phase-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 1rem;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+.phase-step {
+  font-size: 0.64rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #fff;
+  background: var(--learn);
+  padding: 0.12rem 0.45rem;
+  border-radius: 999px;
+}
+.phase-name {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
 
 /* Skip's sub-label ("12h") is a plain inline span in prod with no CSS of its
    own — it just inherits the button. Left unstyled here to match (no new design). */
@@ -75,7 +102,6 @@
   flex-direction: column;
   gap: 0.85rem;
   padding: 1rem 0.9rem 1.2rem;
-  background: transparent;           /* the grid shows through here */
 }
 .chat-bubble {
   max-width: 88%;
@@ -90,11 +116,15 @@
 .chat-bubble .qbody-display,
 .qfold-body .qbody-display { overflow-x: auto; max-width: 100%; }
 
-/* User answer: aligned right, soft orange fill with a full-strength outline. */
+/* User answer: aligned right, soft orange fill with a full-strength outline.
+   A column so the edit affordance / inline editor can stack under the text. */
 .chat-bubble-user {
   align-self: flex-end;
   background: color-mix(in srgb, var(--orange-100) 36%, var(--bg));
   border: 1px solid var(--orange-200);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
 }
 /* Grader reply: aligned left, neutral surface, stacked sections. */
 .chat-bubble-agent {
@@ -105,6 +135,64 @@
   flex-direction: column;
   gap: 0.55rem;
 }
+
+/* ---- Edit affordance + inline editor (edit & revert, change 1) ----
+   Each user turn carries a quiet "Edit" pencil; tapping it swaps the bubble
+   body for a textarea with Save/Cancel. Save rewrites the turn, drops every
+   turn after it, and regrades. Hidden while a grade is in flight. */
+.bubble-edit {
+  align-self: flex-end;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border: none;
+  background: transparent;
+  color: var(--orange-300);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.1rem 0.25rem;
+  border-radius: 6px;
+  cursor: pointer;
+  opacity: 0.7;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity 0.12s ease;
+}
+.bubble-edit svg { width: 0.85rem; height: 0.85rem; }
+.bubble-edit:active { opacity: 1; }
+@media (hover: hover) { .bubble-edit:hover { opacity: 1; } }
+
+.bubble-editor {
+  width: min(78vw, 30rem);
+  resize: none;
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1.4;
+  color: var(--fg);
+  background: var(--bg);
+  border: 1px solid var(--orange-200);
+  border-radius: 10px;
+  padding: 0.5rem 0.6rem;
+  -webkit-tap-highlight-color: transparent;
+}
+.bubble-editor:focus { outline: none; box-shadow: 0 0 0 2px color-mix(in srgb, var(--orange-200) 30%, transparent); }
+.bubble-edit-actions { display: flex; align-self: flex-end; gap: 0.4rem; }
+.bubble-btn {
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.35rem 0.75rem;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: filter 0.12s ease;
+}
+.bubble-btn:active { filter: brightness(0.95); }
+.bubble-cancel { background: transparent; color: var(--muted); }
+.bubble-save { background: var(--orange-200); color: #fff; box-shadow: var(--shadow); }
 
 /* ---- Grade badge ----
    Prod styles the badge locally in GradePage.css (correct=green, partial=orange,
@@ -125,6 +213,15 @@
 .grade-badge.grade-incorrect { background: var(--purple-400); }
 
 .grade-ok { font-size: 0.95rem; color: var(--learn-dark); font-weight: 600; }
+
+/* Transcription reading: a plain agent bubble carrying the current reading. */
+.reading-label {
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
 
 /* Issue list */
 .issue-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
@@ -227,8 +324,8 @@
 .img-src-icon { display: flex; width: 1.5rem; height: 1.5rem; }
 .img-src-icon svg { width: 100%; height: 100%; }
 
-/* Photo thumbnails as a user bubble */
-.photo-bubble { padding: 0.4rem; display: flex; flex-wrap: wrap; gap: 0.4rem; }
+/* Photo thumbnails as a user bubble (row-wrapped — overrides the column above) */
+.photo-bubble { padding: 0.4rem; flex-direction: row; flex-wrap: wrap; align-items: flex-start; gap: 0.4rem; }
 .photo-thumb {
   display: block;
   width: 100%;
@@ -257,6 +354,26 @@
   font-style: italic;
   margin-top: 0.3rem;
 }
+
+/* ---- Advance button (transcription → grading) ----
+   The primary CTA of the transcription step: confirm the reading and move on to
+   grading. Full-width green, sits below the corrections input. */
+.advance-btn {
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.98rem;
+  padding: 0.7rem 1rem;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  background: var(--learn);
+  color: #fff;
+  box-shadow: var(--shadow);
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.08s ease, filter 0.12s ease;
+}
+.advance-btn:active { transform: scale(0.99); filter: brightness(0.96); }
+@media (hover: hover) { .advance-btn:hover { filter: brightness(1.05); } }
 
 /* ---- Bottom actions ---- */
 .grade-actions {

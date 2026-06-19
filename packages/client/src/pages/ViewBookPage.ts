@@ -53,7 +53,7 @@ export function ViewBookPage(): HTMLElement {
   </div>`;
   listHead.hidden = true;
 
-  const page = html`<div class="view-book-page app gridpad">
+  const page = html`<div class="view-book-page app">
     ${TopBar({ onBack: () => { window.location.hash = '#/'; } })}
     <div class="vb-scroll">
       ${spinner}

@@ -13,7 +13,6 @@
 /* ---- Question stage ----
    The 1fr middle region: a pinned title row on top, then the question filling
    the rest. The title stays put; the problem scrolls under it when long. */
-/* Uses the shared .gridpad component (mocks.css) for the engineering-pad grid. */
 .learn-stage {
   min-height: 0;
   display: grid;

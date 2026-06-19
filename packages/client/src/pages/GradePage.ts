@@ -1,38 +1,42 @@
 import { html } from '@/lib/html';
 import { renderLatex } from '@/lib/latex';
-import { unstashPhotos } from '@/lib/photo-transfer';
 import { TopBar } from '@/components/TopBar';
 import { ChatContainer } from '@/components/ChatContainer';
 import { ChatBubble } from '@/components/ChatBubble';
 import { ReplyRow } from '@/components/ReplyRow';
 import { ThinkingBubble } from '@/components/ThinkingBubble';
-import { ImageSourcePicker } from '@/components/ImageSourcePicker';
 import { recordCompleted } from '@/lib/session';
 import { splitLabel } from '@/lib/problem-grouping';
-import '@/styles/gridpad.css';
+import { Conversation } from './grade/conversation';
+import type { Grade, Turn } from './grade/conversation';
+import * as gradeApi from './grade/grade-api';
+import { GraderBubble } from './grade/GraderBubble';
+import { UserBubble } from './grade/UserBubble';
+import { ReadingBubble } from './grade/ReadingBubble';
+import { PhotoBubble } from '@/components/PhotoBubble';
+import { unstashPhotos } from '@/lib/photo-transfer';
+import { ImageSourcePicker } from '@/components/ImageSourcePicker';
 import './GradePage.css';
 
-type Grade = 'correct' | 'partial' | 'incorrect';
-interface GradingIssue { severity: string; description: string }
-interface Turn {
-  role: 'user' | 'assistant';
-  text: string;
-}
+type Phase = 'transcribe' | 'grade';
 
 export function GradePage(): HTMLElement {
   const params = new URLSearchParams(window.location.hash.split('?')[1] ?? '');
   const questionId = params.get('questionId') ?? '';
-  const mode = params.get('mode') as 'photo' | 'type' ?? 'type';
+  const mode = (params.get('mode') as 'photo' | 'type') ?? 'type';
   const from = params.get('from') === 'revisit' ? 'revisit' : 'learn';
 
-  const conversation: Turn[] = [];
-  let lastRecommendedGrade: Grade | null = null;
-  let lastIssues: GradingIssue[] = [];
-  let firstAnswer = '';
+  // ---- State ----
+  const convo = new Conversation();
+  let phase: Phase = 'grade';
+  let sending = false;
+  let editingId: number | null = null;
+  let transient: HTMLElement | null = null;     // capture prompt / thinking bubble
+  let photoFiles: File[] = [];                   // kept for /transcribe/retry
+  let photoBubbleEl: HTMLElement | null = null;  // cached to avoid leaking object URLs
   let completedChapter: string | null = null;
 
   const chat = ChatContainer();
-  chat.el.classList.add('gridpad');
 
   // ---- Question fold ----
   const qEyebrow = document.createElement('span');
@@ -48,180 +52,180 @@ export function GradePage(): HTMLElement {
     ${qBody}
   </details>`;
 
-  // ---- Grade buttons ----
+  // ---- Phase bar (photo flow only) ----
+  const phaseStep = html`<span class="phase-step"></span>`;
+  const phaseName = html`<span class="phase-name"></span>`;
+  const phaseBar = html`<div class="phase-bar">${phaseStep}${phaseName}</div>`;
+  phaseBar.hidden = true;
+
+  // ---- Footer controls ----
+  const reply = ReplyRow({
+    placeholder: 'Clarify or add to your answer…',
+    onSend(text) { void onSend(text); },
+  });
+
+  const advanceBtn = html`<button class="advance-btn" type="button">Looks good — grade it →</button>`;
+  advanceBtn.hidden = true;
+  advanceBtn.addEventListener('click', () => { void enterGradePhase(); });
+
   const gradeRow = html`<div class="grade-row">
     <button class="grade-btn gb-incorrect" data-grade="incorrect" type="button">Incorrect</button>
     <button class="grade-btn gb-partial" data-grade="partial" type="button">Partial</button>
     <button class="grade-btn gb-correct" data-grade="correct" type="button">Correct</button>
   </div>`;
   gradeRow.hidden = true;
-
-  function updateSuggested() {
-    gradeRow.querySelectorAll('.grade-btn').forEach((btn) => {
-      btn.classList.toggle('suggested', (btn as HTMLElement).dataset.grade === lastRecommendedGrade);
-    });
-  }
-
   gradeRow.addEventListener('click', (e) => {
     const btn = (e.target as HTMLElement).closest('[data-grade]') as HTMLElement | null;
-    if (!btn) return;
-    void saveAttempt(btn.dataset.grade as Grade);
+    if (btn) void saveAttempt(btn.dataset.grade as Grade);
   });
 
-  // ---- Reply row ----
-  const reply = ReplyRow({
-    placeholder: 'Clarify or add to your answer…',
-    onSend(text) { void handleUserMessage(text); },
-  });
-
-  // ---- Skip ----
+  // ---- Skip + top bar ----
   const skipBtn = html`<button class="topbar-btn">Skip <span class="tb-sub">12h</span></button>`;
   skipBtn.addEventListener('click', () => {
-    void fetch(`/api/skip/${questionId}`, { method: 'POST' }).then(() => {
-      window.location.hash = `#/${from}`;
-    });
+    void gradeApi.skip(questionId).then(() => { window.location.hash = `#/${from}`; });
   });
-
   const topBar = TopBar({ onBack: () => { window.location.hash = `#/${from}`; }, right: skipBtn });
 
-  // ---- Page shell ----
   const page = html`<div class="grade-page">
     ${topBar}
     ${qfold}
+    ${phaseBar}
     ${chat.el}
     <footer class="grade-actions">
       ${reply.el}
+      ${advanceBtn}
       ${gradeRow}
     </footer>
   </div>`;
 
-  // ---- Render a grader response ----
-  function renderGraderBubble(data: { reasoning: string; issues: GradingIssue[]; recommendedGrade: Grade }) {
-    lastRecommendedGrade = data.recommendedGrade;
-    lastIssues = data.issues;
-    const bubble = ChatBubble('agent');
-
-    // Badge
-    const badge = document.createElement('span');
-    badge.className = `grade-badge grade-${data.recommendedGrade}`;
-    badge.textContent = data.recommendedGrade;
-    bubble.appendChild(badge);
-
-    // Issues or "no issues"
-    if (data.issues.length === 0) {
-      const ok = document.createElement('div');
-      ok.className = 'grade-ok';
-      ok.textContent = 'No issues found — looks correct.';
-      bubble.appendChild(ok);
-    } else {
-      const list = document.createElement('ul');
-      list.className = 'issue-list';
-      for (const issue of data.issues) {
-        const li = document.createElement('li');
-        li.className = `issue issue-${issue.severity}`;
-        const sev = document.createElement('span');
-        sev.className = 'issue-sev';
-        sev.textContent = issue.severity;
-        const desc = document.createElement('span');
-        desc.className = 'issue-desc';
-        renderLatex(desc, issue.description);
-        li.append(sev, desc);
-        list.appendChild(li);
-      }
-      bubble.appendChild(list);
+  // ---- Render from state ----
+  function buildTurn(turn: Turn): HTMLElement {
+    if (turn.role === 'user' && turn.kind === 'photo') {
+      if (!photoBubbleEl) photoBubbleEl = PhotoBubble(photoFiles, { notes: turn.notes });
+      return photoBubbleEl;
     }
-
-    // Collapsible reasoning
-    const det = document.createElement('details');
-    det.className = 'reasoning';
-    const sum = document.createElement('summary');
-    sum.textContent = 'Show reasoning';
-    const rb = document.createElement('div');
-    rb.className = 'reasoning-body';
-    renderLatex(rb, data.reasoning);
-    det.append(sum, rb);
-    bubble.appendChild(det);
-
-    chat.append(bubble);
-    gradeRow.hidden = false;
-    updateSuggested();
+    if (turn.role === 'user' && turn.kind === 'text') {
+      return UserBubble(
+        { id: turn.id, text: turn.text },
+        {
+          editable: phase === 'grade' && !sending,
+          editing: editingId === turn.id,
+          onEdit: (id) => { editingId = id; render(); },
+          onCancel: () => { editingId = null; render(); },
+          onSave: (id, text) => {
+            editingId = null;
+            convo.editUserTurn(id, text);
+            render();
+            void doGrade();
+          },
+        },
+      );
+    }
+    if (turn.kind === 'reading') return ReadingBubble(turn.text);
+    return GraderBubble(turn.payload);
   }
 
-  // ---- Grade API call ----
-  async function doGrade() {
-    reply.disable();
-    const thinking = ThinkingBubble('Grading…');
-    chat.append(thinking);
+  function render(): void {
+    chat.clear();
+    for (const turn of convo.turns) chat.el.appendChild(buildTurn(turn));
+    if (transient) chat.el.appendChild(transient);
 
-    try {
-      const res = await fetch(`/api/questions/${questionId}/grade`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ conversation }),
+    phaseBar.hidden = mode !== 'photo';
+    if (mode === 'photo') {
+      phaseStep.textContent = phase === 'transcribe' ? 'Step 1 of 2' : 'Step 2 of 2';
+      phaseName.textContent = phase === 'transcribe' ? 'Check the reading' : 'Grading';
+    }
+
+    if (phase === 'transcribe') {
+      reply.setPlaceholder('Tell me what to fix…');
+      advanceBtn.hidden = lastReading().trim() === '';
+      gradeRow.hidden = true;
+    } else {
+      reply.setPlaceholder('Clarify or add to your answer…');
+      advanceBtn.hidden = true;
+      gradeRow.hidden = convo.latestGrade === null;
+      const suggested = convo.latestGrade?.recommendedGrade ?? null;
+      gradeRow.querySelectorAll('.grade-btn').forEach((b) => {
+        (b as HTMLElement).classList.toggle('suggested', (b as HTMLElement).dataset.grade === suggested);
       });
-      thinking.remove();
-      if (!res.ok) throw new Error('grade failed');
-      const data = await res.json() as { reasoning: string; issues: GradingIssue[]; recommendedGrade: Grade };
-      conversation.push({ role: 'assistant', text: JSON.stringify(data) });
-      renderGraderBubble(data);
+    }
+    reply.setSending(sending);
+  }
+
+  // ---- Grading flow (Task 11 fills doGrade/onSend/saveAttempt) ----
+  async function doGrade(): Promise<void> {
+    sending = true;
+    const thinking = ThinkingBubble('Grading…');
+    transient = thinking;
+    render();
+    chat.scrollToBottom();
+    try {
+      const payload = await gradeApi.grade(questionId, convo.toGradePayload());
+      transient = null;
+      convo.addGrade(payload);
+      sending = false;
+      render();
+      const agents = chat.el.querySelectorAll('.chat-bubble-agent');
+      const last = agents[agents.length - 1] as HTMLElement | undefined;
+      if (last) chat.scrollToNode(last);
     } catch {
-      thinking.remove();
+      transient = null;
+      sending = false;
+      render();
       const err = ChatBubble('agent');
       err.textContent = 'Grading failed. Send your message again to retry.';
-      chat.append(err);
-    } finally {
-      reply.enable();
+      chat.el.appendChild(err);
     }
   }
 
-  // ---- Handle user message (clarification or first answer) ----
-  async function handleUserMessage(text: string) {
-    if (!firstAnswer) firstAnswer = text;
-    conversation.push({ role: 'user', text });
-
-    const bubble = ChatBubble('user');
-    const body = document.createElement('div');
-    renderLatex(body, text);
-    bubble.appendChild(body);
-    chat.append(bubble);
-
-    await doGrade();
+  async function onSend(text: string): Promise<void> {
+    if (sending) return;
+    if (phase === 'transcribe') {
+      convo.addUser(text);          // a correction
+      render();
+      chat.scrollToBottom();
+      await reReadPhoto(text);
+    } else {
+      convo.addUser(text);          // an answer / clarification
+      render();
+      chat.scrollToBottom();
+      await doGrade();
+    }
   }
 
-  // ---- Save attempt ----
-  async function saveAttempt(rating: Grade) {
+  async function saveAttempt(rating: Grade): Promise<void> {
+    const latest = convo.latestGrade;
     try {
-      await fetch(`/api/questions/${questionId}/attempts`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          answer: firstAnswer,
-          recommendedGrade: lastRecommendedGrade,
-          rating,
-          issues: lastIssues,
-        }),
+      await gradeApi.saveAttempt(questionId, {
+        answer: convo.firstAnswer,
+        recommendedGrade: latest?.recommendedGrade ?? rating,
+        rating,
+        issues: latest?.issues ?? [],
       });
       recordCompleted(from, completedChapter);
       window.location.hash = `#/${from}`;
     } catch {
       const err = ChatBubble('agent');
       err.textContent = 'Failed to save. Try again.';
-      chat.append(err);
+      chat.el.appendChild(err);
     }
   }
 
-  // ---- Photo mode: read stashed photos ----
-  function startPhotoFlow() {
+  function startPhotoFlow(): void {
+    phase = 'transcribe';
     const transfer = unstashPhotos();
-
     if (transfer && transfer.files.length > 0) {
-      void transcribePhotos(transfer.files, transfer.notes);
+      photoFiles = transfer.files;
+      convo.addPhoto(transfer.notes);
+      render();
+      chat.scrollToBottom();
+      void readPhoto(transfer.notes);
     } else {
       showPhotoCapture();
     }
   }
 
-  function showPhotoCapture() {
+  function showPhotoCapture(): void {
     const wrapper = document.createElement('div');
     wrapper.className = 'photo-capture';
     const prompt = document.createElement('div');
@@ -229,92 +233,103 @@ export function GradePage(): HTMLElement {
     prompt.textContent = 'Add a photo of your solution';
     const picker = ImageSourcePicker({
       onFiles(files) {
-        wrapper.remove();
-        void transcribePhotos(files, '');
+        photoFiles = files;
+        transient = null;
+        convo.addPhoto('');
+        render();
+        chat.scrollToBottom();
+        void readPhoto('');
       },
     });
     wrapper.append(prompt, picker);
-    chat.append(wrapper);
+    transient = wrapper;
+    render();
   }
 
-  async function transcribePhotos(files: File[], notes: string) {
-    // Show photo thumbnails as user bubble
-    const bubble = ChatBubble('user');
-    bubble.classList.add('photo-bubble');
-    for (const file of files) {
-      const img = document.createElement('img');
-      img.className = 'photo-thumb';
-      img.src = URL.createObjectURL(file);
-      img.alt = 'Your solution';
-      bubble.appendChild(img);
+  function lastReading(): string {
+    for (let i = convo.turns.length - 1; i >= 0; i--) {
+      const t = convo.turns[i];
+      if (t && t.kind === 'reading') return t.text;
     }
-    if (notes) {
-      const noteEl = document.createElement('div');
-      noteEl.className = 'photo-notes-text';
-      noteEl.textContent = notes;
-      bubble.appendChild(noteEl);
-    }
-    chat.append(bubble);
+    return '';
+  }
 
-    const thinking = ThinkingBubble('Transcribing…');
-    chat.append(thinking);
-    reply.disable();
-
-    const form = new FormData();
-    for (const file of files) form.append('images', file);
-    if (notes) form.append('notes', notes);
-
+  async function readPhoto(notes: string): Promise<void> {
+    sending = true;
+    transient = ThinkingBubble('Reading…');
+    render();
+    chat.scrollToBottom();
     try {
-      const res = await fetch(`/api/questions/${questionId}/transcribe`, {
-        method: 'POST',
-        body: form,
-      });
-      thinking.remove();
-      if (!res.ok) throw new Error('transcribe failed');
-      const { transcription } = await res.json() as { transcription: string };
-      await handleUserMessage(transcription);
+      const text = await gradeApi.transcribe(questionId, photoFiles, notes);
+      transient = null;
+      convo.addReading(text);
+      sending = false;
+      render();
+      const readings = chat.el.querySelectorAll('.reading-bubble');
+      const last = readings[readings.length - 1] as HTMLElement | undefined;
+      if (last) chat.scrollToNode(last);
     } catch {
-      thinking.remove();
+      transient = null;
+      sending = false;
+      render();
       const err = ChatBubble('agent');
       err.textContent = 'Transcription failed. Try typing your answer instead.';
-      chat.append(err);
-      reply.enable();
+      chat.el.appendChild(err);
     }
   }
 
-  // ---- Boot: fetch question + start flow ----
-  async function boot() {
+  async function reReadPhoto(correction: string): Promise<void> {
+    const current = lastReading();
+    sending = true;
+    transient = ThinkingBubble('Re-reading…');
+    render();
+    chat.scrollToBottom();
     try {
-      const [qRes, bRes] = await Promise.all([
-        fetch(`/api/questions/${questionId}`),
-        // We'll get bookId from question response, but fetch both in parallel is tricky.
-        // Fetch question first, then book.
-        null,
-      ].filter(Boolean));
-      if (!qRes || !qRes.ok) throw new Error('question not found');
+      const text = await gradeApi.retranscribe(questionId, photoFiles, current, correction);
+      transient = null;
+      convo.addReading(text);
+      sending = false;
+      render();
+      const readings = chat.el.querySelectorAll('.reading-bubble');
+      const last = readings[readings.length - 1] as HTMLElement | undefined;
+      if (last) chat.scrollToNode(last);
+    } catch {
+      transient = null;
+      sending = false;
+      render();
+      const err = ChatBubble('agent');
+      err.textContent = 'Re-reading failed. Try again.';
+      chat.el.appendChild(err);
+    }
+  }
+
+  async function enterGradePhase(): Promise<void> {
+    const reading = lastReading();
+    phase = 'grade';
+    convo.clear();
+    photoBubbleEl = null;
+    editingId = null;
+    convo.addUser(reading);     // seed the answer (now inline-editable)
+    render();
+    chat.scrollToTop();
+    await doGrade();
+  }
+
+  // ---- Boot ----
+  async function boot(): Promise<void> {
+    try {
+      const qRes = await fetch(`/api/questions/${questionId}`);
+      if (!qRes.ok) throw new Error('question not found');
       const question = await qRes.json() as { canonicalText: string; label: string; bookId: string };
       completedChapter = splitLabel(question.label)?.chapter ?? null;
       renderLatex(qBody, question.canonicalText);
-
-      // Fetch book for eyebrow
       try {
-        const bookRes = await fetch(`/api/books/${question.bookId}`);
-        if (bookRes.ok) {
-          const book = await bookRes.json() as { title: string };
-          qEyebrow.textContent = `${book.title} · ${question.label}`;
-        } else {
-          qEyebrow.textContent = question.label;
-        }
-      } catch {
-        qEyebrow.textContent = question.label;
-      }
+        const bRes = await fetch(`/api/books/${question.bookId}`);
+        qEyebrow.textContent = bRes.ok ? `${(await bRes.json() as { title: string }).title} · ${question.label}` : question.label;
+      } catch { qEyebrow.textContent = question.label; }
 
-      // Start the appropriate flow
-      if (mode === 'photo') {
-        startPhotoFlow();
-      } else {
-        reply.focus();
-      }
+      if (mode === 'photo') { startPhotoFlow(); }
+      else { phase = 'grade'; render(); chat.scrollToTop(); reply.focus(); }
     } catch {
       qEyebrow.textContent = 'Error';
       const err = ChatBubble('agent');

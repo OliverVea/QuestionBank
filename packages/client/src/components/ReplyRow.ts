@@ -1,3 +1,4 @@
+// packages/client/src/components/ReplyRow.ts
 import { html } from '@/lib/html';
 import './ReplyRow.css';
 
@@ -6,9 +7,12 @@ export interface ReplyRowHandle {
   focus(): void;
   disable(): void;
   enable(): void;
+  /** Compose-while-busy: lock only the send button; textarea stays editable. */
+  setSending(busy: boolean): void;
+  setPlaceholder(text: string): void;
 }
 
-/** Reply row: auto-growing textarea + send button pill. Enter to send, Shift+Enter for newline. */
+/** Reply row: auto-growing textarea + send button. Enter to send, Shift+Enter for newline. */
 export function ReplyRow(opts: { placeholder?: string; onSend: (text: string) => void }): ReplyRowHandle {
   const input = document.createElement('textarea');
   input.className = 'reply-input';
@@ -16,8 +20,10 @@ export function ReplyRow(opts: { placeholder?: string; onSend: (text: string) =>
   input.placeholder = opts.placeholder ?? 'Type a message…';
 
   const sendBtn = html`<button class="reply-send" type="button" aria-label="Send">→</button>`;
+  const send_ = sendBtn as HTMLButtonElement;
 
   function send() {
+    if (send_.disabled) return;
     const text = input.value.trim();
     if (!text) return;
     opts.onSend(text);
@@ -39,7 +45,9 @@ export function ReplyRow(opts: { placeholder?: string; onSend: (text: string) =>
   return {
     el,
     focus() { input.focus(); },
-    disable() { (input as HTMLTextAreaElement).disabled = true; (sendBtn as HTMLButtonElement).disabled = true; },
-    enable() { (input as HTMLTextAreaElement).disabled = false; (sendBtn as HTMLButtonElement).disabled = false; },
+    disable() { input.disabled = true; send_.disabled = true; },
+    enable() { input.disabled = false; send_.disabled = false; },
+    setSending(busy: boolean) { send_.disabled = busy; },
+    setPlaceholder(text: string) { input.placeholder = text; },
   };
 }

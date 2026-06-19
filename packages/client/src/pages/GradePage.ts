@@ -147,10 +147,65 @@ export function GradePage(): HTMLElement {
   }
 
   // ---- Grading flow (Task 11 fills doGrade/onSend/saveAttempt) ----
-  async function doGrade(): Promise<void> { /* Task 11 */ }
-  async function onSend(_text: string): Promise<void> { /* Task 11 */ }
-  async function saveAttempt(_rating: Grade): Promise<void> { /* Task 11 */ }
+  async function doGrade(): Promise<void> {
+    sending = true;
+    const thinking = ThinkingBubble('Grading…');
+    transient = thinking;
+    render();
+    chat.scrollToBottom();
+    try {
+      const payload = await gradeApi.grade(questionId, convo.toGradePayload());
+      transient = null;
+      convo.addGrade(payload);
+      sending = false;
+      render();
+      const last = chat.el.querySelector('.chat-bubble-agent:last-of-type') as HTMLElement | null;
+      if (last) chat.scrollToNode(last);
+    } catch {
+      transient = null;
+      sending = false;
+      render();
+      const err = ChatBubble('agent');
+      err.textContent = 'Grading failed. Send your message again to retry.';
+      chat.el.appendChild(err);
+    }
+  }
+
+  async function onSend(text: string): Promise<void> {
+    if (phase === 'transcribe') {
+      convo.addUser(text);          // a correction
+      render();
+      chat.scrollToBottom();
+      await reReadPhoto(text);
+    } else {
+      convo.addUser(text);          // an answer / clarification
+      render();
+      chat.scrollToBottom();
+      await doGrade();
+    }
+  }
+
+  async function saveAttempt(rating: Grade): Promise<void> {
+    const latest = convo.latestGrade;
+    try {
+      await gradeApi.saveAttempt(questionId, {
+        answer: convo.firstAnswer,
+        recommendedGrade: latest?.recommendedGrade ?? rating,
+        rating,
+        issues: latest?.issues ?? [],
+      });
+      recordCompleted(from, completedChapter);
+      window.location.hash = `#/${from}`;
+    } catch {
+      const err = ChatBubble('agent');
+      err.textContent = 'Failed to save. Try again.';
+      chat.el.appendChild(err);
+    }
+  }
+
   async function enterGradePhase(): Promise<void> { /* Task 13 */ }
+
+  async function reReadPhoto(_correction: string): Promise<void> { /* Task 13 */ }
 
   // ---- Boot ----
   async function boot(): Promise<void> {
@@ -174,11 +229,6 @@ export function GradePage(): HTMLElement {
       chat.append(err);
     }
   }
-
-  // expose for ThinkingBubble usage in later tasks
-  void ThinkingBubble;
-  void recordCompleted;
-  void completedChapter;
 
   void boot();
   return page;

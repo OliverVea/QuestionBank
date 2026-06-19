@@ -34,7 +34,7 @@ describe('GradePage (typed flow)', () => {
     page.remove();
   });
 
-  test.skip('typing an answer grades it and reveals the grade-row', async () => {
+  test('typing an answer grades it and reveals the grade-row', async () => {
     setHash('#/grade?questionId=q1&mode=type&from=learn');
     const page = GradePage();
     document.body.appendChild(page);

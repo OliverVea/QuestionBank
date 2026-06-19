@@ -159,7 +159,8 @@ export function GradePage(): HTMLElement {
       convo.addGrade(payload);
       sending = false;
       render();
-      const last = chat.el.querySelector('.chat-bubble-agent:last-of-type') as HTMLElement | null;
+      const agents = chat.el.querySelectorAll('.chat-bubble-agent');
+      const last = agents[agents.length - 1] as HTMLElement | undefined;
       if (last) chat.scrollToNode(last);
     } catch {
       transient = null;

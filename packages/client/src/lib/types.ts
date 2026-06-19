@@ -66,7 +66,7 @@ export interface BookSummary {
   progress: number;
   dueNow: number;
   nextReviewDate: string | null;
-  learnNext: { label: string; pathPrefix: string } | null;
+  learnNext: { label: string; pathPrefix: string; started: boolean } | null;
 }
 
 export type BookWithSummary = Book & { summary: BookSummary };

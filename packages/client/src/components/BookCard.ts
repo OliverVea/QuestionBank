@@ -59,7 +59,8 @@ export function BookCard({ book, onOpen, onRevisit, onLearn }: BookCardProps): H
       actions.appendChild(pill('revisit-soon', ICON_REVISIT, `Ready in ${daysUntil(s.nextReviewDate)}`, null));
     }
     if (s.learnNext !== null) {
-      actions.appendChild(pill('learn', ICON_LEARN, `Start learning ${s.learnNext.pathPrefix}`, onLearn));
+      const verb = s.learnNext.started ? 'Continue with chapter' : 'Start learning chapter';
+      actions.appendChild(pill('learn', ICON_LEARN, `${verb} ${s.learnNext.pathPrefix}`, onLearn));
     }
     if (actions.childElementCount > 0) card.appendChild(actions);
   }

@@ -112,8 +112,12 @@ export interface BookSummary {
   dueNow: number;
   /** ISO date of the earliest upcoming review among 'waiting' problems; null if none. */
   nextReviewDate: string | null;
-  /** Next un-attempted problem (derived path order); null if nothing left to learn. */
-  learnNext: { label: string; pathPrefix: string } | null;
+  /**
+   * Next un-attempted problem (derived path order); null if nothing left to learn.
+   * `started` is true when that problem's chapter (pathPrefix) already has ≥1 attempt
+   * elsewhere — i.e. the learner is continuing the chapter rather than beginning it.
+   */
+  learnNext: { label: string; pathPrefix: string; started: boolean } | null;
 }
 
 /** A book plus its landing summary, as returned by GET /api/books/summaries. */

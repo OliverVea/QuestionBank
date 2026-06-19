@@ -71,7 +71,17 @@ describe('summarizeBooks', () => {
     const attempts = [attempt('q2', 'correct', 1)];
     const [s] = summarizeBooks([b], qs, attempts, new Set(), NOW);
     // Path order: 1.A.2 (attempted, skip) → 1.A.10 → 2.1. First un-attempted = 1.A.10.
-    expect(s!.summary.learnNext).toEqual({ label: '1.A.10', pathPrefix: '1' });
+    // Chapter 1 already has an attempt (1.A.2), so started is true → "Continue with chapter 1".
+    expect(s!.summary.learnNext).toEqual({ label: '1.A.10', pathPrefix: '1', started: true });
+  });
+
+  it('learnNext.started is false when the next problem begins an as-yet-untouched chapter', () => {
+    const b = book('b', ['q1', 'q2', 'q3']);
+    // Chapter 1 fully attempted; chapter 2 untouched → learnNext is 2.1, started: false.
+    const qs = [q('q1', 'b', '1.A.1'), q('q2', 'b', '1.A.2'), q('q3', 'b', '2.1')];
+    const attempts = [attempt('q1', 'correct', 1), attempt('q2', 'correct', 1)];
+    const [s] = summarizeBooks([b], qs, attempts, new Set(), NOW);
+    expect(s!.summary.learnNext).toEqual({ label: '2.1', pathPrefix: '2', started: false });
   });
 
   it('learnNext is null when every problem has an attempt', () => {

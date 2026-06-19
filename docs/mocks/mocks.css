@@ -102,36 +102,6 @@ body {
   .topbar-btn:hover { background: var(--surface); color: var(--fg); }
 }
 
-/* ---- Engineering-pad grid ----
-   Add `.gridpad` to any container to paint a faint graph-paper grid behind its
-   content: a fine grid every 22px with every 3rd line thick (thin·thin·thick),
-   rotated ~25deg, on its own non-scrolling layer so it never adds scroll height
-   and stays independent of the text. The container clips it; direct children
-   render above it. Override --gridpad-bg to tint the surface behind the grid. */
-.gridpad {
-  position: relative;
-  overflow: hidden;
-  background: var(--gridpad-bg, transparent);
-}
-.gridpad::before {
-  content: '';
-  position: absolute;
-  inset: -60%;                    /* oversize so rotated corners still cover */
-  z-index: 0;
-  pointer-events: none;
-  --grid: 22px;
-  --grid-thin: color-mix(in srgb, var(--grey-200) 7%, transparent);
-  --grid-thick: color-mix(in srgb, var(--grey-300) 12%, transparent);
-  background-image:
-    repeating-linear-gradient(to right, var(--grid-thick) 0 1.4px, transparent 1.4px calc(var(--grid) * 3)),
-    repeating-linear-gradient(to bottom, var(--grid-thick) 0 1.4px, transparent 1.4px calc(var(--grid) * 3)),
-    repeating-linear-gradient(to right, var(--grid-thin) 0 1px, transparent 1px var(--grid)),
-    repeating-linear-gradient(to bottom, var(--grid-thin) 0 1px, transparent 1px var(--grid));
-  transform: translateY(-8%) rotate(25deg);
-  transform-origin: center;
-}
-.gridpad > * { position: relative; z-index: 1; }
-
 /* ---- Load-in animations ----
    Mark an element with `.animate-in` to have it enter on page load. Set the
    animation *style* by putting one of `.anim-fade` / `.anim-cascade` /

@@ -9,7 +9,6 @@ import { ThinkingBubble } from '@/components/ThinkingBubble';
 import { ImageSourcePicker } from '@/components/ImageSourcePicker';
 import { recordCompleted } from '@/lib/session';
 import { splitLabel } from '@/lib/problem-grouping';
-import '@/styles/gridpad.css';
 import './GradePage.css';
 
 type Grade = 'correct' | 'partial' | 'incorrect';
@@ -32,7 +31,6 @@ export function GradePage(): HTMLElement {
   let completedChapter: string | null = null;
 
   const chat = ChatContainer();
-  chat.el.classList.add('gridpad');
 
   // ---- Question fold ----
   const qEyebrow = document.createElement('span');

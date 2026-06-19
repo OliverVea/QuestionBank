@@ -7,7 +7,6 @@ import { ImageSourcePicker } from '@/components/ImageSourcePicker';
 import { stashPhotos } from '@/lib/photo-transfer';
 import { shouldPause, getCount, reset } from '@/lib/session';
 import { SessionPause } from '@/components/SessionPause';
-import '@/styles/gridpad.css';
 import './LearnPage.css';
 
 interface Question { id: string; bookId: string; label: string; canonicalText: string }
@@ -22,7 +21,7 @@ export function RevisitPage(): HTMLElement {
   const eyebrow = html`<div class="qcard-eyebrow"><span></span></div>`;
   const qscroll = html`<div class="qscroll"></div>`;
   qscroll.appendChild(Spinner());
-  const stage = html`<main class="learn-stage gridpad">${eyebrow}${qscroll}</main>`;
+  const stage = html`<main class="learn-stage">${eyebrow}${qscroll}</main>`;
 
   const picker = ImageSourcePicker({
     cameraLabel: 'Camera',

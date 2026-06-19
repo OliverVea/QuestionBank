@@ -62,7 +62,7 @@ export function AttemptsPage(): HTMLElement {
   </section>`;
   problemSection.hidden = true;
 
-  const page = html`<div class="attempts-page app gridpad">
+  const page = html`<div class="attempts-page app">
     ${TopBar({ onBack: () => { window.location.hash = backHash; } })}
     <div class="ah-scroll">
       ${spinner}

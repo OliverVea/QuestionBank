@@ -18,8 +18,10 @@
 </head>
 <body class="anim-cascade">
   <script src="vendor/katex/katex.min.js"></script>
-  <!-- `.grade-page` is the grid shell (prod vocabulary). The engineering-pad
-       grid lives on the chat container so it shows behind the chat only. -->
+  <!-- `.grade-page` is the page shell (prod vocabulary): topbar / question /
+       phase bar / chat / actions, the chat scrolling between the pinned chrome.
+       The photo flow runs as two sequential chats — transcription, then grading
+       (the confirmed reading seeds the grading chat). -->
   <div class="grade-page">
     <!-- Top bar: Back (left) / Skip + when-it-returns (right) -->
     <header class="topbar">
@@ -41,16 +43,25 @@
       <div class="qfold-body" id="q-body"><!-- rendered question --></div>
     </details>
 
-    <!-- The grading conversation -->
-    <main class="chat-container gridpad" id="chat"><!-- turns injected below --></main>
+    <!-- Two-step indicator (photo flow only): transcription → grading -->
+    <div class="phase-bar" id="phase-bar" hidden>
+      <span class="phase-step" id="phase-step">Step 1 of 2</span>
+      <span class="phase-name" id="phase-name">Check the reading</span>
+    </div>
 
-    <!-- Bottom: reply box + save/rate -->
+    <!-- The active conversation (rebuilt from the `conversation` model) -->
+    <main class="chat-container" id="chat"><!-- turns injected below --></main>
+
+    <!-- Bottom: reply box, advance (transcription) or save/rate (grading) -->
     <footer class="grade-actions">
       <div class="reply-row">
         <textarea class="reply-input" id="reply" rows="1"
           placeholder="Clarify or add to your answer…"></textarea>
         <button class="reply-send" id="send-btn" aria-label="Send">→</button>
       </div>
+      <!-- Transcription step: confirm the reading and move on to grading -->
+      <button class="advance-btn" id="advance-btn" type="button" hidden>Looks good — grade it →</button>
+      <!-- Grading step: save the attempt with a grade -->
       <div class="grade-row" id="grade-row" hidden>
         <button class="grade-btn gb-incorrect" data-grade="incorrect">Incorrect</button>
         <button class="grade-btn gb-partial" data-grade="partial">Partial</button>
@@ -116,213 +127,252 @@
       }
     }
 
-    // --- Dummy data: the question + a short graded back-and-forth ---
+    // --- Icons ---
+    const PENCIL_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+         stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" />
+      <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>`;
+    const CAMERA_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+         stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 8a2 2 0 0 1 2-2h2l1.2-1.6A2 2 0 0 1 11.8 4h.4a2 2 0 0 1 1.6.8L15 6h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />
+      <circle cx="12" cy="12.5" r="3.2" /></svg>`;
+    const DEVICE_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+         stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <circle cx="8.5" cy="9" r="1.6" />
+      <path d="m4 18 5-5 3.5 3.5L16 12l4 4" /></svg>`;
+
+    // --- Demo data ---
     const QUESTION =
       'Suppose $a$ and $b$ are real numbers, not both 0. Find real numbers $c$ and $d$ such that\n' +
       '$$1/(a+bi) = c+di.$$';
 
-    // A conversation: user answer → grader (partial) → user clarification →
-    // grader (upgraded to correct). `kind` drives bubble styling.
-    const TURNS = [
-      {
-        kind: 'user',
-        text: 'Multiply top and bottom by the conjugate: $\\frac{1}{a+bi} = \\frac{a-bi}{a^2+b^2}$, so $c = \\frac{a}{a^2+b^2}$.',
-      },
-      {
-        kind: 'grader',
+    // Typed demo conversation (user → partial → user → correct). Grader turns
+    // store their parsed payload directly.
+    const DEMO = [
+      { role: 'user', text: 'Multiply top and bottom by the conjugate: $\\frac{1}{a+bi} = \\frac{a-bi}{a^2+b^2}$, so $c = \\frac{a}{a^2+b^2}$.' },
+      { role: 'assistant', kind: 'grade', payload: {
         grade: 'partial',
         issues: [
           { severity: 'critical', text: 'You found $c$ but never gave $d$. The imaginary part is missing.' },
           { severity: 'minor', text: 'State briefly why $a^2+b^2 \\neq 0$ (since $a,b$ are not both 0).' },
         ],
         reasoning: 'The conjugate method is right and $c=\\frac{a}{a^2+b^2}$ is correct, but a complete answer must also give $d$.',
-      },
-      {
-        kind: 'user',
-        text: 'Right — and $d = \\frac{-b}{a^2+b^2}$. Also $a^2+b^2 > 0$ because $a,b$ are not both zero.',
-      },
-      {
-        kind: 'grader',
-        grade: 'correct',
-        issues: [],
+      } },
+      { role: 'user', text: 'Right — and $d = \\frac{-b}{a^2+b^2}$. Also $a^2+b^2 > 0$ because $a,b$ are not both zero.' },
+      { role: 'assistant', kind: 'grade', payload: {
+        grade: 'correct', issues: [],
         reasoning: 'Both parts now given: $c=\\frac{a}{a^2+b^2}$, $d=\\frac{-b}{a^2+b^2}$, with the nonzero-denominator justified. Complete.',
-      },
+      } },
     ];
 
-    // The canned grade a faked transcribe/send lands on (photo flow + live send).
-    const FAKE_TRANSCRIPTION =
-      'By the conjugate, $\\frac{1}{a+bi}=\\frac{a-bi}{a^2+b^2}$, so $c=\\frac{a}{a^2+b^2}$ and $d=\\frac{-b}{a^2+b^2}$.';
+    // Successive fake readings of the photo — the first read, then re-reads after
+    // the user points out a mistake.
+    const READINGS = [
+      'By the conjugate, $\\frac{1}{a+bi}=\\frac{a-bi}{a^2+b^2}$, so $c=\\frac{a}{a^2+b^2}$ and $d=\\frac{-b}{a^2+b^2}$.',
+      'Re-read it — $c=\\frac{a}{a^2+b^2}$ and $d=\\frac{-b}{a^2+b^2}$, with $a^2+b^2>0$ since $a,b$ are not both 0.',
+    ];
     const FAKE_GRADE = {
-      kind: 'grader',
-      grade: 'correct',
-      issues: [],
+      grade: 'correct', issues: [],
       reasoning: 'Both real and imaginary parts are given and correct; the conjugate step is sound.',
     };
 
-    // --- Camera / Device icons (from prod ImageSourcePicker) ---
-    const CAMERA_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
-         stroke-linecap="round" stroke-linejoin="round">
-      <path d="M3 8a2 2 0 0 1 2-2h2l1.2-1.6A2 2 0 0 1 11.8 4h.4a2 2 0 0 1 1.6.8L15 6h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />
-      <circle cx="12" cy="12.5" r="3.2" />
-    </svg>`;
-    const DEVICE_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
-         stroke-linecap="round" stroke-linejoin="round">
-      <rect x="3" y="4" width="18" height="16" rx="2" />
-      <circle cx="8.5" cy="9" r="1.6" />
-      <path d="m4 18 5-5 3.5 3.5L16 12l4 4" />
-    </svg>`;
+    // ===================================================================
+    // Model — `conversation` is the active chat's source of truth. The photo
+    // flow runs two chats in sequence (phase 'transcribe' → 'grade'); entering
+    // grading clears the model and seeds it with the confirmed reading.
+    // ===================================================================
+    let conversation = [];   // turns: { id, role, kind?, text?, payload? }
+    let nextId = 1;
+    let phase = 'grade';     // 'transcribe' | 'grade'
+    let sending = false;     // a read/grade is in flight
+    let editingId = null;    // id of the user turn being inline-edited
+    let transient = null;    // ephemeral node (capture prompt / thinking)
+    let suggested = null;    // last grader grade → drives the grade-row
+    let currentReading = ''; // latest transcription
+    let readIdx = 0;         // which canned reading comes next
+    const seen = new Set();  // turn ids already animated
+
+    function addUser(text, kind) { const id = nextId++; conversation.push({ id, role: 'user', text, kind }); return id; }
+    function addReading(text) { conversation.push({ id: nextId++, role: 'assistant', kind: 'reading', text }); }
+    function addGrade(payload) { conversation.push({ id: nextId++, role: 'assistant', kind: 'grade', payload }); }
+    function editUserTurn(id, text) {
+      const idx = conversation.findIndex((t) => t.id === id);
+      if (idx === -1) return;
+      conversation[idx] = { ...conversation[idx], text };
+      conversation.length = idx + 1;   // revert: drop everything after the edited turn
+    }
+    const hasReading = () => conversation.some((t) => t.kind === 'reading');
 
     // --- DOM handles ---
     const chat = document.getElementById('chat');
     const reply = document.getElementById('reply');
+    const sendBtn = document.getElementById('send-btn');
     const gradeRow = document.getElementById('grade-row');
+    const advanceBtn = document.getElementById('advance-btn');
+    const phaseBar = document.getElementById('phase-bar');
+    const phaseStep = document.getElementById('phase-step');
+    const phaseName = document.getElementById('phase-name');
 
     document.getElementById('q-eyebrow').textContent = 'Griffiths · Chapter 2 · Problem 1';
     renderContent(document.getElementById('q-body'), QUESTION);
 
-    // Mode: ?mode=photo runs the photo→transcribe flow; otherwise the typed
-    // demo conversation (matches prod's GradePage `mode` param).
     const mode = new URLSearchParams(location.search).get('mode') === 'photo' ? 'photo' : 'type';
 
-    let stagger = 0;
+    function el(tag, cls, text) { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
+    function autoGrow(ta, max) { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, max || 120) + 'px'; }
 
-    // --- Bubble builders (data → DOM, prod vocabulary) ---
-    function userBubble(text) {
-      const el = document.createElement('div');
-      el.className = 'chat-bubble chat-bubble-user qbody animate-in';
-      el.style.setProperty('--i', stagger++);
-      const body = document.createElement('div');
-      renderContent(body, text);
-      el.appendChild(body);
-      return el;
-    }
+    // ===================================================================
+    // Bubble builders (data → DOM)
+    // ===================================================================
+    function userBubble(turn) {
+      const bubble = el('div', 'chat-bubble chat-bubble-user');
 
-    function graderBubble(turn) {
-      const el = document.createElement('div');
-      el.className = 'chat-bubble chat-bubble-agent animate-in';
-      el.style.setProperty('--i', stagger++);
-
-      const badge = document.createElement('span');
-      badge.className = `grade-badge grade-${turn.grade}`;
-      badge.textContent = turn.grade;
-      el.appendChild(badge);
-
-      if (turn.issues.length === 0) {
-        const ok = document.createElement('div');
-        ok.className = 'grade-ok';
-        ok.textContent = 'No issues found — looks correct.';
-        el.appendChild(ok);
-      } else {
-        const list = document.createElement('ul');
-        list.className = 'issue-list';
-        for (const issue of turn.issues) {
-          const li = document.createElement('li');
-          li.className = `issue issue-${issue.severity}`;
-          const sev = document.createElement('span');
-          sev.className = 'issue-sev';
-          sev.textContent = issue.severity;
-          const desc = document.createElement('span');
-          desc.className = 'issue-desc qbody';
-          renderContent(desc, issue.text);
-          li.append(sev, desc);
-          list.appendChild(li);
-        }
-        el.appendChild(list);
+      if (turn.kind === 'photo') {                       // photo turn: thumbnails, not editable
+        bubble.classList.add('photo-bubble');
+        bubble.appendChild(el('div', 'photo-thumb photo-thumb-ph', 'solution photo'));
+        if (turn.text) bubble.appendChild(el('div', 'photo-notes-text', turn.text));
+        return bubble;
       }
 
-      const det = document.createElement('details');
-      det.className = 'reasoning';
-      const sum = document.createElement('summary');
-      sum.textContent = 'Show reasoning';
-      const rb = document.createElement('div');
-      rb.className = 'reasoning-body qbody';
-      renderContent(rb, turn.reasoning);
-      det.append(sum, rb);
-      el.appendChild(det);
+      if (editingId === turn.id) {                        // inline editor (grading: edit & revert)
+        const ta = el('textarea', 'bubble-editor'); ta.value = turn.text;
+        const actions = el('div', 'bubble-edit-actions');
+        const cancel = el('button', 'bubble-btn bubble-cancel', 'Cancel'); cancel.type = 'button';
+        const save = el('button', 'bubble-btn bubble-save', 'Save'); save.type = 'button';
+        cancel.addEventListener('click', () => { editingId = null; render(); });
+        save.addEventListener('click', () => {
+          const v = ta.value.trim(); if (!v) return;
+          editingId = null;
+          editUserTurn(turn.id, v);
+          render();
+          void doGrade();
+        });
+        actions.append(cancel, save);
+        bubble.append(ta, actions);
+        setTimeout(() => { ta.focus(); autoGrow(ta, 160); }, 0);
+        return bubble;
+      }
 
-      // The grader's grade becomes the suggested save.
-      revealGradeRow(turn.grade);
-      return el;
+      const body = el('div', 'qbody');
+      renderContent(body, turn.text);
+      bubble.appendChild(body);
+      // Edit affordance — grading phase only, and not while a grade is in flight.
+      if (phase === 'grade' && !sending) {
+        const edit = el('button', 'bubble-edit'); edit.type = 'button';
+        edit.innerHTML = PENCIL_ICON + '<span>Edit</span>';
+        edit.setAttribute('aria-label', 'Edit your message');
+        edit.addEventListener('click', () => { editingId = turn.id; render(); });
+        bubble.appendChild(edit);
+      }
+      return bubble;
+    }
+
+    function readingBubble(text) {
+      const bubble = el('div', 'chat-bubble chat-bubble-agent reading-bubble');
+      bubble.appendChild(el('div', 'reading-label', "Here's what I read"));
+      const body = el('div', 'qbody');
+      renderContent(body, text);
+      bubble.appendChild(body);
+      return bubble;
+    }
+
+    function graderBubble(p) {
+      const bubble = el('div', 'chat-bubble chat-bubble-agent');
+      bubble.appendChild(el('span', `grade-badge grade-${p.grade}`, p.grade));
+
+      if (p.issues.length === 0) {
+        bubble.appendChild(el('div', 'grade-ok', 'No issues found — looks correct.'));
+      } else {
+        const list = el('ul', 'issue-list');
+        for (const issue of p.issues) {
+          const li = el('li', `issue issue-${issue.severity}`);
+          li.appendChild(el('span', 'issue-sev', issue.severity));
+          const desc = el('span', 'issue-desc qbody');
+          renderContent(desc, issue.text);
+          li.appendChild(desc);
+          list.appendChild(li);
+        }
+        bubble.appendChild(list);
+      }
+
+      const det = el('details', 'reasoning');
+      det.appendChild(el('summary', null, 'Show reasoning'));
+      const rb = el('div', 'reasoning-body qbody');
+      renderContent(rb, p.reasoning);
+      det.appendChild(rb);
+      bubble.appendChild(det);
+      return bubble;
     }
 
     function thinkingBubble(label) {
-      const el = document.createElement('div');
-      el.className = 'chat-bubble chat-bubble-agent thinking-bubble animate-in';
-      el.style.setProperty('--i', stagger++);
-      el.innerHTML =
+      const bubble = el('div', 'chat-bubble chat-bubble-agent thinking-bubble');
+      bubble.innerHTML =
         '<span class="thinking-dots"><span></span><span></span><span></span></span>' +
         `<span class="thinking-label">${label}</span>`;
-      return el;
+      return bubble;
     }
 
-    function photoBubble(notes) {
-      const el = document.createElement('div');
-      el.className = 'chat-bubble chat-bubble-user photo-bubble animate-in';
-      el.style.setProperty('--i', stagger++);
-      // The mock has no real file — show a placeholder thumbnail tile.
-      const ph = document.createElement('div');
-      ph.className = 'photo-thumb photo-thumb-ph';
-      ph.textContent = 'solution photo';
-      el.appendChild(ph);
-      if (notes) {
-        const noteEl = document.createElement('div');
-        noteEl.className = 'photo-notes-text';
-        noteEl.textContent = notes;
-        el.appendChild(noteEl);
+    function buildTurn(turn) {
+      if (turn.role === 'user') return userBubble(turn);
+      if (turn.kind === 'reading') return readingBubble(turn.text);
+      return graderBubble(turn.payload);
+    }
+
+    // ===================================================================
+    // render() — rebuild the active chat, re-append the transient overlay, and
+    // set the phase bar + footer (advance vs grade-row) + compose state.
+    // ===================================================================
+    function render() {
+      chat.innerHTML = '';
+      for (const turn of conversation) {
+        const node = buildTurn(turn);
+        if (!seen.has(turn.id)) { node.classList.add('animate-in'); node.style.setProperty('--i', 0); seen.add(turn.id); }
+        chat.appendChild(node);
       }
-      return el;
+      if (transient) chat.appendChild(transient);
+
+      // Two-step indicator — only the photo flow has a transcription step.
+      phaseBar.hidden = mode !== 'photo';
+      if (mode === 'photo') {
+        phaseStep.textContent = phase === 'transcribe' ? 'Step 1 of 2' : 'Step 2 of 2';
+        phaseName.textContent = phase === 'transcribe' ? 'Check the reading' : 'Grading';
+      }
+
+      if (phase === 'transcribe') {
+        reply.placeholder = 'Tell me what to fix…';
+        advanceBtn.hidden = !hasReading();          // confirm appears once a reading exists
+        gradeRow.hidden = true;
+      } else {
+        reply.placeholder = 'Clarify or add to your answer…';
+        advanceBtn.hidden = true;
+        gradeRow.hidden = suggested === null;
+        gradeRow.querySelectorAll('.grade-btn').forEach((b) => b.classList.toggle('suggested', b.dataset.grade === suggested));
+      }
+
+      // Compose-while-busy: only the send button locks; the textarea stays live.
+      sendBtn.disabled = sending;
     }
 
-    function append(node) {
-      chat.appendChild(node);
-      node.scrollIntoView({ block: 'end', behavior: 'smooth' });
-      return node;
+    // ===================================================================
+    // Scroll rules: open at the top; keep the bottom in view for your own
+    // messages; land on the TOP of an agent reply so it reads from the start.
+    // ===================================================================
+    function scrollToTop() { chat.scrollTop = 0; }
+    function scrollToBottom() { chat.scrollTo({ top: chat.scrollHeight, behavior: 'smooth' }); }
+    function scrollToLastAgent() {
+      const agents = chat.querySelectorAll('.chat-bubble-agent:not(.thinking-bubble)');
+      const node = agents[agents.length - 1];
+      if (node) chat.scrollTo({ top: Math.max(0, node.offsetTop - 8), behavior: 'smooth' });
     }
 
-    // --- Grade row reveal + suggested marker ---
-    function revealGradeRow(suggested) {
-      gradeRow.hidden = false;
-      gradeRow.querySelectorAll('.grade-btn').forEach((btn) => {
-        btn.classList.toggle('suggested', btn.dataset.grade === suggested);
-      });
-    }
-
-    // --- Fake grade: thinking → canned grader bubble ---
-    function fakeGrade(turn) {
-      const thinking = append(thinkingBubble('Grading…'));
-      setSending(true);
-      setTimeout(() => {
-        thinking.remove();
-        append(graderBubble(turn));
-        setSending(false);
-      }, 900);
-    }
-
-    // Resync stub for compose-while-busy (fully built in the new-UX pass): for
-    // now lock both input and send while a grade is in flight, like prod today.
-    function setSending(busy) {
-      reply.disabled = busy;
-      document.getElementById('send-btn').disabled = busy;
-    }
-
-    // --- Flows ---
-    function startTypedFlow() {
-      TURNS.forEach((turn) => {
-        append(turn.kind === 'user' ? userBubble(turn.text) : graderBubble(turn));
-      });
-      reply.focus();
-    }
-
+    // ===================================================================
+    // Phase 1 — transcription chat (conversational: correct it, AI re-reads)
+    // ===================================================================
     function startPhotoFlow() {
-      // No stashed photo in the mock → show the capture prompt + picker.
-      const wrapper = document.createElement('div');
-      wrapper.className = 'photo-capture';
-      const prompt = document.createElement('div');
-      prompt.className = 'photo-capture-prompt';
-      prompt.textContent = 'Add a photo of your solution';
-
-      const picker = document.createElement('div');
-      picker.className = 'img-src-picker';
+      phase = 'transcribe';
+      const wrapper = el('div', 'photo-capture');
+      wrapper.appendChild(el('div', 'photo-capture-prompt', 'Add a photo of your solution'));
+      const picker = el('div', 'img-src-picker');
       picker.innerHTML =
         `<button class="img-src-btn img-src-camera" type="button">
            <span class="img-src-icon" aria-hidden="true">${CAMERA_ICON}</span>Camera
@@ -331,56 +381,91 @@
            <span class="img-src-icon" aria-hidden="true">${DEVICE_ICON}</span>Device
          </button>`;
       picker.querySelectorAll('.img-src-btn').forEach((btn) => {
-        btn.addEventListener('click', () => { wrapper.remove(); transcribePhoto(); });
+        btn.addEventListener('click', () => { transient = null; addUser('', 'photo'); render(); scrollToBottom(); readPhoto('Reading…'); });
       });
-
-      wrapper.append(prompt, picker);
-      append(wrapper);
+      wrapper.appendChild(picker);
+      transient = wrapper;
+      render();
     }
 
-    // Photo → transcribe: show the photo bubble, fake a transcribe pause, then
-    // (prod today) auto-hand the transcription to the grader as a user turn.
-    function transcribePhoto() {
-      append(photoBubble(''));
-      const thinking = append(thinkingBubble('Transcribing…'));
-      setSending(true);
+    function readPhoto(label) {
+      sending = true;
+      transient = thinkingBubble(label);
+      render();
+      scrollToBottom();
       setTimeout(() => {
-        thinking.remove();
-        setSending(false);
-        append(userBubble(FAKE_TRANSCRIPTION));
-        fakeGrade(FAKE_GRADE);
-      }, 1100);
+        transient = null;
+        currentReading = READINGS[Math.min(readIdx, READINGS.length - 1)];
+        readIdx++;
+        addReading(currentReading);
+        sending = false;
+        render();
+        scrollToLastAgent();
+      }, 1000);
     }
 
-    // --- Interactions ---
-    function nextItem() {
-      // Real app: advance to the next pending lesson/repetition in the session
-      // loop. Mock: hop back to learn, which picks the next due question.
-      window.location.href = 'learn.html';
+    function enterGradePhase() {
+      phase = 'grade';
+      conversation = [];          // a fresh grading chat
+      seen.clear();
+      suggested = null;
+      editingId = null;
+      addUser(currentReading);    // seed the answer (now inline-editable)
+      render();
+      scrollToTop();
+      void doGrade();
     }
 
+    // ===================================================================
+    // Phase 2 — grading chat
+    // ===================================================================
+    function doGrade() {
+      sending = true;
+      transient = thinkingBubble('Grading…');
+      render();
+      scrollToBottom();
+      setTimeout(() => {
+        transient = null;
+        addGrade(FAKE_GRADE);
+        suggested = FAKE_GRADE.grade;
+        sending = false;
+        render();
+        scrollToLastAgent();
+      }, 900);
+    }
+
+    // ===================================================================
+    // Shared reply handler — dispatches by phase
+    // ===================================================================
+    function onSend() {
+      const text = reply.value.trim(); if (!text) return;
+      reply.value = ''; reply.style.height = 'auto';
+      if (phase === 'transcribe') {
+        addUser(text);            // a correction
+        render();
+        scrollToBottom();
+        readPhoto('Re-reading…');
+      } else {
+        addUser(text);            // an answer / clarification
+        render();
+        scrollToBottom();
+        void doGrade();
+      }
+    }
+
+    // ===================================================================
+    // Top bar + footer wiring
+    // ===================================================================
+    function nextItem() { window.location.href = 'learn.html'; }
     document.getElementById('back-btn').addEventListener('click', () => { window.location.href = 'learn.html'; });
-
-    // Skip: v0 advances to the next item without persisting anything (the
-    // skipped question reappears next session). Mock just advances.
     document.getElementById('skip-btn').addEventListener('click', nextItem);
 
-    // Send reply: post the user's clarification as a chat turn and re-grade
-    // against it. Mock appends the bubble then fakes a grader response.
-    function sendReply() {
-      const text = reply.value.trim();
-      if (!text) return;
-      append(userBubble(text));
-      reply.value = '';
-      reply.style.height = 'auto';
-      fakeGrade(FAKE_GRADE);
-    }
-    document.getElementById('send-btn').addEventListener('click', sendReply);
-    reply.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendReply(); }
-    });
+    sendBtn.addEventListener('click', onSend);
+    reply.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); onSend(); } });
+    reply.addEventListener('input', () => autoGrow(reply, 120));
 
-    // Save grade: record the attempt with the chosen grade, then advance.
+    advanceBtn.addEventListener('click', enterGradePhase);
+
     gradeRow.addEventListener('click', (e) => {
       const btn = e.target.closest('[data-grade]');
       if (!btn) return;
@@ -388,15 +473,21 @@
       nextItem();
     });
 
-    // Auto-grow the reply textarea a little as you type.
-    reply.addEventListener('input', () => {
-      reply.style.height = 'auto';
-      reply.style.height = Math.min(reply.scrollHeight, 120) + 'px';
-    });
-
-    // --- Boot ---
-    if (mode === 'photo') startPhotoFlow();
-    else startTypedFlow();
+    // ===================================================================
+    // Boot
+    // ===================================================================
+    if (mode === 'photo') {
+      startPhotoFlow();
+    } else {
+      phase = 'grade';
+      for (const t of DEMO) {
+        if (t.role === 'user') addUser(t.text);
+        else { addGrade(t.payload); suggested = t.payload.grade; }
+      }
+      render();
+      scrollToTop();
+      reply.focus();
+    }
   </script>
   <script src="footer.js" defer></script>
 </body>

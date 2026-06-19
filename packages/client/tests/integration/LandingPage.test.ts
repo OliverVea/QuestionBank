@@ -9,9 +9,9 @@ const activity: Activity = {
 const future = new Date(Date.now() + 3 * 86_400_000).toISOString();
 const books: BookWithSummary[] = [
   { id: 'b1', title: 'Quantum', author: 'Griffiths', isbn: '9781107179868',
-    summary: { progress: 42, dueNow: 7, nextReviewDate: null, learnNext: { label: '3.1', pathPrefix: '3' } } },
+    summary: { progress: 42, dueNow: 7, nextReviewDate: null, learnNext: { label: '3.1', pathPrefix: '3', started: false } } },
   { id: 'b2', title: 'Calculus',
-    summary: { progress: 68, dueNow: 0, nextReviewDate: future, learnNext: { label: '5.B.1', pathPrefix: '5' } } },
+    summary: { progress: 68, dueNow: 0, nextReviewDate: future, learnNext: { label: '5.B.1', pathPrefix: '5', started: true } } },
   { id: 'b3', title: 'Done Book',
     summary: { progress: 100, dueNow: 0, nextReviewDate: null, learnNext: null } },
 ];
@@ -54,12 +54,15 @@ describe('LandingPage', () => {
     const c1 = cardFor('Quantum');
     expect(c1.querySelector('.bc-pct')!.textContent).toBe('42%');
     expect(c1.querySelector('.bc-revisit')!.textContent).toContain('7 to revisit');
-    expect(c1.querySelector('.bc-learn')!.textContent).toContain('Start learning 3');
+    // started: false → fresh chapter → "Start learning chapter 3".
+    expect(c1.querySelector('.bc-learn')!.textContent).toContain('Start learning chapter 3');
 
     // Book 2: nothing due but scheduled → quiet "Ready in N days" pill.
     const c2 = cardFor('Calculus');
     expect(c2.querySelector('.bc-revisit-soon')!.textContent).toMatch(/Ready in \d+ days?/);
     expect(c2.querySelector('.bc-revisit')).toBeNull();
+    // started: true → chapter already begun → "Continue with chapter 5".
+    expect(c2.querySelector('.bc-learn')!.textContent).toContain('Continue with chapter 5');
   });
 
   test('finished book sinks to the bottom and shows no pills', async () => {

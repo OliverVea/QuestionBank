@@ -49,6 +49,20 @@ describe('AnthropicApiProvider', () => {
     expect(sent[1]).toMatchObject({ type: 'text', text: 'extract' });
   });
 
+  it('defaults max_tokens but lets a call site raise it', async () => {
+    const create = vi.fn().mockResolvedValue({
+      stop_reason: 'end_turn',
+      content: [{ type: 'text', text: 'ok' }],
+    });
+    const provider = new AnthropicApiProvider({ messages: { create } } as never);
+
+    await provider.complete([{ role: 'user', text: 'x' }]);
+    expect(create.mock.calls[0]![0].max_tokens).toBe(8000);
+
+    await provider.complete([{ role: 'user', text: 'x' }], { maxTokens: 16_000 });
+    expect(create.mock.calls[1]![0].max_tokens).toBe(16_000);
+  });
+
   it('throws LlmError on refusal', async () => {
     const provider = new AnthropicApiProvider(fakeClient({ stop_reason: 'refusal', content: [] }));
     await expect(provider.complete([{ role: 'user', text: 'x' }])).rejects.toThrow(LlmError);
@@ -56,7 +70,11 @@ describe('AnthropicApiProvider', () => {
 
   it('throws LlmError on max_tokens truncation', async () => {
     const provider = new AnthropicApiProvider(
-      fakeClient({ stop_reason: 'max_tokens', content: [{ type: 'text', text: 'partial' }] }),
+      fakeClient({
+        stop_reason: 'max_tokens',
+        content: [{ type: 'text', text: 'partial' }],
+        usage: { output_tokens: 8000 },
+      }),
     );
     await expect(provider.complete([{ role: 'user', text: 'x' }])).rejects.toThrow(LlmError);
   });

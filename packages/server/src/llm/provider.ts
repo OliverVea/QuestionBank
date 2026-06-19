@@ -23,6 +23,10 @@ export interface Message {
 export interface CompleteOpts {
   model?: string;
   timeoutMs?: number;
+  /** Cap on output tokens for this call. Defaults to the provider's own ceiling.
+   *  Raise it for call sites whose structured response can be long (e.g. grading,
+   *  where a verbose reasoning + issues list truncates and 502s at the default). */
+  maxTokens?: number;
 }
 
 /**

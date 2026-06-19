@@ -13,6 +13,11 @@ import type { Store } from '../storage/store.js';
 
 const ROLES: readonly Role[] = ['user', 'assistant'];
 
+/** Grading emits an unbounded `reasoning` string plus an `issues` list; verbose answers
+ *  overran the provider's 8000-token default and 502'd (`response truncated`). Double the
+ *  ceiling — still far under the model's output limit — so a long critique completes. */
+const GRADING_MAX_TOKENS = 16_000;
+
 function parseConversation(raw: unknown): Message[] | undefined {
   if (!Array.isArray(raw)) return undefined;
   const out: Message[] = [];
@@ -59,7 +64,9 @@ export function questionGradeRouter(store: Store, provider: LlmProvider): Router
     log.info('grading turn', { question: questionId, turns: transcript.length });
 
     try {
-      const raw = await provider.completeStructured<unknown>(messages, gradingTurnSchema);
+      const raw = await provider.completeStructured<unknown>(messages, gradingTurnSchema, {
+        maxTokens: GRADING_MAX_TOKENS,
+      });
       const turn = validateGradingTurn(raw);
       const recommendedGrade = deriveGrade(turn.issues);
       log.info('grading complete', {

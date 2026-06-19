@@ -13,6 +13,10 @@ import {
 const REQUEST_TIMEOUT_MS = 120_000;
 const DEFAULT_MODEL = 'claude-sonnet-4-6';
 
+/** Default output-token ceiling for a request. Call sites whose structured response can
+ *  run long pass a higher `maxTokens` (truncation here surfaces as a 502 to the user). */
+const DEFAULT_MAX_TOKENS = 8000;
+
 /** The connectivity probe fails fast and never retries — a health check must not hang
  *  for two minutes or retry through an outage. */
 const PROBE_TIMEOUT_MS = 5_000;
@@ -37,10 +41,22 @@ async function toApiMessages(conversation: Message[]): Promise<Anthropic.Message
   );
 }
 
-/** Common stop-reason guards shared by the text and tool-use readers. */
+/** Common stop-reason guards shared by the text and tool-use readers. These throws end
+ *  in a 502, so they MUST log their cause — the SDK call succeeded, so the HTTP-failure
+ *  path never fired, and a bare LlmError otherwise leaves prod with no reason for the 502.
+ *  `max_tokens` in particular means the response overran the output ceiling — raise the
+ *  call site's `maxTokens` (the output_tokens here is the ceiling that was hit). */
 function assertUsableStop(message: Anthropic.Message): void {
-  if (message.stop_reason === 'refusal') throw new LlmError('request refused');
+  if (message.stop_reason === 'refusal') {
+    log.warn('llm response refused', { model: message.model, stop: message.stop_reason });
+    throw new LlmError('request refused');
+  }
   if (message.stop_reason === 'max_tokens') {
+    log.warn('llm response truncated — raise maxTokens', {
+      model: message.model,
+      stop: message.stop_reason,
+      outputTokens: message.usage.output_tokens,
+    });
     throw new LlmError('response truncated — increase max_tokens');
   }
 }
@@ -49,7 +65,10 @@ function assertUsableStop(message: Anthropic.Message): void {
 function textFromMessage(message: Anthropic.Message): string {
   assertUsableStop(message);
   const textBlock = message.content.find((block) => block.type === 'text');
-  if (textBlock === undefined) throw new LlmError('no text content in API response');
+  if (textBlock === undefined) {
+    log.warn('llm response missing text block', { model: message.model, stop: message.stop_reason });
+    throw new LlmError('no text content in API response');
+  }
   return textBlock.text;
 }
 
@@ -57,7 +76,13 @@ function textFromMessage(message: Anthropic.Message): string {
 function toolInputFromMessage<T>(message: Anthropic.Message): T {
   assertUsableStop(message);
   const toolBlock = message.content.find((block) => block.type === 'tool_use');
-  if (toolBlock === undefined) throw new LlmError('no tool_use block in API response');
+  if (toolBlock === undefined) {
+    log.warn('llm response missing tool_use block', {
+      model: message.model,
+      stop: message.stop_reason,
+    });
+    throw new LlmError('no tool_use block in API response');
+  }
   return toolBlock.input as T;
 }
 
@@ -90,7 +115,7 @@ export class AnthropicApiProvider implements LlmProvider {
     let message: Anthropic.Message;
     try {
       message = await this.client.messages.create(
-        { model, max_tokens: 8000, messages, ...extra },
+        { model, max_tokens: opts?.maxTokens ?? DEFAULT_MAX_TOKENS, messages, ...extra },
         { timeout: opts?.timeoutMs ?? REQUEST_TIMEOUT_MS, maxRetries: 2 },
       );
     } catch (err) {

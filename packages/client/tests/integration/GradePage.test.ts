@@ -82,4 +82,40 @@ describe('GradePage (typed flow)', () => {
     expect(page.querySelector('.chat-bubble-agent .grade-badge')).not.toBeNull();
     page.remove();
   });
+
+  test('photo flow: read → correct → re-read → confirm → grade', async () => {
+    vi.unstubAllGlobals();
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      if (url.endsWith('/transcribe')) return { ok: true, status: 200, json: async () => ({ transcription: 'reading 1' }) };
+      if (url.endsWith('/transcribe/retry')) return { ok: true, status: 200, json: async () => ({ transcription: 'reading 2' }) };
+      if (url.endsWith('/grade')) return { ok: true, status: 200, json: async () => ({ reasoning: 'r', issues: [], recommendedGrade: 'correct' }) };
+      if (url.includes('/books/')) return { ok: true, status: 200, json: async () => ({ title: 'Griffiths' }) };
+      if (url.includes('/questions/')) return { ok: true, status: 200, json: async () => ({ canonicalText: 'Q', label: 'Griffiths · Ch 2 · P1', bookId: 'b1' }) };
+      return { ok: true, status: 200, json: async () => ({}) };
+    }));
+    const { stashPhotos } = await import('@/lib/photo-transfer');
+    stashPhotos({ files: [new File([new Uint8Array([1])], 'a.png', { type: 'image/png' })], notes: '' });
+
+    setHash('#/grade?questionId=q1&mode=photo&from=learn');
+    const page = GradePage();
+    document.body.appendChild(page);
+    await flush(); await flush();
+
+    expect(page.querySelector('.phase-bar')?.hasAttribute('hidden')).toBe(false);
+    expect(page.querySelector('.reading-bubble')?.textContent).toContain('reading 1');
+    expect(page.querySelector('.advance-btn')?.hasAttribute('hidden')).toBe(false);
+
+    const input = page.querySelector('.reply-input') as HTMLTextAreaElement;
+    input.value = 'that 7 is a 1';
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    await flush(); await flush();
+    expect(page.querySelectorAll('.reading-bubble')).toHaveLength(2);
+
+    (page.querySelector('.advance-btn') as HTMLButtonElement).click();
+    await flush(); await flush();
+    expect(page.querySelector('.reading-bubble')).toBeNull();
+    expect(page.querySelectorAll('.chat-bubble-user')).toHaveLength(1);
+    expect(page.querySelector('.chat-bubble-agent .grade-badge')?.textContent).toBe('correct');
+    page.remove();
+  });
 });

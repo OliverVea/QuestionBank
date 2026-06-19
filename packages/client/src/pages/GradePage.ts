@@ -14,6 +14,8 @@ import { GraderBubble } from './grade/GraderBubble';
 import { UserBubble } from './grade/UserBubble';
 import { ReadingBubble } from './grade/ReadingBubble';
 import { PhotoBubble } from '@/components/PhotoBubble';
+import { unstashPhotos } from '@/lib/photo-transfer';
+import { ImageSourcePicker } from '@/components/ImageSourcePicker';
 import './GradePage.css';
 
 type Phase = 'transcribe' | 'grade';
@@ -204,9 +206,108 @@ export function GradePage(): HTMLElement {
     }
   }
 
-  async function enterGradePhase(): Promise<void> { /* Task 13 */ }
+  function startPhotoFlow(): void {
+    phase = 'transcribe';
+    const transfer = unstashPhotos();
+    if (transfer && transfer.files.length > 0) {
+      photoFiles = transfer.files;
+      convo.addPhoto(transfer.notes);
+      render();
+      chat.scrollToBottom();
+      void readPhoto(transfer.notes);
+    } else {
+      showPhotoCapture();
+    }
+  }
 
-  async function reReadPhoto(_correction: string): Promise<void> { /* Task 13 */ }
+  function showPhotoCapture(): void {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'photo-capture';
+    const prompt = document.createElement('div');
+    prompt.className = 'photo-capture-prompt';
+    prompt.textContent = 'Add a photo of your solution';
+    const picker = ImageSourcePicker({
+      onFiles(files) {
+        photoFiles = files;
+        transient = null;
+        convo.addPhoto('');
+        render();
+        chat.scrollToBottom();
+        void readPhoto('');
+      },
+    });
+    wrapper.append(prompt, picker);
+    transient = wrapper;
+    render();
+  }
+
+  function lastReading(): string {
+    for (let i = convo.turns.length - 1; i >= 0; i--) {
+      const t = convo.turns[i];
+      if (t && t.kind === 'reading') return t.text;
+    }
+    return '';
+  }
+
+  async function readPhoto(notes: string): Promise<void> {
+    sending = true;
+    transient = ThinkingBubble('Reading…');
+    render();
+    chat.scrollToBottom();
+    try {
+      const text = await gradeApi.transcribe(questionId, photoFiles, notes);
+      transient = null;
+      convo.addReading(text);
+      sending = false;
+      render();
+      const readings = chat.el.querySelectorAll('.reading-bubble');
+      const last = readings[readings.length - 1] as HTMLElement | undefined;
+      if (last) chat.scrollToNode(last);
+    } catch {
+      transient = null;
+      sending = false;
+      render();
+      const err = ChatBubble('agent');
+      err.textContent = 'Transcription failed. Try typing your answer instead.';
+      chat.el.appendChild(err);
+    }
+  }
+
+  async function reReadPhoto(correction: string): Promise<void> {
+    const current = lastReading();
+    sending = true;
+    transient = ThinkingBubble('Re-reading…');
+    render();
+    chat.scrollToBottom();
+    try {
+      const text = await gradeApi.retranscribe(questionId, photoFiles, current, correction);
+      transient = null;
+      convo.addReading(text);
+      sending = false;
+      render();
+      const readings = chat.el.querySelectorAll('.reading-bubble');
+      const last = readings[readings.length - 1] as HTMLElement | undefined;
+      if (last) chat.scrollToNode(last);
+    } catch {
+      transient = null;
+      sending = false;
+      render();
+      const err = ChatBubble('agent');
+      err.textContent = 'Re-reading failed. Try again.';
+      chat.el.appendChild(err);
+    }
+  }
+
+  async function enterGradePhase(): Promise<void> {
+    const reading = lastReading();
+    phase = 'grade';
+    convo.clear();
+    editingId = null;
+    convo.addUser(reading);     // seed the answer (now inline-editable)
+    render();
+    chat.scrollToTop();
+    await doGrade();
+  }
 
   // ---- Boot ----
   async function boot(): Promise<void> {
@@ -221,7 +322,7 @@ export function GradePage(): HTMLElement {
         qEyebrow.textContent = bRes.ok ? `${(await bRes.json() as { title: string }).title} · ${question.label}` : question.label;
       } catch { qEyebrow.textContent = question.label; }
 
-      if (mode === 'photo') { /* Task 13: startPhotoFlow() */ }
+      if (mode === 'photo') { startPhotoFlow(); }
       else { phase = 'grade'; render(); chat.scrollToTop(); reply.focus(); }
     } catch {
       qEyebrow.textContent = 'Error';

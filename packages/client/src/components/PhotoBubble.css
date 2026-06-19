@@ -1,0 +1,11 @@
+/* packages/client/src/components/PhotoBubble.css */
+.photo-bubble { padding: 0.4rem; display: flex; flex-direction: row; flex-wrap: wrap; align-items: flex-start; gap: 0.4rem; }
+.photo-thumb {
+  display: block;
+  width: 100%;
+  max-width: 140px;
+  max-height: 200px;
+  object-fit: cover;
+  border-radius: 11px;
+}
+.photo-notes-text { width: 100%; font-size: 0.85rem; color: var(--muted); font-style: italic; margin-top: 0.3rem; }

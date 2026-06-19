@@ -48,4 +48,38 @@ describe('GradePage (typed flow)', () => {
     expect(page.querySelector('.grade-row')?.hasAttribute('hidden')).toBe(false);
     page.remove();
   });
+
+  test('editing an earlier answer truncates downstream turns and regrades', async () => {
+    setHash('#/grade?questionId=q1&mode=type&from=learn');
+    const page = GradePage();
+    document.body.appendChild(page);
+    await flush();
+
+    // First answer → grade
+    const input = page.querySelector('.reply-input') as HTMLTextAreaElement;
+    input.value = 'first answer';
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    await flush(); await flush();
+    // Clarify → second grade
+    input.value = 'a clarification';
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    await flush(); await flush();
+    expect(page.querySelectorAll('.chat-bubble-user')).toHaveLength(2);
+
+    // Edit the FIRST user bubble
+    const firstEdit = page.querySelector('.chat-bubble-user .bubble-edit') as HTMLButtonElement;
+    firstEdit.click();
+    await flush();
+    const editor = page.querySelector('textarea.bubble-editor') as HTMLTextAreaElement;
+    editor.value = 'edited first answer';
+    (page.querySelector('.bubble-save') as HTMLButtonElement).click();
+    await flush();
+
+    // Downstream gone (one user turn), regrade in flight then lands
+    expect(page.querySelectorAll('.chat-bubble-user')).toHaveLength(1);
+    expect(page.querySelector('.chat-bubble-user')?.textContent).toContain('edited first answer');
+    await flush(); await flush();
+    expect(page.querySelector('.chat-bubble-agent .grade-badge')).not.toBeNull();
+    page.remove();
+  });
 });

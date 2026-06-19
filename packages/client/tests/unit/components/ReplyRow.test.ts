@@ -34,4 +34,14 @@ describe('ReplyRow', () => {
     input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
     expect(onSend).toHaveBeenCalledWith('hello');
   });
+
+  test('Enter does NOT call onSend when setSending(true) is active', () => {
+    const onSend = vi.fn();
+    const r = ReplyRow({ onSend });
+    const { input } = parts(r);
+    r.setSending(true);
+    input.value = 'blocked message';
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    expect(onSend).not.toHaveBeenCalled();
+  });
 });

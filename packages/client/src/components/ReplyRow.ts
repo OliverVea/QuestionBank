@@ -20,8 +20,10 @@ export function ReplyRow(opts: { placeholder?: string; onSend: (text: string) =>
   input.placeholder = opts.placeholder ?? 'Type a message…';
 
   const sendBtn = html`<button class="reply-send" type="button" aria-label="Send">→</button>`;
+  const send_ = sendBtn as HTMLButtonElement;
 
   function send() {
+    if (send_.disabled) return;
     const text = input.value.trim();
     if (!text) return;
     opts.onSend(text);
@@ -39,7 +41,6 @@ export function ReplyRow(opts: { placeholder?: string; onSend: (text: string) =>
   });
 
   const el = html`<div class="reply-row">${input}${sendBtn}</div>`;
-  const send_ = sendBtn as HTMLButtonElement;
 
   return {
     el,

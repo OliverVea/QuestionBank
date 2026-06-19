@@ -83,6 +83,26 @@ describe('GradePage (typed flow)', () => {
     page.remove();
   });
 
+  test('sending Enter twice while grade is in flight produces only one user bubble and one grade badge', async () => {
+    setHash('#/grade?questionId=q1&mode=type&from=learn');
+    const page = GradePage();
+    document.body.appendChild(page);
+    await flush();
+
+    const input = page.querySelector('.reply-input') as HTMLTextAreaElement;
+    // Fire Enter twice synchronously before any microtask flush
+    input.value = 'my answer';
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+
+    // Now flush so the grade API resolves
+    await flush(); await flush();
+
+    expect(page.querySelectorAll('.chat-bubble-user')).toHaveLength(1);
+    expect(page.querySelectorAll('.grade-badge')).toHaveLength(1);
+    page.remove();
+  });
+
   test('photo flow: read → correct → re-read → confirm → grade', async () => {
     vi.unstubAllGlobals();
     vi.stubGlobal('fetch', vi.fn(async (url: string) => {

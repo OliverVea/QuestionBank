@@ -33,6 +33,7 @@ export function GradePage(): HTMLElement {
   let editingId: number | null = null;
   let transient: HTMLElement | null = null;     // capture prompt / thinking bubble
   let photoFiles: File[] = [];                   // kept for /transcribe/retry
+  let photoBubbleEl: HTMLElement | null = null;  // cached to avoid leaking object URLs
   let completedChapter: string | null = null;
 
   const chat = ChatContainer();
@@ -99,7 +100,10 @@ export function GradePage(): HTMLElement {
 
   // ---- Render from state ----
   function buildTurn(turn: Turn): HTMLElement {
-    if (turn.role === 'user' && turn.kind === 'photo') return PhotoBubble(photoFiles, { notes: turn.notes });
+    if (turn.role === 'user' && turn.kind === 'photo') {
+      if (!photoBubbleEl) photoBubbleEl = PhotoBubble(photoFiles, { notes: turn.notes });
+      return photoBubbleEl;
+    }
     if (turn.role === 'user' && turn.kind === 'text') {
       return UserBubble(
         { id: turn.id, text: turn.text },
@@ -134,7 +138,7 @@ export function GradePage(): HTMLElement {
 
     if (phase === 'transcribe') {
       reply.setPlaceholder('Tell me what to fix…');
-      advanceBtn.hidden = !convo.turns.some((t) => t.kind === 'reading');
+      advanceBtn.hidden = lastReading().trim() === '';
       gradeRow.hidden = true;
     } else {
       reply.setPlaceholder('Clarify or add to your answer…');
@@ -175,6 +179,7 @@ export function GradePage(): HTMLElement {
   }
 
   async function onSend(text: string): Promise<void> {
+    if (sending) return;
     if (phase === 'transcribe') {
       convo.addUser(text);          // a correction
       render();
@@ -302,6 +307,7 @@ export function GradePage(): HTMLElement {
     const reading = lastReading();
     phase = 'grade';
     convo.clear();
+    photoBubbleEl = null;
     editingId = null;
     convo.addUser(reading);     // seed the answer (now inline-editable)
     render();

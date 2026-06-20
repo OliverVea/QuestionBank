@@ -1,7 +1,8 @@
 #!/bin/sh
-# PROCESSING 2: deploy to prod (apps) in the MINIMAL profile. Runs only after
-# deploy-beta AND test-after-beta succeed: import the built image into the homelab
-# k3s containerd and helm-upgrade the prod release with values-minimal.yaml.
+# PROCESSING 2: deploy BOTH the figure-service AND QuestionBank to prod (apps), in that
+# order. Runs only after deploy-beta AND test-after-beta succeed. The figure-service comes
+# up FIRST so its figure-service-auth secret and Service exist before QB mounts the key /
+# points at its Service URL.
 #
 # MINIMAL profile (Tier-A decoupling): no public Ingress, no Authentik forward-auth.
 # Routing (Cloudflare ingress) and the Authentik auth SYSTEM are owned by the
@@ -17,20 +18,64 @@ wget --no-check-certificate -qO /tmp/olve-lib.sh \
   https://raw.githubusercontent.com/OliverVea/Olve.Pipelines/main/.pipelines/scripts/olve-lib.sh
 . /tmp/olve-lib.sh
 
-# curl is needed by the in-pod health loop below; olve_ssh_host installs only the ssh
+# curl is needed by the in-pod health loops below; olve_ssh_host installs only the ssh
 # client. kubectl runs over ssh on the host; the health curl runs HERE in the job pod —
 # only the pod resolves *.svc.cluster.local.
 apk add --no-cache curl
 
 HOST=oliver@bulwark-m2
+NS=apps
+
+olve_ssh_host bulwark-m2
+
+# ── figure-service (FIRST: QB below mounts its secret and points at its Service URL) ──
+FIG_RELEASE=questionbank-figures
+
+# Select the figure build's bundle dir by its distinct marker (NOT version.txt, which
+# is the QB build's selector).
+FIG_INPUT_DIR=$(dirname "$(ls /input/*/figures-version.txt | head -1)")
+FIG_VERSION=$(cat "$FIG_INPUT_DIR/figures-version.txt")
+
+echo "Deploying $FIG_RELEASE:$FIG_VERSION to $NS"
+
+# Materialize the shared API key into figure-service-auth (key api-key) in this ns.
+# Mounted as FIGURE_SERVICE_API_KEY by BOTH the figure-service (to validate the X-API-Key
+# header) and the QB server (to send it). Fail loud if unset — an empty key would silently
+# DISABLE auth on the service.
+[ -n "$FIGURE_SERVICE_API_KEY" ] || { echo "FIGURE_SERVICE_API_KEY unset" >&2; exit 1; }
+ssh -o StrictHostKeyChecking=no "$HOST" \
+  "kubectl -n $NS create secret generic figure-service-auth \
+     --from-literal=api-key='$FIGURE_SERVICE_API_KEY' \
+     --dry-run=client -o yaml | kubectl apply -f -"
+
+olve_image_import "$FIG_INPUT_DIR/image.tar" "$HOST"
+ssh -o StrictHostKeyChecking=no "$HOST" "sudo crictl images | grep $FIG_RELEASE"
+
+olve_helm_deploy "$HOST" "$FIG_RELEASE" "$NS" "$FIG_INPUT_DIR/helm" "$FIG_VERSION"
+
+echo "Waiting for $FIG_RELEASE rollout in $NS (heavy image)..."
+ssh -o StrictHostKeyChecking=no "$HOST" \
+  "kubectl -n $NS rollout status deploy/$FIG_RELEASE --timeout=300s"
+
+echo "Verifying $FIG_RELEASE /health..."
+fig_ok=
+for i in 1 2 3 4 5 6; do
+  if curl -sf -o /dev/null "http://$FIG_RELEASE.$NS.svc.cluster.local/health"; then
+    echo "figure-service prod OK"
+    fig_ok=1
+    break
+  fi
+  sleep 5
+done
+[ -n "$fig_ok" ] || { echo "figure-service prod health check failed" >&2; exit 1; }
+
+# ── QuestionBank (AFTER the figure-service is healthy) ──
 RELEASE=questionbank
 
 # Prod tenancy toggle (see QB_PROD_ALLOW_DEFAULT_CUSTOMER in .pipelines/config.yaml).
 # Coerce UNSET → "0" (strict) so an unset secret can never mean "allow default
 # customer". values-minimal.yaml also baselines this to "0" as defense-in-depth.
 ALLOW_DEFAULT="${QB_PROD_ALLOW_DEFAULT_CUSTOMER:-0}"
-
-olve_ssh_host bulwark-m2
 
 INPUT_DIR=$(olve_bundle_input)
 VERSION=$(cat "$INPUT_DIR/version.txt")

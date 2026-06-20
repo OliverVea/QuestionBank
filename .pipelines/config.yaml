@@ -15,9 +15,13 @@
 #     - in-code-testing   npm ci → typecheck → offline unit/UAT suite (FakeProvider, no network)
 #
 #   PROCESSING (sequential — each gates the next):
-#     0. deploy-beta        deploy to apps-beta, wait for rollout, health-gate
+#     0. deploy-beta        deploy figure-service THEN QB to apps-beta, rollout + health-gate
 #     1. test-after-beta    HTTP smoke vs the LIVE beta Service (LLM-free, isolated tenant)
-#     2. deploy             deploy to prod (apps) in the MINIMAL profile
+#     2. deploy             deploy figure-service THEN QB to prod (apps) in the MINIMAL profile
+#
+#   Each env's deploy step brings up the figure-service (and its figure-service-auth
+#   secret) FIRST, before the QB deploy that mounts the secret / points at the Service —
+#   so the figure and QB deploys for one env are one ordered step, not two.
 #
 # Profile split (Tier-A decoupling, mirrors Olve.Pipelines):
 #   This pipeline deploys QuestionBank in a SELF-SUFFICIENT MINIMAL profile —
@@ -89,15 +93,11 @@ productionSteps:
       scriptFile: scripts/package-figures.sh
 
 # Processing steps run sequentially (order = list position), each receiving the
-# bundle. Each env's figure-service is deployed BEFORE that env's QuestionBank, so
-# the figure-service-auth secret and Service exist before QB mounts the key / points
-# at the URL:
-#   deploy-figures-beta → deploy-beta → test-after-beta → deploy-figures → deploy
+# bundle. Each env's deploy step brings up that env's figure-service (and its
+# figure-service-auth secret + Service) BEFORE the QB deploy that mounts the key /
+# points at the URL — figures and QB for one env are merged into one ordered step:
+#   deploy-beta → test-after-beta → deploy
 processingSteps:
-  - name: deploy-figures-beta
-    configuration:
-      image: alpine:latest
-      scriptFile: scripts/deploy-figures-beta.sh
   - name: deploy-beta
     configuration:
       image: alpine:latest
@@ -106,10 +106,6 @@ processingSteps:
     configuration:
       image: node:22
       scriptFile: scripts/test-after-beta.sh
-  - name: deploy-figures
-    configuration:
-      image: alpine:latest
-      scriptFile: scripts/deploy-figures.sh
   - name: deploy
     configuration:
       image: alpine:latest

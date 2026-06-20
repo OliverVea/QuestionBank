@@ -1,0 +1,7 @@
+.venv/
+samples/
+imgs/
+out/
+uv.lock
+__pycache__/
+*.pyc

@@ -1,0 +1,16 @@
+[project]
+name = "figure-segmentation-spike"
+version = "0.0.0"
+description = "Phase-1 validation spike: document-layout model figure segmentation"
+requires-python = ">=3.10"
+dependencies = [
+    "streamlit>=1.40",
+    "doclayout-yolo>=0.0.3",
+    "huggingface-hub>=0.25",
+    "pillow>=10.4",
+    "opencv-python-headless>=4.10",
+    "numpy>=1.26",
+]
+# Let doclayout-yolo pull torch/torchvision from PyPI. Default linux wheels run
+# fine on CPU (they just also bundle unused CUDA libs); not worth fighting the
+# CPU-index version tags for a throwaway spike on a box with disk to spare.

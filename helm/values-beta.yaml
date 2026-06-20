@@ -22,11 +22,20 @@ config:
   QB_DATA_DIR: "/data"
   QB_CUSTOMER_HEADER: "X-authentik-uid"
   QB_ALLOW_DEFAULT_CUSTOMER: "0"
+  # In-cluster figure-service (deployed to apps-beta first by deploy-figures-beta).
+  FIGURE_SERVICE_URL: "http://questionbank-figures.apps-beta.svc.cluster.local"
 
 # Beta has its OWN Anthropic key (k8s secret questionbank-secrets in apps-beta,
 # created out-of-band) so LLM routes work on beta. This is the one place beta
 # diverges from the credential-free minimal profile.
+#
+# figure-service-auth (key api-key) is created in apps-beta by deploy-figures-beta;
+# mounted here as FIGURE_SERVICE_API_KEY so the server authenticates to the
+# figure-service with the same key the service validates.
 secrets:
   - name: questionbank-secrets
     envMap:
       ANTHROPIC_API_KEY: anthropic-api-key
+  - name: figure-service-auth
+    envMap:
+      FIGURE_SERVICE_API_KEY: api-key

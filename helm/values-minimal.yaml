@@ -28,10 +28,18 @@ config:
   QB_DATA_DIR: "/data"
   QB_CUSTOMER_HEADER: "X-authentik-uid"
   QB_ALLOW_DEFAULT_CUSTOMER: "0"
+  # In-cluster figure-service (deployed to apps first by deploy-figures).
+  FIGURE_SERVICE_URL: "http://questionbank-figures.apps.svc.cluster.local"
 
 # Prod LLM key. deploy.sh materializes questionbank-secrets in `apps` from the
 # ANTHROPIC_API_KEY pipeline secret before the helm upgrade; mounted here (mirrors beta).
+#
+# figure-service-auth (key api-key) is created in apps by deploy-figures; mounted
+# here as FIGURE_SERVICE_API_KEY so the server authenticates to the figure-service.
 secrets:
   - name: questionbank-secrets
     envMap:
       ANTHROPIC_API_KEY: anthropic-api-key
+  - name: figure-service-auth
+    envMap:
+      FIGURE_SERVICE_API_KEY: api-key

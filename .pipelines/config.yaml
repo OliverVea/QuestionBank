@@ -61,6 +61,13 @@ secrets:
   # questionbank-secrets in `apps`. Set the value via the secrets API before deploy.
   - name: ANTHROPIC_API_KEY
     description: Anthropic API key for prod LLM routes. Materialized into questionbank-secrets in apps by deploy.sh.
+  # Shared secret for the figure-service API. The figure deploy steps materialize it
+  # into a per-namespace k8s secret `figure-service-auth` (key api-key), mounted as
+  # FIGURE_SERVICE_API_KEY by BOTH the figure-service (to validate the X-API-Key
+  # header) and the QuestionBank server (to send it). Set the value via the secrets
+  # API before deploy.
+  - name: FIGURE_SERVICE_API_KEY
+    description: Shared X-API-Key for the figure-service. Materialized into figure-service-auth in apps/apps-beta; mounted by both the service and the QB server.
 
 # Production steps run in parallel and write to bundle/<step-name>/. BOTH must
 # succeed before any processing (deploy) step runs.
@@ -73,10 +80,24 @@ productionSteps:
     configuration:
       image: node:22
       scriptFile: scripts/test-in-code.sh
+  # Build the (heavy: torch + baked-in models) figure-service image with Kaniko and
+  # stage its helm chart + a DISTINCT version marker (figures-version.txt, so the QB
+  # build's version.txt selector in olve_bundle_input is unambiguous) into the bundle.
+  - name: package-figures
+    configuration:
+      image: gcr.io/kaniko-project/executor:debug
+      scriptFile: scripts/package-figures.sh
 
 # Processing steps run sequentially (order = list position), each receiving the
-# bundle. deploy-beta gates test-after-beta gates deploy (prod).
+# bundle. Each env's figure-service is deployed BEFORE that env's QuestionBank, so
+# the figure-service-auth secret and Service exist before QB mounts the key / points
+# at the URL:
+#   deploy-figures-beta → deploy-beta → test-after-beta → deploy-figures → deploy
 processingSteps:
+  - name: deploy-figures-beta
+    configuration:
+      image: alpine:latest
+      scriptFile: scripts/deploy-figures-beta.sh
   - name: deploy-beta
     configuration:
       image: alpine:latest
@@ -85,6 +106,10 @@ processingSteps:
     configuration:
       image: node:22
       scriptFile: scripts/test-after-beta.sh
+  - name: deploy-figures
+    configuration:
+      image: alpine:latest
+      scriptFile: scripts/deploy-figures.sh
   - name: deploy
     configuration:
       image: alpine:latest

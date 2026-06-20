@@ -7,12 +7,19 @@ Endpoints:
 
 Both pipeline steps run server-side in a single request — no second roundtrip.
 
+Auth: every endpoint except /health requires an `X-API-Key` header matching the
+FIGURE_SERVICE_API_KEY env var (constant-time). If the var is unset, auth is off
+(local dev).
+
 Request: multipart/form-data with `file` = the image. Optional form fields:
   conf  (float, default 0.2)  detection confidence threshold
   imgsz (int,   default 1024) detection inference size
 
 Step 3 (matching figures to questions, e.g. via Sonnet) is a separate follow-up.
 """
+
+import hmac
+import os
 
 from flask import Flask, abort, jsonify, request
 from PIL import Image, UnidentifiedImageError
@@ -21,6 +28,22 @@ import pipeline
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 25 * 1024 * 1024  # 25 MB
+
+# Shared-secret API auth. Callers (the QuestionBank server) send X-API-Key; we
+# compare it constant-time against FIGURE_SERVICE_API_KEY. When the var is unset
+# (local dev) auth is disabled. /health is always open so k8s probes work.
+API_KEY = os.environ.get("FIGURE_SERVICE_API_KEY", "")
+
+
+@app.before_request
+def _require_api_key():
+    if request.path == "/health":
+        return None
+    if not API_KEY:
+        return None
+    if not hmac.compare_digest(request.headers.get("X-API-Key", ""), API_KEY):
+        abort(401, description="missing or invalid X-API-Key")
+    return None
 
 
 def _image_from_request() -> Image.Image:
@@ -74,6 +97,7 @@ def process():
 
 
 @app.errorhandler(400)
+@app.errorhandler(401)
 @app.errorhandler(413)
 @app.errorhandler(500)
 def _json_error(err):

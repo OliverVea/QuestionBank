@@ -1,0 +1,39 @@
+# figure-service chart values. The service is in-cluster only (ClusterIP, no
+# ingress); the QuestionBank server reaches it by Service DNS and authenticates
+# with the shared X-API-Key. Beta and prod use this same file — they differ only
+# by namespace, which the deploy scripts pass.
+replicaCount: 1
+
+image:
+  repository: questionbank-figures
+  tag: latest
+  # Image is imported into the node's containerd by the deploy step, not pulled.
+  pullPolicy: Never
+
+service:
+  type: ClusterIP
+  port: 80
+
+container:
+  port: 8000
+
+# Heavy: torch (CPU) + DocLayout-YOLO + UVDoc loaded in-process. Models lazy-load
+# on the first request, so startup/health is fast; sizing is for inference.
+resources:
+  requests:
+    cpu: 250m
+    memory: 2Gi
+  limits:
+    cpu: "2"
+    memory: 4Gi
+
+# Plain (non-secret) env. Empty values are dropped at render time.
+config: {}
+
+# Secret-backed env. figure-service-auth (key api-key) is created per-namespace by
+# the deploy step from the FIGURE_SERVICE_API_KEY pipeline secret; the QB server
+# mounts the SAME secret to send the matching key.
+secrets:
+  - name: figure-service-auth
+    envMap:
+      FIGURE_SERVICE_API_KEY: api-key

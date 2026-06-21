@@ -37,10 +37,15 @@ persistence:
 resources:
   requests:
     cpu: 50m
-    memory: 128Mi
+    # 256Mi headroom for the baseline; /api/scan peaks much higher (see limit).
+    memory: 256Mi
   limits:
     cpu: 500m
-    memory: 256Mi
+    # /api/scan decodes a full-res page, gets a large rectified PNG back from the
+    # figure-service, cuts crops with sharp, and base64-encodes several images for
+    # the matcher LLM call — this peaks well over 256Mi and OOMKilled the pod. 1Gi
+    # gives that path headroom.
+    memory: 1Gi
 
 # Plain env vars (non-secret). Empty values are dropped at render time.
 config:

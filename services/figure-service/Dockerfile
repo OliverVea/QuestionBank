@@ -1,8 +1,11 @@
 FROM python:3.12-slim
 
-# opencv-python-headless still needs libglib; nothing else required for torch CPU.
+# OpenCV needs libglib2.0-0 AND libGL.so.1 (libgl1): doclayout-yolo pulls the FULL
+# opencv-python transitively (not just the headless one pinned in pyproject), and full
+# opencv dlopens libGL at `import cv2`. Without libgl1 the warmup step below fails the
+# build with "ImportError: libGL.so.1: cannot open shared object file".
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends libglib2.0-0 \
+    && apt-get install -y --no-install-recommends libglib2.0-0 libgl1 \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --no-cache-dir uv

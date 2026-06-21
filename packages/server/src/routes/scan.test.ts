@@ -81,6 +81,53 @@ describe('POST /api/scan', () => {
     expect(res.body.matchError).toBeUndefined();
   });
 
+  it('downscales the rectified page + crops before the matcher call (10 MB/image limit)', async () => {
+    const provider = new FakeProvider({
+      structured: {
+        resolved: [
+          { kind: 'add', path: '1.A.1', canonicalText: 'see fig', figureRefs: ['Figure 1'] },
+        ],
+        needsSection: [],
+        matches: [
+          { figureIndex: 0, printedLabel: 'Figure 1', matchedProblemIndex: 0, confidence: 'high' },
+        ],
+      },
+    });
+    // An oversized rectified page like the real device emits (3472×4624). Full-res this is
+    // ~19 MB base64, over Anthropic's 10 MB/image hard limit — the matcher must downscale it.
+    const bigPng = await sharp({
+      create: { width: 3472, height: 4624, channels: 3, background: { r: 200, g: 150, b: 100 } },
+    })
+      .png()
+      .toBuffer();
+    const figureService = new FakeFigureService({
+      rectified: { pngBase64: bigPng.toString('base64'), width: 3472, height: 4624 },
+      figures: [{ id: 0, box: [100, 100, 2000, 3000], score: 0.9 }],
+    });
+    const app = createApp(store, provider, figureService);
+    const bookId = await seedBook(app);
+
+    const res = await request(app)
+      .post('/api/scan')
+      .field('bookId', bookId)
+      .attach('images', PNG, { filename: 'p1.png', contentType: 'image/png' });
+
+    expect(res.status).toEqual(200);
+    expect(res.body.matchError).toBeUndefined();
+
+    // lastConversation is the matcher call (it runs after extraction). Its images are
+    // [page, crop] — both must be capped and well under the 10 MB/image limit.
+    const images = provider.lastConversation[0]!.images ?? [];
+    expect(images).toHaveLength(2);
+    for (const ref of images) {
+      expect(ref.mimeType).toEqual('image/jpeg');
+      const bytes = await ref.load();
+      expect(bytes.toString('base64').length).toBeLessThan(10 * 1024 * 1024);
+      const meta = await sharp(bytes).metadata();
+      expect(Math.max(meta.width ?? 0, meta.height ?? 0)).toBeLessThanOrEqual(1568);
+    }
+  });
+
   it('skips the matcher when no add cites a figure', async () => {
     const provider = new FakeProvider({
       structured: {

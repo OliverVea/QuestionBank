@@ -1,0 +1,107 @@
+{
+  "page_questions": [
+    {
+      "label": "1",
+      "summary": "Procedure to measure E field at a point"
+    },
+    {
+      "label": "2",
+      "summary": "Reproduce figure, mark where E=0"
+    },
+    {
+      "label": "3",
+      "summary": "Rank E field strengths at points 1-4"
+    },
+    {
+      "label": "4",
+      "summary": "Wire segment with 5 nC charge, linear charge density"
+    },
+    {
+      "label": "5",
+      "summary": "Electron force from long charged wire, halved density"
+    },
+    {
+      "label": "6",
+      "summary": "Hollow charged soda straw, field inside"
+    },
+    {
+      "label": "7",
+      "summary": "Irregular charged area, scaled dimensions"
+    },
+    {
+      "label": "8",
+      "summary": "Circular disk surface charge density, doubled radius"
+    },
+    {
+      "label": "9",
+      "summary": "Sphere charge Q, ratio of field strengths"
+    },
+    {
+      "label": "10",
+      "summary": "Ball suspended from charged plate, pendulum period"
+    },
+    {
+      "label": "11",
+      "summary": "Rank E field strengths at five points"
+    },
+    {
+      "label": "12",
+      "summary": "Parallel-plate capacitor, field ratios"
+    },
+    {
+      "label": "13",
+      "summary": "Object released at center of capacitor"
+    }
+  ],
+  "figures": [
+    {
+      "figure_id": 0,
+      "printed_label": "FIGURE Q23.7",
+      "matched_question_label": "7",
+      "confidence": "high",
+      "reasoning": "Irregular charged area matches Q23.7 about irregularly shaped charged area."
+    },
+    {
+      "figure_id": 1,
+      "printed_label": "FIGURE Q23.2",
+      "matched_question_label": "2",
+      "confidence": "high",
+      "reasoning": "Labeled (a) and (b) charge diagrams referenced by Q23.2."
+    },
+    {
+      "figure_id": 2,
+      "printed_label": "FIGURE Q23.3",
+      "matched_question_label": "3",
+      "confidence": "high",
+      "reasoning": "Field lines with points 1-4 referenced by Q23.3 ranking task."
+    },
+    {
+      "figure_id": 3,
+      "printed_label": "FIGURE Q23.11",
+      "matched_question_label": "11",
+      "confidence": "high",
+      "reasoning": "Capacitor plates with points 1-5 referenced by Q23.11 and Q23.13."
+    },
+    {
+      "figure_id": 4,
+      "printed_label": "FIGURE Q23.4",
+      "matched_question_label": "4",
+      "confidence": "high",
+      "reasoning": "Wire segment with charges matches Q23.4 about wire segment."
+    },
+    {
+      "figure_id": 5,
+      "printed_label": "FIGURE Q23.10",
+      "matched_question_label": "10",
+      "confidence": "high",
+      "reasoning": "Ball suspended from charged plate labeled mass m charge q matches Q23.10."
+    },
+    {
+      "figure_id": 6,
+      "printed_label": "FIGURE Q23.6",
+      "matched_question_label": "6",
+      "confidence": "high",
+      "reasoning": "Charged soda straw with 'inside straw' label matches Q23.6."
+    }
+  ]
+}

@@ -1,0 +1,82 @@
+{
+  "page_questions": [
+    {
+      "label": "1",
+      "summary": "Rank temperatures from highest to lowest"
+    },
+    {
+      "label": "2",
+      "summary": "New temperature after doubling from 10°C"
+    },
+    {
+      "label": "3",
+      "summary": "Highest/lowest temp ice/water vapor can exist"
+    },
+    {
+      "label": "4",
+      "summary": "Pressure comparison in two-compartment cylinder"
+    },
+    {
+      "label": "5",
+      "summary": "Factor gas temperature changes"
+    },
+    {
+      "label": "6",
+      "summary": "Moles and number density with tripled pressure"
+    },
+    {
+      "label": "7",
+      "summary": "Freezing/boiling points in underwater apartment"
+    },
+    {
+      "label": "8",
+      "summary": "Water vapor squeezed at -0.01°C"
+    },
+    {
+      "label": "9",
+      "summary": "Factor gas pressure changes"
+    },
+    {
+      "label": "10",
+      "summary": "Temperature change in process (constant V)"
+    },
+    {
+      "label": "11",
+      "summary": "Final pressure as temperature rises 300-1200K"
+    },
+    {
+      "label": "12",
+      "summary": "What is wrong with student's pV cycle diagram"
+    }
+  ],
+  "figures": [
+    {
+      "figure_id": 0,
+      "printed_label": "FIGURE Q18.11",
+      "matched_question_label": "11",
+      "confidence": "high",
+      "reasoning": "Vertical p(atm) vs V process arrow matches FIGURE Q18.11 referenced in problem 11."
+    },
+    {
+      "figure_id": 1,
+      "printed_label": "FIGURE Q18.10",
+      "matched_question_label": "10",
+      "confidence": "high",
+      "reasoning": "Horizontal p vs V process arrow matches FIGURE Q18.10 referenced in problem 10."
+    },
+    {
+      "figure_id": 2,
+      "printed_label": "FIGURE Q18.4",
+      "matched_question_label": "4",
+      "confidence": "high",
+      "reasoning": "Piston cylinder with 80°C/20°C compartments matches FIGURE Q18.4 in problem 4."
+    },
+    {
+      "figure_id": 3,
+      "printed_label": "FIGURE Q18.12",
+      "matched_question_label": "12",
+      "confidence": "high",
+      "reasoning": "pV cycle triangle diagram matches FIGURE Q18.12 referenced in problem 12."
+    }
+  ]
+}

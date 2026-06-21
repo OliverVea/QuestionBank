@@ -3,6 +3,7 @@ import { newId, nowIso } from '../domain/ids.js';
 import type { Attempt, Question, Relevance } from '../domain/types.js';
 import { requireCustomerId } from '../middleware/resolve-customer.js';
 import { planBatchSave, type IncomingQuestion } from '../services/batch-save.js';
+import { deleteFiguresForQuestions } from '../services/cascade.js';
 import { compareProblems } from '../services/problem-order.js';
 import { reconcileQuestionIds } from '../services/reconcile.js';
 import { deriveSummary } from '../services/summary.js';
@@ -96,6 +97,7 @@ export function bookQuestionsRouter(store: Store): Router {
     // sequence is effectively atomic (no concurrent writer can interleave).
     if (plan.deleteIds.length > 0) {
       const doomed = new Set(plan.deleteIds);
+      await deleteFiguresForQuestions(store, customerId, doomed);
       for (const attempt of await store.attempts.getAll(customerId)) {
         if (doomed.has(attempt.questionId)) await store.attempts.delete(customerId, attempt.id);
       }

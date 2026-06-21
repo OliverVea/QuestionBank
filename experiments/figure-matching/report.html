@@ -1,0 +1,719 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Figure → question matching</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font: 15px/1.45 system-ui, sans-serif; margin: 0; padding: 1.5rem; max-width: 1500px; }
+  h1 { margin: 0 0 .25rem; } .lede { color: #888; margin: 0 0 1.5rem; }
+  section { border-top: 2px solid #8884; padding: 1rem 0 2rem; }
+  h2 { margin: .2rem 0 1rem; } h2 .src { font-weight: 400; color: #888; font-size: .8em; }
+  .case { display: grid; grid-template-columns: minmax(260px, 380px) 1fr; gap: 1.5rem; align-items: start; }
+  .page { width: 100%; border: 1px solid #8884; border-radius: 6px; }
+  .qcount { color: #888; font-size: .85em; margin-top: .5rem; }
+  .figcol { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: .75rem; }
+  .fig { display: flex; gap: .6rem; border: 1px solid #8884; border-radius: 6px; padding: .5rem; }
+  .fig.ok { border-left: 4px solid #3a7; } .fig.bad { border-left: 4px solid #d44; }
+  .fig img { width: 88px; height: 88px; object-fit: contain; background: #8881; border-radius: 4px; flex: none; }
+  .figmeta { min-width: 0; flex: 1; } .figid { font-weight: 600; margin-bottom: .25rem; } .figid .score { color: #999; font-weight: 400; font-size: .8em; }
+  .mrow { display: grid; grid-template-columns: 110px 1fr; gap: .5rem; padding: .2rem 0; border-top: 1px solid #8882; }
+  .mname { color: #aaa; font-size: .85em; } .mbody { min-width: 0; }
+  .badge { font-size: .72em; padding: .05em .4em; border-radius: 4px; }
+  .badge.high { background: #3a72; color: #3a7; } .badge.medium { background: #db42; color: #c93; } .badge.low { background: #d442; color: #d44; }
+  .qs { color: #999; font-size: .85em; } .reason { color: #999; font-size: .82em; margin-top: .1rem; }
+  .unmatched, .missing { color: #d44; }
+  .agree { color: #3a7; font-size: .75em; border: 1px solid #3a7; padding: 0 .35em; border-radius: 4px; }
+  .disagree { color: #d44; font-size: .75em; border: 1px solid #d44; padding: 0 .35em; border-radius: 4px; }
+</style></head><body>
+<h1>Figure → question matching</h1>
+<p class="lede">Opus 4.8, Sonnet 4.6, Haiku 4.5: all agreed on the matched question for <b>38/42</b> figures (4 differ). Disagreements are outlined red.</p>
+<section>
+    <h2>test_1 <span class="src">PXL_20260619_123302708.jpg</span></h2>
+    <div class="case">
+      <div class="pagecol">
+        <a href="cases/test_1/rectified.jpg" target="_blank"><img class="page" src="cases/test_1/rectified.jpg" loading="lazy" alt="page test_1"></a>
+        <div class="qcount">questions found — Opus 4.8: 18 · Sonnet 4.6: 18 · Haiku 4.5: 18</div>
+      </div>
+      <div class="figcol"><div class="fig ok">
+      <img src="cases/test_1/crops/figure_0.jpg" loading="lazy" alt="figure 0">
+      <div class="figmeta">
+        <div class="figid">figure_0 <span class="score">det 0.9363</span> <span class="agree">match</span></div>
+        <div class="mrow">
+        <span class="mname">Opus 4.8 <span class="badge high">high</span></span>
+        <span class="mbody">“FIGURE EX 1.19” → <b>19</b> <span class="qs">Describe real motion for given position-vs-time graph</span><div class="reason">Position-vs-time y(m) decreasing graph matches FIGURE EX1.19 referenced in problem 19.</div></span>
+      </div><div class="mrow">
+        <span class="mname">Sonnet 4.6 <span class="badge high">high</span></span>
+        <span class="mbody">“EX1.19” → <b>19</b> <span class="qs"></span><div class="reason"></div></span>
+      </div><div class="mrow">
+        <span class="mname">Haiku 4.5 <span class="badge high">high</span></span>
+        <span class="mbody">“EX1.19” → <b>19</b> <span class="qs"></span><div class="reason"></div></span>
+      </div>
+      </div>
+    </div><div class="fig ok">
+      <img src="cases/test_1/crops/figure_1.jpg" loading="lazy" alt="figure 1">
+      <div class="figmeta">
+        <div class="figid">figure_1 <span class="score">det 0.2515</span> <span class="agree">match</span></div>
+        <div class="mrow">
+        <span class="mname">Opus 4.8 <span class="badge high">high</span></span>
+        <span class="mbody">“FIGURE EX 1.10 / FIGURE EX1.11” → <b>10</b> <span class="qs">Motion diagram with v2, add dot 4 and velocity vector for acceleration cases</span><div class="reason">Crop contains both EX1.10 (v2, dots 2-3) for problem 10 and EX1.11 (v1, dots 1-2) for problem 11.</div></span>
+      </div><div class="mrow">
+        <span class="mname">Sonnet 4.6 <span class="badge high">high</span></span>
+        <span class="mbody">“EX1.10” → <b>10</b> <span class="qs"></span><div class="reason"></div></span>
+      </div><div class="mrow">
+        <span class="mname">Haiku 4.5 <span class="badge high">high</span></span>
+        <span class="mbody">“EX1.10 and EX1.11” → <b>10</b> <span class="qs"></span><div class="reason"></div></span>
+      </div>
+      </div>
+    </div><div class="fig ok">
+      <img src="cases/test_1/crops/figure_2.jpg" loading="lazy" alt="figure 2">
+      <div class="figmeta">
+        <div class="figid">figure_2 <span class="score">det 0.927</span> <span class="agree">match</span></div>
+        <div class="mrow">
+        <span class="mname">Opus 4.8 <span class="badge high">high</span></span>
+        <span class="mbody">“FIGURE EX1.20” → <b>20</b> <span class="qs">Describe real motion for given position-vs-time graph</span><div class="reason">x(mi) vs t(h) graph labeled FIGURE EX1.20 referenced in problem 20.</div></span>
+      </div><div class="mrow">
+        <span class="mname">Sonnet 4.6 <span class="badge high">high</span></span>
+        <span class="mbody">“EX1.20” → <b>20</b> <span class="qs"></span><div class="reason"></div></span>
+      </div><div class="mrow">
+        <span class="mname">Haiku 4.5 <span class="badge high">high</span></span>
+        <span class="mbody">“EX1.20” → <b>20</b> <span class="qs"></span><div class="reason"></div></span>
+      </div>
+      </div>
+    </div><div class="fig ok">
+      <img src="cases/test_1/crops/figure_3.jpg" loading="lazy" alt="figure 3">
+      <div class="figmeta">
+        <div class="figid">figure_3 <span class="score">det 0.5475</span> <span class="agree">match</span></div>
+        <div class="mrow">
+        <span class="mname">Opus 4.8 <span class="badge high">high</span></span>
+        <span class="mbody">“FIGURE EX1.18” → <b>18</b> <span class="qs">Motion diagram of drag racer; measure x-values, make graph</span><div class="reason">Drag racer motion diagram '1 frame every 2 s' matches FIGURE EX1.18 in problem 18.</div></span>
+      </div><div class="mrow">
+        <span class="mname">Sonnet 4.6 <span class="badge high">high</span></span>
+        <span class="mbody">“EX1.18” → <b>18</b> <span class="qs"></span><div class="reason"></div></span>
+      </div><div class="mrow">
+        <span class="mname">Haiku 4.5 <span class="badge high">high</span></span>
+        <span class="mbody">“EX1.18” → <b>18</b> <span class="qs"></span><div class="reason"></div></span>
+      </div>
+      </div>
+    </div></div>
+    </div>
+  </section>
+<section>
+    <h2>test_2 <span class="src">PXL_20260619_131203627.jpg</span></h2>
+    <div class="case">
+      <div class="pagecol">
+        <a href="cases/test_2/rectified.jpg" target="_blank"><img class="page" src="cases/test_2/rectified.jpg" loading="lazy" alt="page test_2"></a>
+        <div class="qcount">questions found — Opus 4.8: 12 · Sonnet 4.6: 12 · Haiku 4.5: 12</div>
+      </div>
+      <div class="figcol"><div class="fig ok">
+      <img src="cases/test_2/crops/figure_0.jpg" loading="lazy" alt="figure 0">
+      <div class="figmeta">
+        <div class="figid">figure_0 <span class="score">det 0.9348</span> <span class="agree">match</span></div>
+        <div class="mrow">
+        <span class="mname">Opus 4.8 <span class="badge high">high</span></span>
+        <span class="mbody">“FIGURE Q18.11” → <b>11</b> <span class="qs">Final pressure as temperature rises 300-1200K</span><div class="reason">Vertical p(atm) vs V process arrow matches FIGURE Q18.11 referenced in problem 11.</div></span>
+      </div><div class="mrow">
+        <span class="mname">Sonnet 4.6 <span class="badge high">high</span></span>
+        <span class="mbody">“Q18.11” → <b>11</b> <span class="qs"></span><div class="reason"></div></span>
+      </div><div class="mrow">
+        <span class="mname">Haiku 4.5 <span class="badge high">high</span></span>
+        <span class="mbody">“Q18.11” → <b>11</b> <span class="qs"></span><div class="reason"></div></span>
+      </div>
+      </div>
+    </div><div class="fig ok">
+      <img src="cases/test_2/crops/figure_1.jpg" loading="lazy" alt="figure 1">
+      <div class="figmeta">
+        <div class="figid">figure_1 <span class="score">det 0.9471</span> <span class="agree">match</span></div>
+        <div class="mrow">
+        <span class="mname">Opus 4.8 <span class="badge high">high</span></span>
+        <span class="mbody">“FIGURE Q18.10” → <b>10</b> <span class="qs">Temperature change in process (constant V)</span><div class="reason">Horizontal p vs V process arrow matches FIGURE Q18.10 referenced in problem 10.</div></span>
+      </div><div class="mrow">
+        <span class="mname">Sonnet 4.6 <span class="badge high">high</span></span>
+        <span class="mbody">“Q18.10” → <b>10</b> <span class="qs"></span><div class="reason"></div></span>
+      </div><div class="mrow">
+        <span class="mname">Haiku 4.5 <span class="badge high">high</span></span>
+        <span class="mbody">“Q18.10” → <b>10</b> <span class="qs"></span><div class="reason"></div></span>
+      </div>
+      </div>
+    </div><div class="fig ok">
+      <img src="cases/test_2/crops/figure_2.jpg" loading="lazy" alt="figure 2">
+      <div class="figmeta">
+        <div class="figid">figure_2 <span class="score">det 0.9374</span> <span class="agree">match</span></div>
+        <div class="mrow">
+        <span class="mname">Opus 4.8 <span class="badge high">high</span></span>
+        <span class="mbody">“FIGURE Q18.4” → <b>4</b> <span class="qs">Pressure comparison in two-compartment cylinder</span><div class="reason">Piston cylinder with 80°C/20°C compartments matches FIGURE Q18.4 in problem 4.</div></span>
+      </div><div class="mrow">
+        <span class="mname">Sonnet 4.6 <span class="badge high">high</span></span>
+        <span class="mbody">“Q18.4” → <b>4</b> <span class="qs"></span><div class="reason"></div></span>
+      </div><div class="mrow">
+        <span class="mname">Haiku 4.5 <span class="badge high">high</span></span>
+        <span class="mbody">“Q18.4” → <b>4</b> <span class="qs"></span><div class="reason"></div></span>
+      </div>
+      </div>
+    </div><div class="fig ok">
+      <img src="cases/test_2/crops/figure_3.jpg" loading="lazy" alt="figure 3">
+      <div class="figmeta">
+        <div class="figid">figure_3 <span class="score">det 0.9238</span> <span class="agree">match</span></div>
+        <div class="mrow">
+        <span class="mname">Opus 4.8 <span class="badge high">high</span></span>
+        <span class="mbody">“FIGURE Q18.12” → <b>12</b> <span class="qs">What is wrong with student's pV cycle diagram</span><div class="reason">pV cycle triangle diagram matches FIGURE Q18.12 referenced in problem 12.</div></span>
+      </div><div class="mrow">
+        <span class="mname">Sonnet 4.6 <span class="badge high">high</span></span>
+        <span class="mbody">“Q18.12” → <b>12</b> <span class="qs"></span><div class="reason"></div></span>
+      </div><div class="mrow">
+        <span class="mname">Haiku 4.5 <span class="badge high">high</span></span>
+        <span class="mbody">“Q18.12” → <b>12</b> <span class="qs"></span><div class="reason"></div></span>
+      </div>
+      </div>
+    </div></div>
+    </div>
+  </section>
+<section>
+    <h2>test_3 <span class="src">PXL_20260619_131215689.jpg</span></h2>
+    <div class="case">
+      <div class="pagecol">
+        <a href="cases/test_3/rectified.jpg" target="_blank"><img class="page" src="cases/test_3/rectified.jpg" loading="lazy" alt="page test_3"></a>
+        <div class="qcount">questions found — Opus 4.8: 14 · Sonnet 4.6: 14 · Haiku 4.5: 14</div>
+      </div>
+      <div class="figcol"><div class="fig ok">
+      <img src="cases/test_3/crops/figure_0.jpg" loading="lazy" alt="figure 0">
+      <div class="figmeta">
+        <div class="figid">figure_0 <span class="score">det 0.9489</span> <span class="agree">match</span></div>
+        <div class="mrow">
+        <span class="mname">Opus 4.8 <span class="badge high">high</span></span>
+        <span class="mbody">“FIGURE P18.56” → <b>56</b> <span class="qs">U-shaped tube with mercury compressing air, length L</span><div class="reason">U-shaped tube with open/closed ends, Hg and air, matching problem 56's mercury column description.</div></span>
+      </div><div class="mrow">
+        <span class="mname">Sonnet 4.6 <span class="badge high">high</span></span>
+        <span class="mbody">“P18.56” → <b>56</b> <span class="qs"></span><div class="reason"></div></span>
+      </div><div class="mrow">
+        <span class="mname">Haiku 4.5 <span class="badge high">high</span></span>
+        <span class="mbody">“P18.56” → <b>56</b> <span class="qs"></span><div class="reason"></div></span>
+      </div>
+      </div>
+    </div><div class="fig ok">
+      <img src="cases/test_3/crops/figure_1.jpg" loading="lazy" alt="figure 1">
+      <div class="figmeta">
+        <div class="figid">figure_1 <span class="score">det 0.9254</span> <span class="agree">match</span></div>
+        <div class="mrow">
+        <span class="mname">Opus 4.8 <span class="badge high">high</span></span>
+        <span class="mbody">“FIGURE P18.57” → <b>57</b> <span class="qs">50 kg circular piston on compressed air, piston height</span><div class="reason">Cylinder with 50 kg piston at 30°C, 10 cm width, matching problem 57's circular piston on compressed air.</div></span>
+      </div><div class="mrow">
+        <span class="mname">Sonnet 4.6 <span class="badge high">high</span></span>
+        <span class="mbody">“P18.57” → <b>57</b> <span class="qs"></span><div class="reason"></div></span>
+      </div><div class="mrow">
+        <span class="mname">Haiku 4.5 <span class="badge high">high</span></span>
+        <span class="mbody">“P18.57” → <b>57</b> <span class="qs"></span><div class="reason"></div></span>
+      </div>
+      </div>
+    </div><div class="fig ok">
+      <img src="cases/test_3/crops/figure_2.jpg" loading="lazy" alt="figure 2">
+      <div class="figmeta">
+        <div class="figid">figure_2 <span class="score">det 0.9491</span> <span class="agree">match</span></div>
+        <div class="mrow">
+        <span class="mname">Opus 4.8 <span class="badge high">high</span></span>
+        <span class="mbody">“FIGURE P18.49” → <b>49</b> <span class="qs">3.0-m pipe pushed into water, find trapped air length L</span><div class="reason">Before/After pipe pushed into water with length L, matching problem 49's pipe.</div></span>
+      </div><div class="mrow">
+        <span class="mname">Sonnet 4.6 <span class="badge high">high</span></span>
+        <span class="mbody">“P18.49” → <b>49</b> <span class="qs"></span><div class="reason"></div></span>
+      </div><div class="mrow">
+        <span class="mname">Haiku 4.5 <span class="badge high">high</span></span>
+        <span class="mbody">“P18.49” → <b>49</b> <span class="qs"></span><div class="reason"></div></span>
+      </div>
+      </div>
+    </div><div class="fig ok">
+      <img src="cases/test_3/crops/figure_3.jpg" loading="lazy" alt="figure 3">
+      <div class="figmeta">
+        <div class="figid">figure_3 <span class="score">det 0.919</span> <span class="agree">match</span></div>
+        <div class="mrow">
+        <span class="mname">Opus 4.8 <span class="badge high">high</span></span>
+        <span class="mbody">“FIGURE P18.58” → <b>58</b> <span class="qs">Containers A and B connected by valve, final pressure</span><div class="reason">Containers A (300 K) and B (400 K) connected by valve, matching problem 58.</div></span>
+      </div><div class="mrow">
+        <span class="mname">Sonnet 4.6 <span class="badge high">high</span></span>
+        <span class="mbody">“P18.58” → <b>58</b> <span class="qs"></span><div class="reason"></div></span>
+      </div><div class="mrow">
+        <span class="mname">Haiku 4.5 <span class="badge high">high</span></span>
+        <span class="mbody">“P18.58” → <b>58</b> <span class="qs"></span><div class="reason"></div></span>
+      </div>
+      </div>
+    </div><div class="fig ok">
+      <img src="cases/test_3/crops/figure_4.jpg" loading="lazy" alt="figure 4">
+      <div class="figmeta">
+        <div class="figid">figure_4 <span class="score">det 0.9241</span> <span class="agree">match</span></div>
+        <div class="mrow">
+        <span class="mname">Opus 4.8 <span class="badge high">high</span></span>
+        <span class="mbody">“FIGURE P18.61” → <b>61</b> <span class="qs">Nitrogen gas two processes, find p1, T2, T3, T4</span><div class="reason">pV diagram with states 1-2-3-4 in diamond shape, matching problem 61's two processes.</div></span>
+      </div><div class="mrow">
+        <span class="mname">Sonnet 4.6 <span class="badge high">high</span></span>
+        <span class="mbody">“P18.61” → <b>61</b> <span class="qs"></span><div class="reason"></div></span>
+      </div><div class="mrow">
+        <span class="mname">Haiku 4.5 <span class="badge high">high</span></span>
+        <span class="mbody">“P18.61” → <b>61</b> <span class="qs"></span><div class="reason"></div></span>
+      </div>
+      </div>
+    </div><div class="fig ok">
+      <img src="cases/test_3/crops/figure_5.jpg" loading="lazy" alt="figure 5">
+      <div class="figmeta">
+        <div class="figid">figure_5 <span class="score">det 0.8786</span> <span class="agree">match</span></div>
+        <div class="mrow">
+        <span class="mname">Opus 4.8 <span class="badge high">high</span></span>
+        <span class="mbody">“FIGURE P18.60” → <b>60</b> <span class="qs">Helium gas process 1-2-3, find V1, V3, p2, T3</span><div class="reason">pV diagram with process 1-2-3, isothermal, matching problem 60's helium process.</div></span>
+      </div><div class="mrow">
+        <span class="mname">Sonnet 4.6 <span class="badge high">high</span></span>
+        <span class="mbody">“P18.60” → <b>60</b> <span class="qs"></span><div class="reason"></div></span>
+      </div><div class="mrow">
+        <span class="mname">Haiku 4.5 <span class="badge high">high</span></span>
+        <span class="mbody">“P18.60” → <b>60</b> <span class="qs"></span><div class="reason"></div></span>
+      </div>
+      </div>
+    </div></div>
+    </div>
+  </section>
+<section>
+    <h2>test_4 <span class="src">PXL_20260619_131225663.jpg</span></h2>
+    <div class="case">
+      <div class="pagecol">
+        <a href="cases/test_4/rectified.jpg" target="_blank"><img class="page" src="cases/test_4/rectified.jpg" loading="lazy" alt="page test_4"></a>
+        <div class="qcount">questions found — Opus 4.8: 13 · Sonnet 4.6: 13 · Haiku 4.5: 13</div>
+      </div>
+      <div class="figcol"><div class="fig ok">
+      <img src="cases/test_4/crops/figure_0.jpg" loading="lazy" alt="figure 0">
+      <div class="figmeta">
+        <div class="figid">figure_0 <span class="score">det 0.9282</span> <span class="agree">match</span></div>
+        <div class="mrow">
+        <span class="mname">Opus 4.8 <span class="badge high">high</span></span>
+        <span class="mbody">“FIGURE Q23.7” → <b>7</b> <span class="qs">Irregular charged area, scaled dimensions</span><div class="reason">Irregular charged area matches Q23.7 about irregularly shaped charged area.</div></span>
+      </div><div class="mrow">
+        <span class="mname">Sonnet 4.6 <span class="badge high">high</span></span>
+        <span class="mbody">“Q23.7” → <b>7</b> <span class="qs"></span><div class="reason"></div></span>
+      </div><div class="mrow">
+        <span class="mname">Haiku 4.5 <span class="badge high">high</span></span>
+        <span class="mbody">“Q23.7” → <b>7</b> <span class="qs"></span><div class="reason"></div></span>
+      </div>
+      </div>
+    </div><div class="fig ok">
+      <img src="cases/test_4/crops/figure_1.jpg" loading="lazy" alt="figure 1">
+      <div class="figmeta">
+        <div class="figid">figure_1 <span class="score">det 0.9123</span> <span class="agree">match</span></div>
+        <div class="mrow">
+        <span class="mname">Opus 4.8 <span class="badge high">high</span></span>
+        <span class="mbody">“FIGURE Q23.2” → <b>2</b> <span class="qs">Reproduce figure, mark where E=0</span><div class="reason">Labeled (a) and (b) charge diagrams referenced by Q23.2.</div></span>
+      </div><div class="mrow">
+        <span class="mname">Sonnet 4.6 <span class="badge high">high</span></span>
+        <span class="mbody">“Q23.2” → <b>2</b> <span class="qs"></span><div class="reason"></div></span>
+      </div><div class="mrow">
+        <span class="mname">Haiku 4.5 <span class="badge high">high</span></span>
+        <span class="mbody">“Q23.2” → <b>2</b> <span class="qs"></span><div class="reason"></div></span>
+      </div>
+      </div>
+    </div><div class="fig ok">
+      <img src="cases/test_4/crops/figure_2.jpg" loading="lazy" alt="figure 2">
+      <div class="figmeta">
+        <div class="figid">figure_2 <span class="score">det 0.9349</span> <span class="agree">match</span></div>
+        <div class="mrow">
+        <span class="mname">Opus 4.8 <span class="badge high">high</span></span>
+        <span class="mbody">“FIGURE Q23.3” → <b>3</b> <span class="qs">Rank E field strengths at points 1-4</span><div class="reason">Field lines with points 1-4 referenced by Q23.3 ranking task.</div></span>
+      </div><div class="mrow">
+        <span class="mname">Sonnet 4.6 <span class="badge high">high</span></span>
+        <span class="mbody">“Q23.3” → <b>3</b> <span class="qs"></span><div class="reason"></div></span>
+      </div><div class="mrow">
+        <span class="mname">Haiku 4.5 <span class="badge high">high</span></span>
+        <span class="mbody">“Q23.3” → <b>3</b> <span class="qs"></span><div class="reason"></div></span>
+      </div>
+      </div>
+    </div><div class="fig ok">
+      <img src="cases/test_4/crops/figure_3.jpg" loading="lazy" alt="figure 3">
+      <div class="figmeta">
+        <div class="figid">figure_3 <span class="score">det 0.9413</span> <span class="agree">match</span></div>
+        <div class="mrow">
+        <span class="mname">Opus 4.8 <span class="badge high">high</span></span>
+        <span class="mbody">“FIGURE Q23.11” → <b>11</b> <span class="qs">Rank E field strengths at five points</span><div class="reason">Capacitor plates with points 1-5 referenced by Q23.11 and Q23.13.</div></span>
+      </div><div class="mrow">
+        <span class="mname">Sonnet 4.6 <span class="badge high">high</span></span>
+        <span class="mbody">“Q23.11” → <b>11</b> <span class="qs"></span><div class="reason"></div></span>
+      </div><div class="mrow">
+        <span class="mname">Haiku 4.5 <span class="badge high">high</span></span>
+        <span class="mbody">“Q23.11” → <b>11</b> <span class="qs"></span><div class="reason"></div></span>
+      </div>
+      </div>
+    </div><div class="fig ok">
+      <img src="cases/test_4/crops/figure_4.jpg" loading="lazy" alt="figure 4">
+      <div class="figmeta">
+        <div class="figid">figure_4 <span class="score">det 0.6463</span> <span class="agree">match</span></div>
+        <div class="mrow">
+        <span class="mname">Opus 4.8 <span class="badge high">high</span></span>
+        <span class="mbody">“FIGURE Q23.4” → <b>4</b> <span class="qs">Wire segment with 5 nC charge, linear charge density</span><div class="reason">Wire segment with charges matches Q23.4 about wire segment.</div></span>
+      </div><div class="mrow">
+        <span class="mname">Sonnet 4.6 <span class="badge medium">medium</span></span>
+        <span class="mbody"><i>no label</i> → <b>4</b> <span class="qs"></span><div class="reason"></div></span>
+      </div><div class="mrow">
+        <span class="mname">Haiku 4.5 <span class="badge high">high</span></span>
+        <span class="mbody">“Q23.4” → <b>4</b> <span class="qs"></span><div class="reason"></div></span>
+      </div>
+      </div>
+    </div><div class="fig ok">
+      <img src="cases/test_4/crops/figure_5.jpg" loading="lazy" alt="figure 5">
+      <div class="figmeta">
+        <div class="figid">figure_5 <span class="score">det 0.8504</span> <span class="agree">match</span></div>
+        <div class="mrow">
+        <span class="mname">Opus 4.8 <span class="badge high">high</span></span>
+        <span class="mbody">“FIGURE Q23.10” → <b>10</b> <span class="qs">Ball suspended from charged plate, pendulum period</span><div class="reason">Ball suspended from charged plate labeled mass m charge q matches Q23.10.</div></span>
+      </div><div class="mrow">
+        <span class="mname">Sonnet 4.6 <span class="badge high">high</span></span>
+        <span class="mbody">“Q23.10” → <b>10</b> <span class="qs"></span><div class="reason"></div></span>
+      </div><div class="mrow">
+        <span class="mname">Haiku 4.5 <span class="badge high">high</span></span>
+        <span class="mbody">“Q23.10” → <b>10</b> <span class="qs"></span><div class="reason"></div></span>
+      </div>
+      </div>
+    </div><div class="fig ok">
+      <img src="cases/test_4/crops/figure_6.jpg" loading="lazy" alt="figure 6">
+      <div class="figmeta">
+        <div class="figid">figure_6 <span class="score">det 0.827</span> <span class="agree">match</span></div>
+        <div class="mrow">
+        <span class="mname">Opus 4.8 <span class="badge high">high</span></span>
+        <span class="mbody">“FIGURE Q23.6” → <b>6</b> <span class="qs">Hollow charged soda straw, field inside</span><div class="reason">Charged soda straw with 'inside straw' label matches Q23.6.</div></span>
+      </div><div class="mrow">
+        <span class="mname">Sonnet 4.6 <span class="badge high">high</span></span>
+        <span class="mbody">“Q23.6” → <b>6</b> <span class="qs"></span><div class="reason"></div></span>
+      </div><div class="mrow">
+        <span class="mname">Haiku 4.5 <span class="badge high">high</span></span>
+        <span class="mbody">“Q23.6” → <b>6</b> <span class="qs"></span><div class="reason"></div></span>
+      </div>
+      </div>
+    </div></div>
+    </div>
+  </section>
+<section>
+    <h2>test_5 <span class="src">PXL_20260619_131245144.jpg</span></h2>
+    <div class="case">
+      <div class="pagecol">
+        <a href="cases/test_5/rectified.jpg" target="_blank"><img class="page" src="cases/test_5/rectified.jpg" loading="lazy" alt="page test_5"></a>
+        <div class="qcount">questions found — Opus 4.8: 12 · Sonnet 4.6: 12 · Haiku 4.5: 12</div>
+      </div>
+      <div class="figcol"><div class="fig ok">
+      <img src="cases/test_5/crops/figure_0.jpg" loading="lazy" alt="figure 0">
+      <div class="figmeta">
+        <div class="figid">figure_0 <span class="score">det 0.746</span> <span class="agree">match</span></div>
+        <div class="mrow">
+        <span class="mname">Opus 4.8 <span class="badge high">high</span></span>
+        <span class="mbody">“FIGURE Q28.1” → <b>1</b> <span class="qs">Rank currents I_A to I_D through four resistors</span><div class="reason">Four resistors with currents I_A to I_D matches Q28.1 ranking currents.</div></span>
+      </div><div class="mrow">
+        <span class="mname">Sonnet 4.6 <span class="badge high">high</span></span>
+        <span class="mbody">“Q28.1” → <b>1</b> <span class="qs"></span><div class="reason"></div></span>
+      </div><div class="mrow">
+        <span class="mname">Haiku 4.5 <span class="badge high">high</span></span>
+        <span class="mbody">“Q28.1” → <b>1</b> <span class="qs"></span><div class="reason"></div></span>
+      </div>
+      </div>
+    </div><div class="fig ok">
+      <img src="cases/test_5/crops/figure_1.jpg" loading="lazy" alt="figure 1">
+      <div class="figmeta">
+        <div class="figid">figure_1 <span class="score">det 0.9495</span> <span class="agree">match</span></div>
+        <div class="mrow">
+        <span class="mname">Opus 4.8 <span class="badge high">high</span></span>
+        <span class="mbody">“FIGURE Q28.8” → <b>8</b> <span class="qs">Bulbs A and B, switch closed effect</span><div class="reason">Shows bulbs A and B with a switch, matching Q28.8.</div></span>
+      </div><div class="mrow">
+        <span class="mname">Sonnet 4.6 <span class="badge high">high</span></span>
+        <span class="mbody">“Q28.8” → <b>8</b> <span class="qs"></span><div class="reason"></div></span>
+      </div><div class="mrow">
+        <span class="mname">Haiku 4.5 <span class="badge high">high</span></span>
+        <span class="mbody">“Q28.8” → <b>8</b> <span class="qs"></span><div class="reason"></div></span>
+      </div>
+      </div>
+    </div><div class="fig ok">
+      <img src="cases/test_5/crops/figure_2.jpg" loading="lazy" alt="figure 2">
+      <div class="figmeta">
+        <div class="figid">figure_2 <span class="score">det 0.9434</span> <span class="agree">match</span></div>
+        <div class="mrow">
+        <span class="mname">Opus 4.8 <span class="badge high">high</span></span>
+        <span class="mbody">“FIGURE Q28.9” → <b>9</b> <span class="qs">Bulbs A, B, C identical, rank brightness and wire connection</span><div class="reason">Shows bulbs A, B, C with points 1 and 2, matching Q28.9.</div></span>
+      </div><div class="mrow">
+        <span class="mname">Sonnet 4.6 <span class="badge high">high</span></span>
+        <span class="mbody">“Q28.9” → <b>9</b> <span class="qs"></span><div class="reason"></div></span>
+      </div><div class="mrow">
+        <span class="mname">Haiku 4.5 <span class="badge high">high</span></span>
+        <span class="mbody">“Q28.9” → <b>9</b> <span class="qs"></span><div class="reason"></div></span>
+      </div>
+      </div>
+    </div><div class="fig ok">
+      <img src="cases/test_5/crops/figure_3.jpg" loading="lazy" alt="figure 3">
+      <div class="figmeta">
+        <div class="figid">figure_3 <span class="score">det 0.8301</span> <span class="agree">match</span></div>
+        <div class="mrow">
+        <span class="mname">Opus 4.8 <span class="badge high">high</span></span>
+        <span class="mbody">“FIGURE Q28.2” → <b>2</b> <span class="qs">Flashlight bulb touching top of 3V battery, does it light</span><div class="reason">Shows flashlight bulb on 3V battery, matching Q28.2.</div></span>
+      </div><div class="mrow">
+        <span class="mname">Sonnet 4.6 <span class="badge high">high</span></span>
+        <span class="mbody">“Q28.2” → <b>2</b> <span class="qs"></span><div class="reason"></div></span>
+      </div><div class="mrow">
+        <span class="mname">Haiku 4.5 <span class="badge high">high</span></span>
+        <span class="mbody">“Q28.2” → <b>2</b> <span class="qs"></span><div class="reason"></div></span>
+      </div>
+      </div>
+    </div><div class="fig ok">
+      <img src="cases/test_5/crops/figure_4.jpg" loading="lazy" alt="figure 4">
+      <div class="figmeta">
+        <div class="figid">figure_4 <span class="score">det 0.9394</span> <span class="agree">match</span></div>
+        <div class="mrow">
+        <span class="mname">Opus 4.8 <span class="badge high">high</span></span>
+        <span class="mbody">“FIGURE Q28.3” → <b>3</b> <span class="qs">Broken wire, potential difference V1-V2</span><div class="reason">Shows 6V battery with 2Ω resistor and points 1,2 with broken wire, matching Q28.3.</div></span>
+      </div><div class="mrow">
+        <span class="mname">Sonnet 4.6 <span class="badge high">high</span></span>
+        <span class="mbody">“Q28.3” → <b>3</b> <span class="qs"></span><div class="reason"></div></span>
+      </div><div class="mrow">
+        <span class="mname">Haiku 4.5 <span class="badge high">high</span></span>
+        <span class="mbody">“Q28.3” → <b>3</b> <span class="qs"></span><div class="reason"></div></span>
+      </div>
+      </div>
+    </div><div class="fig ok">
+      <img src="cases/test_5/crops/figure_5.jpg" loading="lazy" alt="figure 5">
+      <div class="figmeta">
+        <div class="figid">figure_5 <span class="score">det 0.9397</span> <span class="agree">match</span></div>
+        <div class="mrow">
+        <span class="mname">Opus 4.8 <span class="badge high">high</span></span>
+        <span class="mbody">“FIGURE Q28.5” → <b>5</b> <span class="qs">Two resistors R1&gt;R2 in parallel, larger power</span><div class="reason">Shows parallel resistors R1 and R2, matching Q28.5.</div></span>
+      </div><div class="mrow">
+        <span class="mname">Sonnet 4.6 <span class="badge high">high</span></span>
+        <span class="mbody">“Q28.5” → <b>5</b> <span class="qs"></span><div class="reason"></div></span>
+      </div><div class="mrow">
+        <span class="mname">Haiku 4.5 <span class="badge high">high</span></span>
+        <span class="mbody">“Q28.5” → <b>5</b> <span class="qs"></span><div class="reason"></div></span>
+      </div>
+      </div>
+    </div><div class="fig ok">
+      <img src="cases/test_5/crops/figure_6.jpg" loading="lazy" alt="figure 6">
+      <div class="figmeta">
+        <div class="figid">figure_6 <span class="score">det 0.9378</span> <span class="agree">match</span></div>
+        <div class="mrow">
+        <span class="mname">Opus 4.8 <span class="badge high">high</span></span>
+        <span class="mbody">“FIGURE Q28.4” → <b>4</b> <span class="qs">Two resistors R1&gt;R2, which dissipates larger power</span><div class="reason">Shows series resistors R1 and R2 with battery, matching Q28.4.</div></span>
+      </div><div class="mrow">
+        <span class="mname">Sonnet 4.6 <span class="badge high">high</span></span>
+        <span class="mbody">“Q28.4” → <b>4</b> <span class="qs"></span><div class="reason"></div></span>
+      </div><div class="mrow">
+        <span class="mname">Haiku 4.5 <span class="badge high">high</span></span>
+        <span class="mbody">“Q28.4” → <b>4</b> <span class="qs"></span><div class="reason"></div></span>
+      </div>
+      </div>
+    </div><div class="fig bad">
+      <img src="cases/test_5/crops/figure_7.jpg" loading="lazy" alt="figure 7">
+      <div class="figmeta">
+        <div class="figid">figure_7 <span class="score">det 0.9329</span> <span class="disagree">differ</span></div>
+        <div class="mrow">
+        <span class="mname">Opus 4.8 <span class="badge high">high</span></span>
+        <span class="mbody">“FIGURE Q28.11” → <b>11</b> <span class="qs">Bulbs A and B identical, switch closed effect</span><div class="reason">Faint image of bulbs A and B with switch, matching Q28.11.</div></span>
+      </div><div class="mrow">
+        <span class="mname">Sonnet 4.6 <span class="badge high">high</span></span>
+        <span class="mbody">“Q28.11” → <b>11</b> <span class="qs"></span><div class="reason"></div></span>
+      </div><div class="mrow">
+        <span class="mname">Haiku 4.5 <span class="badge high">high</span></span>
+        <span class="mbody">“Q28.6” → <b>6</b> <span class="qs"></span><div class="reason"></div></span>
+      </div>
+      </div>
+    </div><div class="fig ok">
+      <img src="cases/test_5/crops/figure_8.jpg" loading="lazy" alt="figure 8">
+      <div class="figmeta">
+        <div class="figid">figure_8 <span class="score">det 0.9251</span> <span class="agree">match</span></div>
+        <div class="mrow">
+        <span class="mname">Opus 4.8 <span class="badge high">high</span></span>
+        <span class="mbody">“FIGURE Q28.10” → <b>10</b> <span class="qs">Resistance between points 1 and 2</span><div class="reason">Shows 100Ω, 50Ω, R1, R2, R3 with points 1 and 2, matching Q28.10.</div></span>
+      </div><div class="mrow">
+        <span class="mname">Sonnet 4.6 <span class="badge high">high</span></span>
+        <span class="mbody">“Q28.10” → <b>10</b> <span class="qs"></span><div class="reason"></div></span>
+      </div><div class="mrow">
+        <span class="mname">Haiku 4.5 <span class="badge high">high</span></span>
+        <span class="mbody">“Q28.10” → <b>10</b> <span class="qs"></span><div class="reason"></div></span>
+      </div>
+      </div>
+    </div><div class="fig ok">
+      <img src="cases/test_5/crops/figure_9.jpg" loading="lazy" alt="figure 9">
+      <div class="figmeta">
+        <div class="figid">figure_9 <span class="score">det 0.6033</span> <span class="agree">match</span></div>
+        <div class="mrow">
+        <span class="mname">Opus 4.8 <span class="badge high">high</span></span>
+        <span class="mbody">“FIGURE Q28.6” → <b>6</b> <span class="qs">Rank powers P_A to P_D dissipated</span><div class="reason">Four resistors labeled A-D with voltages, matching Q28.6 power ranking.</div></span>
+      </div><div class="mrow">
+        <span class="mname">Sonnet 4.6 <span class="badge high">high</span></span>
+        <span class="mbody">“Q28.6” → <b>6</b> <span class="qs"></span><div class="reason"></div></span>
+      </div><div class="mrow">
+        <span class="mname">Haiku 4.5 <span class="badge high">high</span></span>
+        <span class="mbody">“Q28.6” → <b>6</b> <span class="qs"></span><div class="reason"></div></span>
+      </div>
+      </div>
+    </div><div class="fig ok">
+      <img src="cases/test_5/crops/figure_10.jpg" loading="lazy" alt="figure 10">
+      <div class="figmeta">
+        <div class="figid">figure_10 <span class="score">det 0.9381</span> <span class="agree">match</span></div>
+        <div class="mrow">
+        <span class="mname">Opus 4.8 <span class="badge high">high</span></span>
+        <span class="mbody">“FIGURE Q28.12” → <b>12</b> <span class="qs">Voltage vs time capacitor discharge, rank resistances</span><div class="reason">Graph of ΔVc vs time for R1,R2,R3, matching Q28.12 capacitor discharge.</div></span>
+      </div><div class="mrow">
+        <span class="mname">Sonnet 4.6 <span class="badge high">high</span></span>
+        <span class="mbody">“Q28.12” → <b>12</b> <span class="qs"></span><div class="reason"></div></span>
+      </div><div class="mrow">
+        <span class="mname">Haiku 4.5 <span class="badge high">high</span></span>
+        <span class="mbody">“Q28.12” → <b>12</b> <span class="qs"></span><div class="reason"></div></span>
+      </div>
+      </div>
+    </div></div>
+    </div>
+  </section>
+<section>
+    <h2>test_6 <span class="src">PXL_20260619_131256166.jpg</span></h2>
+    <div class="case">
+      <div class="pagecol">
+        <a href="cases/test_6/rectified.jpg" target="_blank"><img class="page" src="cases/test_6/rectified.jpg" loading="lazy" alt="page test_6"></a>
+        <div class="qcount">questions found — Opus 4.8: 10 · Sonnet 4.6: 10 · Haiku 4.5: 10</div>
+      </div>
+      <div class="figcol"><div class="fig bad">
+      <img src="cases/test_6/crops/figure_0.jpg" loading="lazy" alt="figure 0">
+      <div class="figmeta">
+        <div class="figid">figure_0 <span class="score">det 0.9439</span> <span class="disagree">differ</span></div>
+        <div class="mrow">
+        <span class="mname">Opus 4.8 <span class="badge high">high</span></span>
+        <span class="mbody">“(b)” → <b>5</b> <span class="qs">Is electric field strength increasing/decreasing/not changing</span><div class="reason">This (b) diagram with B, E, v_em vectors is part of FIGURE Q31.5 referenced in question 5.</div></span>
+      </div><div class="mrow">
+        <span class="mname">Sonnet 4.6 <span class="badge high">high</span></span>
+        <span class="mbody">“Q31.6” → <b>6</b> <span class="qs"></span><div class="reason"></div></span>
+      </div><div class="mrow">
+        <span class="mname">Haiku 4.5 <span class="badge high">high</span></span>
+        <span class="mbody">“Q31.6” → <b>6</b> <span class="qs"></span><div class="reason"></div></span>
+      </div>
+      </div>
+    </div><div class="fig bad">
+      <img src="cases/test_6/crops/figure_1.jpg" loading="lazy" alt="figure 1">
+      <div class="figmeta">
+        <div class="figid">figure_1 <span class="score">det 0.9441</span> <span class="disagree">differ</span></div>
+        <div class="mrow">
+        <span class="mname">Opus 4.8 <span class="badge high">high</span></span>
+        <span class="mbody">“(a)” → <b>5</b> <span class="qs">Is electric field strength increasing/decreasing/not changing</span><div class="reason">This (a) diagram with E=3000 V/m and B=10 µT is FIGURE Q31.5 referenced in question 5.</div></span>
+      </div><div class="mrow">
+        <span class="mname">Sonnet 4.6 <span class="badge high">high</span></span>
+        <span class="mbody">“Q31.6” → <b>6</b> <span class="qs"></span><div class="reason"></div></span>
+      </div><div class="mrow">
+        <span class="mname">Haiku 4.5 <span class="badge high">high</span></span>
+        <span class="mbody">“Q31.6” → <b>6</b> <span class="qs"></span><div class="reason"></div></span>
+      </div>
+      </div>
+    </div><div class="fig ok">
+      <img src="cases/test_6/crops/figure_2.jpg" loading="lazy" alt="figure 2">
+      <div class="figmeta">
+        <div class="figid">figure_2 <span class="score">det 0.8899</span> <span class="agree">match</span></div>
+        <div class="mrow">
+        <span class="mname">Opus 4.8 <span class="badge high">high</span></span>
+        <span class="mbody">“FIGURE Q31.2” → <b>2</b> <span class="qs">Sharon's rocket through magnetic field, shoots charge, forces on charge</span><div class="reason">Shows Sharon's rocket and Bill with 800 m/s, labeled FIGURE Q31.2 referenced in question 2.</div></span>
+      </div><div class="mrow">
+        <span class="mname">Sonnet 4.6 <span class="badge high">high</span></span>
+        <span class="mbody">“Q31.2” → <b>2</b> <span class="qs"></span><div class="reason"></div></span>
+      </div><div class="mrow">
+        <span class="mname">Haiku 4.5 <span class="badge high">high</span></span>
+        <span class="mbody">“Q31.2” → <b>2</b> <span class="qs"></span><div class="reason"></div></span>
+      </div>
+      </div>
+    </div><div class="fig ok">
+      <img src="cases/test_6/crops/figure_3.jpg" loading="lazy" alt="figure 3">
+      <div class="figmeta">
+        <div class="figid">figure_3 <span class="score">det 0.7579</span> <span class="agree">match</span></div>
+        <div class="mrow">
+        <span class="mname">Opus 4.8 <span class="badge high">high</span></span>
+        <span class="mbody">“FIGURE Q31.1” → <b>1</b> <span class="qs">Andre flying through magnetic field, does he see B and E fields</span><div class="reason">Shows Andre's spaceship in magnetic field B, FIGURE Q31.1 referenced in question 1.</div></span>
+      </div><div class="mrow">
+        <span class="mname">Sonnet 4.6 <span class="badge high">high</span></span>
+        <span class="mbody">“Q31.1” → <b>1</b> <span class="qs"></span><div class="reason"></div></span>
+      </div><div class="mrow">
+        <span class="mname">Haiku 4.5 <span class="badge high">high</span></span>
+        <span class="mbody">“Q31.1” → <b>1</b> <span class="qs"></span><div class="reason"></div></span>
+      </div>
+      </div>
+    </div><div class="fig bad">
+      <img src="cases/test_6/crops/figure_4.jpg" loading="lazy" alt="figure 4">
+      <div class="figmeta">
+        <div class="figid">figure_4 <span class="score">det 0.7856</span> <span class="disagree">differ</span></div>
+        <div class="mrow">
+        <span class="mname">Opus 4.8 <span class="badge high">high</span></span>
+        <span class="mbody">“FIGURE Q31.6” → <b>6</b> <span class="qs">Do situations represent possible electromagnetic waves</span><div class="reason">Shows (a) B and E vector pairs, part of FIGURE Q31.6 referenced in question 6.</div></span>
+      </div><div class="mrow">
+        <span class="mname">Sonnet 4.6 <span class="badge high">high</span></span>
+        <span class="mbody">“Q31.7” → <b>7</b> <span class="qs"></span><div class="reason"></div></span>
+      </div><div class="mrow">
+        <span class="mname">Haiku 4.5 <span class="badge high">high</span></span>
+        <span class="mbody">“Q31.7” → <b>7</b> <span class="qs"></span><div class="reason"></div></span>
+      </div>
+      </div>
+    </div><div class="fig ok">
+      <img src="cases/test_6/crops/figure_5.jpg" loading="lazy" alt="figure 5">
+      <div class="figmeta">
+        <div class="figid">figure_5 <span class="score">det 0.9194</span> <span class="agree">match</span></div>
+        <div class="mrow">
+        <span class="mname">Opus 4.8 <span class="badge high">high</span></span>
+        <span class="mbody">“FIGURE Q31.3” → <b>3</b> <span class="qs">Curl right hand fingers, is electric flux positive or negative</span><div class="reason">Shows hand curling fingers around circle with crosses, FIGURE Q31.3 referenced in question 3.</div></span>
+      </div><div class="mrow">
+        <span class="mname">Sonnet 4.6 <span class="badge high">high</span></span>
+        <span class="mbody">“Q31.3” → <b>3</b> <span class="qs"></span><div class="reason"></div></span>
+      </div><div class="mrow">
+        <span class="mname">Haiku 4.5 <span class="badge high">high</span></span>
+        <span class="mbody">“Q31.3” → <b>3</b> <span class="qs"></span><div class="reason"></div></span>
+      </div>
+      </div>
+    </div><div class="fig ok">
+      <img src="cases/test_6/crops/figure_6.jpg" loading="lazy" alt="figure 6">
+      <div class="figmeta">
+        <div class="figid">figure_6 <span class="score">det 0.9495</span> <span class="agree">match</span></div>
+        <div class="mrow">
+        <span class="mname">Opus 4.8 <span class="badge high">high</span></span>
+        <span class="mbody">“FIGURE Q31.9” → <b>9</b> <span class="qs">Loop antenna in older televisions, how it works</span><div class="reason">Shows loop antenna on a television, FIGURE Q31.9 referenced in question 9.</div></span>
+      </div><div class="mrow">
+        <span class="mname">Sonnet 4.6 <span class="badge high">high</span></span>
+        <span class="mbody">“Q31.9” → <b>9</b> <span class="qs"></span><div class="reason"></div></span>
+      </div><div class="mrow">
+        <span class="mname">Haiku 4.5 <span class="badge high">high</span></span>
+        <span class="mbody">“Q31.9” → <b>9</b> <span class="qs"></span><div class="reason"></div></span>
+      </div>
+      </div>
+    </div><div class="fig ok">
+      <img src="cases/test_6/crops/figure_7.jpg" loading="lazy" alt="figure 7">
+      <div class="figmeta">
+        <div class="figid">figure_7 <span class="score">det 0.9386</span> <span class="agree">match</span></div>
+        <div class="mrow">
+        <span class="mname">Opus 4.8 <span class="badge medium">medium</span></span>
+        <span class="mbody">“FIGURE Q31.5” → <b>5</b> <span class="qs">Is electric field strength increasing/decreasing/not changing</span><div class="reason">Wait, this shows induced B circles and E dots, labeled FIGURE Q31.4/Q31.5; it represents induced field figure for question 4 or 5.</div></span>
+      </div><div class="mrow">
+        <span class="mname">Sonnet 4.6 <span class="badge high">high</span></span>
+        <span class="mbody">“Q31.5” → <b>5</b> <span class="qs"></span><div class="reason"></div></span>
+      </div><div class="mrow">
+        <span class="mname">Haiku 4.5 <span class="badge high">high</span></span>
+        <span class="mbody">“Q31.5” → <b>5</b> <span class="qs"></span><div class="reason"></div></span>
+      </div>
+      </div>
+    </div><div class="fig ok">
+      <img src="cases/test_6/crops/figure_8.jpg" loading="lazy" alt="figure 8">
+      <div class="figmeta">
+        <div class="figid">figure_8 <span class="score">det 0.8669</span> <span class="agree">match</span></div>
+        <div class="mrow">
+        <span class="mname">Opus 4.8 <span class="badge high">high</span></span>
+        <span class="mbody">“FIGURE Q31.4” → <b>4</b> <span class="qs">Current through surface S with curled right fingers</span><div class="reason">Shows surface S with 2A currents, FIGURE Q31.4 referenced in question 4.</div></span>
+      </div><div class="mrow">
+        <span class="mname">Sonnet 4.6 <span class="badge high">high</span></span>
+        <span class="mbody">“Q31.4” → <b>4</b> <span class="qs"></span><div class="reason"></div></span>
+      </div><div class="mrow">
+        <span class="mname">Haiku 4.5 <span class="badge high">high</span></span>
+        <span class="mbody">“Q31.4” → <b>4</b> <span class="qs"></span><div class="reason"></div></span>
+      </div>
+      </div>
+    </div><div class="fig ok">
+      <img src="cases/test_6/crops/figure_9.jpg" loading="lazy" alt="figure 9">
+      <div class="figmeta">
+        <div class="figid">figure_9 <span class="score">det 0.9408</span> <span class="agree">match</span></div>
+        <div class="mrow">
+        <span class="mname">Opus 4.8 <span class="badge high">high</span></span>
+        <span class="mbody">“FIGURE Q31.10” → <b>10</b> <span class="qs">Vertically polarized wave through five polarizers, rank intensities</span><div class="reason">Shows five polarizers A-E, FIGURE Q31.10 referenced in question 10.</div></span>
+      </div><div class="mrow">
+        <span class="mname">Sonnet 4.6 <span class="badge high">high</span></span>
+        <span class="mbody">“Q31.10” → <b>10</b> <span class="qs"></span><div class="reason"></div></span>
+      </div><div class="mrow">
+        <span class="mname">Haiku 4.5 <span class="badge high">high</span></span>
+        <span class="mbody">“Q31.10” → <b>10</b> <span class="qs"></span><div class="reason"></div></span>
+      </div>
+      </div>
+    </div></div>
+    </div>
+  </section>
+</body></html>

@@ -41,6 +41,24 @@ export interface Question {
   createdAt: string;
 }
 
+/**
+ * A figure crop attached to a question. The crop bytes live in the figure blob store at
+ * `imgs/<id>.webp` (path derived from id — no separate field). Figures are a separate
+ * entity, not a Question field, so a problem with zero figures is byte-identical to today.
+ */
+export interface Figure {
+  id: string;
+  /** Standard scoping (wrong-owner-is-not-found). */
+  customerId: string;
+  /** Owner; the book is reachable via the question. */
+  questionId: string;
+  /** Matcher's read of the printed caption ("Figure P5.32"); absent for user-added. */
+  printedLabel?: string;
+  /** Matcher confidence — enum, matching the spike (not a 0–1 number); absent for user-added. */
+  confidence?: 'high' | 'medium' | 'low';
+  createdAt: string;
+}
+
 /** Grade vocabulary. `partial` ⇒ the answer is ≥70% of the way there. */
 export type Grade = 'correct' | 'partial' | 'incorrect';
 

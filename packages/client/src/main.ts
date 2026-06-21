@@ -9,6 +9,7 @@ import Navigo from 'navigo';
 import { LandingPage } from '@/pages/LandingPage';
 import { AddBookPage } from '@/pages/AddBookPage';
 import { ScanProblemsPage } from '@/pages/ScanProblemsPage';
+import { FigureScanPage } from '@/pages/FigureScanPage';
 import { ManageBooksPage } from '@/pages/ManageBooksPage';
 import { EditBookPage } from '@/pages/EditBookPage';
 import { ViewBookPage } from '@/pages/ViewBookPage';
@@ -29,6 +30,7 @@ router
   .on('/', () => mount(LandingPage))
   .on('/add-book', () => mount(AddBookPage))
   .on('/scan-problems', () => mount(ScanProblemsPage))
+  .on('/figure-scan', () => mount(FigureScanPage))
   .on('/manage-books', () => mount(ManageBooksPage))
   .on('/edit-book', () => mount(EditBookPage))
   .on('/view-book', () => mount(ViewBookPage))

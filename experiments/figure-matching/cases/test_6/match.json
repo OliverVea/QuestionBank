@@ -1,0 +1,116 @@
+{
+  "page_questions": [
+    {
+      "label": "1",
+      "summary": "Andre flying through magnetic field, does he see B and E fields"
+    },
+    {
+      "label": "2",
+      "summary": "Sharon's rocket through magnetic field, shoots charge, forces on charge"
+    },
+    {
+      "label": "3",
+      "summary": "Curl right hand fingers, is electric flux positive or negative"
+    },
+    {
+      "label": "4",
+      "summary": "Current through surface S with curled right fingers"
+    },
+    {
+      "label": "5",
+      "summary": "Is electric field strength increasing/decreasing/not changing"
+    },
+    {
+      "label": "6",
+      "summary": "Do situations represent possible electromagnetic waves"
+    },
+    {
+      "label": "7",
+      "summary": "Directions electromagnetic waves are traveling"
+    },
+    {
+      "label": "8",
+      "summary": "Intensity of EM wave changes with field amplitude/frequency"
+    },
+    {
+      "label": "9",
+      "summary": "Loop antenna in older televisions, how it works"
+    },
+    {
+      "label": "10",
+      "summary": "Vertically polarized wave through five polarizers, rank intensities"
+    }
+  ],
+  "figures": [
+    {
+      "figure_id": 0,
+      "printed_label": "(b)",
+      "matched_question_label": "5",
+      "confidence": "high",
+      "reasoning": "This (b) diagram with B, E, v_em vectors is part of FIGURE Q31.5 referenced in question 5."
+    },
+    {
+      "figure_id": 1,
+      "printed_label": "(a)",
+      "matched_question_label": "5",
+      "confidence": "high",
+      "reasoning": "This (a) diagram with E=3000 V/m and B=10 µT is FIGURE Q31.5 referenced in question 5."
+    },
+    {
+      "figure_id": 2,
+      "printed_label": "FIGURE Q31.2",
+      "matched_question_label": "2",
+      "confidence": "high",
+      "reasoning": "Shows Sharon's rocket and Bill with 800 m/s, labeled FIGURE Q31.2 referenced in question 2."
+    },
+    {
+      "figure_id": 3,
+      "printed_label": "FIGURE Q31.1",
+      "matched_question_label": "1",
+      "confidence": "high",
+      "reasoning": "Shows Andre's spaceship in magnetic field B, FIGURE Q31.1 referenced in question 1."
+    },
+    {
+      "figure_id": 4,
+      "printed_label": "FIGURE Q31.6",
+      "matched_question_label": "6",
+      "confidence": "high",
+      "reasoning": "Shows (a) B and E vector pairs, part of FIGURE Q31.6 referenced in question 6."
+    },
+    {
+      "figure_id": 5,
+      "printed_label": "FIGURE Q31.3",
+      "matched_question_label": "3",
+      "confidence": "high",
+      "reasoning": "Shows hand curling fingers around circle with crosses, FIGURE Q31.3 referenced in question 3."
+    },
+    {
+      "figure_id": 6,
+      "printed_label": "FIGURE Q31.9",
+      "matched_question_label": "9",
+      "confidence": "high",
+      "reasoning": "Shows loop antenna on a television, FIGURE Q31.9 referenced in question 9."
+    },
+    {
+      "figure_id": 7,
+      "printed_label": "FIGURE Q31.5",
+      "matched_question_label": "5",
+      "confidence": "medium",
+      "reasoning": "Wait, this shows induced B circles and E dots, labeled FIGURE Q31.4/Q31.5; it represents induced field figure for question 4 or 5."
+    },
+    {
+      "figure_id": 8,
+      "printed_label": "FIGURE Q31.4",
+      "matched_question_label": "4",
+      "confidence": "high",
+      "reasoning": "Shows surface S with 2A currents, FIGURE Q31.4 referenced in question 4."
+    },
+    {
+      "figure_id": 9,
+      "printed_label": "FIGURE Q31.10",
+      "matched_question_label": "10",
+      "confidence": "high",
+      "reasoning": "Shows five polarizers A-E, FIGURE Q31.10 referenced in question 10."
+    }
+  ]
+}

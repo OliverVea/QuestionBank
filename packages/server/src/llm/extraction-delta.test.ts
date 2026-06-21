@@ -18,8 +18,30 @@ describe('validateExtractionEnvelope', () => {
     };
     const env = validateExtractionEnvelope(raw, EXISTING, 2);
     expect(env.resolved).toHaveLength(3);
-    expect(env.resolved[0]).toEqual({ kind: 'add', path: '1.A.3', canonicalText: 'new one' });
+    // add/edit always carry figureRefs (default []); skip never does.
+    expect(env.resolved[0]).toEqual({ kind: 'add', path: '1.A.3', canonicalText: 'new one', figureRefs: [] });
     expect(env.needsSection[0].pageIndex).toEqual(1);
+  });
+
+  it('carries figureRefs on add/edit (filtering junk) and never on skip', () => {
+    const raw = {
+      resolved: [
+        { kind: 'add', path: '1.A.3', canonicalText: 'x', figureRefs: ['Figure 5.32', '', 7, '  '] },
+        { kind: 'edit', path: '1.A.1', canonicalText: 'y', targetId: 'q1', figureRefs: ['Fig. 3b'] },
+        { kind: 'skip', canonicalText: 'z', targetId: 'q2', figureRefs: ['ignored'] },
+      ],
+      needsSection: [],
+    };
+    const env = validateExtractionEnvelope(raw, EXISTING, 1);
+    expect(env.resolved[0].figureRefs).toEqual(['Figure 5.32']);
+    expect(env.resolved[1].figureRefs).toEqual(['Fig. 3b']);
+    expect(env.resolved[2].figureRefs).toBeUndefined();
+  });
+
+  it('defaults figureRefs to [] when absent on an add', () => {
+    const raw = { resolved: [{ kind: 'add', path: '1.A.3', canonicalText: 'x' }], needsSection: [] };
+    const env = validateExtractionEnvelope(raw, EXISTING, 1);
+    expect(env.resolved[0].figureRefs).toEqual([]);
   });
 
   it('carries a valid relevance through on add/edit and ignores it on skip', () => {

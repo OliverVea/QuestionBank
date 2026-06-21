@@ -1,0 +1,48 @@
+{
+  "question_labels": [
+    "10",
+    "11",
+    "12",
+    "13",
+    "14",
+    "15",
+    "16",
+    "17",
+    "18",
+    "19",
+    "20",
+    "21",
+    "22",
+    "23",
+    "24",
+    "25",
+    "26",
+    "27"
+  ],
+  "figures": [
+    {
+      "figure_id": 0,
+      "printed_label": "EX1.19",
+      "matched_question_label": "19",
+      "confidence": "high"
+    },
+    {
+      "figure_id": 1,
+      "printed_label": "EX1.10",
+      "matched_question_label": "10",
+      "confidence": "high"
+    },
+    {
+      "figure_id": 2,
+      "printed_label": "EX1.20",
+      "matched_question_label": "20",
+      "confidence": "high"
+    },
+    {
+      "figure_id": 3,
+      "printed_label": "EX1.18",
+      "matched_question_label": "18",
+      "confidence": "high"
+    }
+  ]
+}

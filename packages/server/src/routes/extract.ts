@@ -1,36 +1,14 @@
 import { Router } from 'express';
-import type { NextFunction, Request, Response } from 'express';
-import multer from 'multer';
-import { bufferImage, type ImageMimeType } from '../llm/image-ref.js';
 import { LlmError, type LlmProvider, type Message } from '../llm/provider.js';
 import {
   buildExtractionPrompt,
   extractionEnvelopeSchema,
-  type ExistingProblem,
 } from '../llm/extraction-contract.js';
 import { validateExtractionEnvelope, type ExtractionEnvelope } from '../llm/extraction-delta.js';
 import { requireCustomerId } from '../middleware/resolve-customer.js';
 import type { Store } from '../storage/store.js';
 import { log } from '../logging/logger.js';
-
-const MAX_IMAGES = 5;
-
-const VALID_MIME: Record<string, ImageMimeType> = {
-  'image/png': 'image/png',
-  'image/jpeg': 'image/jpeg',
-  'image/webp': 'image/webp',
-  'image/gif': 'image/gif',
-};
-
-/** Load the book's existing problems as { id, path, text } for the dedupe prompt. */
-async function loadExisting(
-  store: Store,
-  customerId: string,
-  bookId: string,
-): Promise<ExistingProblem[]> {
-  const questions = (await store.questions.getAll(customerId)).filter((q) => q.bookId === bookId);
-  return questions.map((q) => ({ id: q.id, path: q.label, text: q.canonicalText }));
-}
+import { acceptImages, loadExisting, readImages } from './extract-shared.js';
 
 /**
  * POST /api/extract — accepts 1..5 page images + a bookId, returns a typed extraction
@@ -43,34 +21,6 @@ async function loadExisting(
  */
 export function extractRouter(provider: LlmProvider, store: Store): Router {
   const router = Router();
-  const upload = multer({
-    storage: multer.memoryStorage(),
-    limits: { fileSize: 10 * 1024 * 1024, files: MAX_IMAGES }, // 10 MB/file, 5 files max
-  });
-
-  // multer throws a LIMIT_FILE_COUNT error past `files`; turn that (and any multer error)
-  // into a clean 400 rather than a 500.
-  const acceptImages = (req: Request, res: Response, next: NextFunction) => {
-    upload.array('images', MAX_IMAGES)(req, res, (err: unknown) => {
-      if (err) {
-        res.status(400).json({ error: `up to ${MAX_IMAGES} page images, each ≤10 MB` });
-        return;
-      }
-      next();
-    });
-  };
-
-  /** Pull validated ImageRefs from the multipart files, or null if any is wrong. */
-  function readImages(req: Request): ReturnType<typeof bufferImage>[] | null {
-    const files = (req.files as Express.Multer.File[] | undefined) ?? [];
-    if (files.length === 0) return null;
-    const refs = [];
-    for (const f of files) {
-      if (!(f.mimetype in VALID_MIME)) return null;
-      refs.push(bufferImage(f.buffer, f.mimetype as ImageMimeType));
-    }
-    return refs;
-  }
 
   router.post('/', acceptImages, async (req, res) => {
     const customerId = requireCustomerId(req);
@@ -94,7 +44,7 @@ export function extractRouter(provider: LlmProvider, store: Store): Router {
     // Relevance scoring rides the book's own learningGoal — no client field needed (the
     // book is already loaded). When the book has no goal, the prompt omits relevance.
     const prompt = buildExtractionPrompt(existing, book.learningGoal);
-    const messages: Message[] = [{ role: 'user', text: prompt, images }];
+    const messages: Message[] = [{ role: 'user', text: prompt, images: images.map((u) => u.ref) }];
     log.info('extracting problems from pages', {
       pages: images.length,
       existing: existing.length,
@@ -162,7 +112,7 @@ export function extractRouter(provider: LlmProvider, store: Store): Router {
     ].join('\n');
 
     const messages: Message[] = [
-      { role: 'user', text: prompt, images },
+      { role: 'user', text: prompt, images: images.map((u) => u.ref) },
       { role: 'assistant', text: JSON.stringify(prior) },
       { role: 'user', text: correction },
     ];

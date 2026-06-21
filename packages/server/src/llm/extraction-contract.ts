@@ -68,6 +68,11 @@ const PROMPT_HEAD = [
   '- `edit`: `path` + `canonicalText` + `targetId`. ALWAYS include the `path` — reuse the',
   '  existing problem\'s `path` from the list above (do not omit it, even when only the text changed).',
   '- `skip`: `targetId` only (the `canonicalText` is informational).',
+  '',
+  'FIGURE REFERENCES. For each `add` (and `edit`), list in `figureRefs` the figure CAPTION',
+  'labels the problem explicitly cites, exactly as printed (e.g. "Figure 5.32", "Fig. 3b").',
+  'Read them from the problem text on the page. Use an empty array when the problem cites no',
+  'figure. Do NOT invent labels; transcribe only what the problem references.',
 ].join('\n');
 
 /** Render the existing-problem block; an empty book yields an explicit "none" line. */
@@ -110,6 +115,7 @@ export const extractionEnvelopeSchema = {
           canonicalText: { type: 'string' },
           targetId: { type: 'string' },
           relevance: { type: 'string', enum: ['high', 'medium', 'low'] },
+          figureRefs: { type: 'array', items: { type: 'string' } },
         },
       },
     },

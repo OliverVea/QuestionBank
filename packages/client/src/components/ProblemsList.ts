@@ -90,7 +90,8 @@ export function ProblemsList({ problems = [], onChange, getLearningGoal, bookId 
         if (!posted.length) return;
         const goal = getLearningGoal?.();
         stashPhotos({ files: posted, notes, ...(bookId ? { bookId } : {}), ...(goal ? { learningGoal: goal } : {}) });
-        window.location.hash = '#/scan-problems';
+        // The figure wizard supersedes the chat scan UI; it commits problems + figures itself.
+        window.location.hash = '#/figure-scan';
       },
       onCancel() { /* stay on page */ },
     });

@@ -1,0 +1,61 @@
+{
+  "question_labels": [
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8",
+    "9",
+    "10",
+    "11",
+    "12",
+    "13"
+  ],
+  "figures": [
+    {
+      "figure_id": 0,
+      "printed_label": "Q23.7",
+      "matched_question_label": "7",
+      "confidence": "high"
+    },
+    {
+      "figure_id": 1,
+      "printed_label": "Q23.2",
+      "matched_question_label": "2",
+      "confidence": "high"
+    },
+    {
+      "figure_id": 2,
+      "printed_label": "Q23.3",
+      "matched_question_label": "3",
+      "confidence": "high"
+    },
+    {
+      "figure_id": 3,
+      "printed_label": "Q23.11",
+      "matched_question_label": "11",
+      "confidence": "high"
+    },
+    {
+      "figure_id": 4,
+      "printed_label": "",
+      "matched_question_label": "4",
+      "confidence": "medium"
+    },
+    {
+      "figure_id": 5,
+      "printed_label": "Q23.10",
+      "matched_question_label": "10",
+      "confidence": "high"
+    },
+    {
+      "figure_id": 6,
+      "printed_label": "Q23.6",
+      "matched_question_label": "6",
+      "confidence": "high"
+    }
+  ]
+}

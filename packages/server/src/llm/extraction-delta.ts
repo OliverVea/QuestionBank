@@ -14,6 +14,15 @@ export interface Delta {
   targetId?: string;
   /** Relevance to the book's learning goal (only when a goal was given; never on skip). */
   relevance?: Relevance;
+  /** Figure caption labels this problem cites (add/edit only; v1 uses add's). Defaults to []. */
+  figureRefs?: string[];
+}
+
+/** Read the figure-reference labels off a raw item — strings only, blanks dropped. */
+function readFigureRefs(raw: Record<string, unknown>): string[] {
+  return Array.isArray(raw.figureRefs)
+    ? raw.figureRefs.filter((s): s is string => typeof s === 'string' && s.trim() !== '')
+    : [];
 }
 
 /** Read a valid relevance off a raw item, or undefined (invalid/absent values are dropped). */
@@ -53,16 +62,17 @@ function validateDelta(raw: unknown, existingIds: Set<string>): Delta {
     throw new LlmError('resolved item missing canonicalText');
   }
   const relevance = readRelevance(raw);
+  const figureRefs = readFigureRefs(raw);
   if (kind === 'add') {
     if (!nonEmptyString(path)) throw new LlmError('add delta requires a path');
     if (targetId !== undefined) throw new LlmError('add delta must not carry a targetId');
-    return { kind, path, canonicalText, ...(relevance ? { relevance } : {}) };
+    return { kind, path, canonicalText, ...(relevance ? { relevance } : {}), figureRefs };
   }
   if (kind === 'edit') {
     if (!nonEmptyString(path)) throw new LlmError('edit delta requires a path');
     if (!nonEmptyString(targetId)) throw new LlmError('edit delta requires a targetId');
     if (!existingIds.has(targetId)) throw new LlmError(`edit targetId is not an existing problem: ${targetId}`);
-    return { kind, path, canonicalText, targetId, ...(relevance ? { relevance } : {}) };
+    return { kind, path, canonicalText, targetId, ...(relevance ? { relevance } : {}), figureRefs };
   }
   // skip — never carries relevance (it is informational only, never committed).
   if (!nonEmptyString(targetId)) throw new LlmError('skip delta requires a targetId');

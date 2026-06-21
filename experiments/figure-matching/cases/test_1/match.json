@@ -1,0 +1,106 @@
+{
+  "page_questions": [
+    {
+      "label": "10",
+      "summary": "Motion diagram with v2, add dot 4 and velocity vector for acceleration cases"
+    },
+    {
+      "label": "11",
+      "summary": "Motion diagram with v1, add dot 3 and velocity vector for acceleration cases"
+    },
+    {
+      "label": "12",
+      "summary": "Car travels left, brakes for stop sign; draw motion diagram"
+    },
+    {
+      "label": "13",
+      "summary": "Speed skater accelerates then constant speed; motion diagram"
+    },
+    {
+      "label": "14",
+      "summary": "Bowling ball up incline then level; motion diagram"
+    },
+    {
+      "label": "15",
+      "summary": "Paper wad launched up by rubber band; motion diagram"
+    },
+    {
+      "label": "16",
+      "summary": "Roof tile falls into pool; motion diagram"
+    },
+    {
+      "label": "17",
+      "summary": "Tennis ball dropped and bounces; motion diagram"
+    },
+    {
+      "label": "18",
+      "summary": "Motion diagram of drag racer; measure x-values, make graph"
+    },
+    {
+      "label": "19",
+      "summary": "Describe real motion for given position-vs-time graph"
+    },
+    {
+      "label": "20",
+      "summary": "Describe real motion for given position-vs-time graph"
+    },
+    {
+      "label": "21",
+      "summary": "Pictorial representation for rocket acceleration problem"
+    },
+    {
+      "label": "22",
+      "summary": "Pictorial representation for bicyclist acceleration problem"
+    },
+    {
+      "label": "23",
+      "summary": "Significant figures in given values"
+    },
+    {
+      "label": "24",
+      "summary": "Convert to basic SI units"
+    },
+    {
+      "label": "25",
+      "summary": "Convert to basic SI units"
+    },
+    {
+      "label": "26",
+      "summary": "Convert to SI units using conversion factors"
+    },
+    {
+      "label": "27",
+      "summary": "Convert SI units to English units"
+    }
+  ],
+  "figures": [
+    {
+      "figure_id": 0,
+      "printed_label": "FIGURE EX 1.19",
+      "matched_question_label": "19",
+      "confidence": "high",
+      "reasoning": "Position-vs-time y(m) decreasing graph matches FIGURE EX1.19 referenced in problem 19."
+    },
+    {
+      "figure_id": 1,
+      "printed_label": "FIGURE EX 1.10 / FIGURE EX1.11",
+      "matched_question_label": "10",
+      "confidence": "high",
+      "reasoning": "Crop contains both EX1.10 (v2, dots 2-3) for problem 10 and EX1.11 (v1, dots 1-2) for problem 11."
+    },
+    {
+      "figure_id": 2,
+      "printed_label": "FIGURE EX1.20",
+      "matched_question_label": "20",
+      "confidence": "high",
+      "reasoning": "x(mi) vs t(h) graph labeled FIGURE EX1.20 referenced in problem 20."
+    },
+    {
+      "figure_id": 3,
+      "printed_label": "FIGURE EX1.18",
+      "matched_question_label": "18",
+      "confidence": "high",
+      "reasoning": "Drag racer motion diagram '1 frame every 2 s' matches FIGURE EX1.18 in problem 18."
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "generated_from": "figure-service POST /v1/process on apps-beta (image questionbank-figures:20260620-052603)",
+  "note": "rectified.jpg re-encoded JPEG q92 from the API's PNG; box/corner coords are pixels in the rectified image.",
+  "cases": [
+    {
+      "test": "test_1",
+      "source": "PXL_20260619_123302708.jpg",
+      "figures": 4
+    },
+    {
+      "test": "test_2",
+      "source": "PXL_20260619_131203627.jpg",
+      "figures": 4
+    },
+    {
+      "test": "test_3",
+      "source": "PXL_20260619_131215689.jpg",
+      "figures": 6
+    },
+    {
+      "test": "test_4",
+      "source": "PXL_20260619_131225663.jpg",
+      "figures": 7
+    },
+    {
+      "test": "test_5",
+      "source": "PXL_20260619_131245144.jpg",
+      "figures": 11
+    },
+    {
+      "test": "test_6",
+      "source": "PXL_20260619_131256166.jpg",
+      "figures": 10
+    }
+  ]
+}

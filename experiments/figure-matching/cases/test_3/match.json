@@ -1,0 +1,104 @@
+{
+  "page_questions": [
+    {
+      "label": "48",
+      "summary": "Mass of neon from temperature-pressure data table"
+    },
+    {
+      "label": "49",
+      "summary": "3.0-m pipe pushed into water, find trapped air length L"
+    },
+    {
+      "label": "50",
+      "summary": "Diving bell lowered into ocean, water rise and air pressure"
+    },
+    {
+      "label": "51",
+      "summary": "Power plant boiling water for steam turbine"
+    },
+    {
+      "label": "52",
+      "summary": "Car tire pressure change after driving"
+    },
+    {
+      "label": "53",
+      "summary": "Gas cylinder with piston, sand added, piston height"
+    },
+    {
+      "label": "54",
+      "summary": "Steam cooled until condenses, find liquid volume"
+    },
+    {
+      "label": "55",
+      "summary": "Boeing 737 cabin air volume needed"
+    },
+    {
+      "label": "56",
+      "summary": "U-shaped tube with mercury compressing air, length L"
+    },
+    {
+      "label": "57",
+      "summary": "50 kg circular piston on compressed air, piston height"
+    },
+    {
+      "label": "58",
+      "summary": "Containers A and B connected by valve, final pressure"
+    },
+    {
+      "label": "59",
+      "summary": "Diver exhaling bubble, diameter at surface"
+    },
+    {
+      "label": "60",
+      "summary": "Helium gas process 1-2-3, find V1, V3, p2, T3"
+    },
+    {
+      "label": "61",
+      "summary": "Nitrogen gas two processes, find p1, T2, T3, T4"
+    }
+  ],
+  "figures": [
+    {
+      "figure_id": 0,
+      "printed_label": "FIGURE P18.56",
+      "matched_question_label": "56",
+      "confidence": "high",
+      "reasoning": "U-shaped tube with open/closed ends, Hg and air, matching problem 56's mercury column description."
+    },
+    {
+      "figure_id": 1,
+      "printed_label": "FIGURE P18.57",
+      "matched_question_label": "57",
+      "confidence": "high",
+      "reasoning": "Cylinder with 50 kg piston at 30°C, 10 cm width, matching problem 57's circular piston on compressed air."
+    },
+    {
+      "figure_id": 2,
+      "printed_label": "FIGURE P18.49",
+      "matched_question_label": "49",
+      "confidence": "high",
+      "reasoning": "Before/After pipe pushed into water with length L, matching problem 49's pipe."
+    },
+    {
+      "figure_id": 3,
+      "printed_label": "FIGURE P18.58",
+      "matched_question_label": "58",
+      "confidence": "high",
+      "reasoning": "Containers A (300 K) and B (400 K) connected by valve, matching problem 58."
+    },
+    {
+      "figure_id": 4,
+      "printed_label": "FIGURE P18.61",
+      "matched_question_label": "61",
+      "confidence": "high",
+      "reasoning": "pV diagram with states 1-2-3-4 in diamond shape, matching problem 61's two processes."
+    },
+    {
+      "figure_id": 5,
+      "printed_label": "FIGURE P18.60",
+      "matched_question_label": "60",
+      "confidence": "high",
+      "reasoning": "pV diagram with process 1-2-3, isothermal, matching problem 60's helium process."
+    }
+  ]
+}

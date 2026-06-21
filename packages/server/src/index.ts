@@ -13,10 +13,16 @@ import { lookupRouter } from './routes/lookup.js';
 import { learnRouter } from './routes/learn.js';
 import { practiceRouter } from './routes/practice.js';
 import { extractRouter } from './routes/extract.js';
+import { scanRouter } from './routes/scan.js';
+import { figuresRouter, questionFiguresRouter } from './routes/figures.js';
 import { skipRouter } from './routes/skip.js';
 import { activityRouter } from './routes/activity.js';
 import { settingsRouter } from './routes/settings.js';
 import { AnthropicApiProvider } from './llm/anthropic-api-provider.js';
+import {
+  figureServiceFromEnv,
+  type FigureServiceClient,
+} from './services/figure-service-client.js';
 import type { LlmProvider } from './llm/provider.js';
 import { errorLogger, requestLogger } from './logging/http.js';
 import { log } from './logging/logger.js';
@@ -36,7 +42,7 @@ const DATA_DIR = process.env.QB_DATA_DIR ?? join(homedir(), '.question-bank');
 export function createApp(
   store: Store,
   provider: LlmProvider,
-  _unused?: unknown,
+  figureService: FigureServiceClient | null = figureServiceFromEnv(),
   customerConfig: ResolveCustomerConfig = configFromEnv(process.env),
 ): Express {
   const app = express();
@@ -78,7 +84,10 @@ export function createApp(
   app.use('/api/activity', activityRouter(store));
   app.use('/api/settings', settingsRouter(store));
   app.use('/api/questions', questionsRouter(store));
+  app.use('/api/questions/:id/figures', questionFiguresRouter(store));
+  app.use('/api/figures', figuresRouter(store));
   app.use('/api/extract', extractRouter(provider, store));
+  app.use('/api/scan', scanRouter(provider, store, figureService));
   app.use('/api/skip', skipRouter(store));
 
   app.use(errorLogger);

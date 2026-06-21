@@ -1,0 +1,131 @@
+{
+  "page_questions": [
+    {
+      "label": "1",
+      "summary": "Rank currents I_A to I_D through four resistors"
+    },
+    {
+      "label": "2",
+      "summary": "Flashlight bulb touching top of 3V battery, does it light"
+    },
+    {
+      "label": "3",
+      "summary": "Broken wire, potential difference V1-V2"
+    },
+    {
+      "label": "4",
+      "summary": "Two resistors R1>R2, which dissipates larger power"
+    },
+    {
+      "label": "5",
+      "summary": "Two resistors R1>R2 in parallel, larger power"
+    },
+    {
+      "label": "6",
+      "summary": "Rank powers P_A to P_D dissipated"
+    },
+    {
+      "label": "7",
+      "summary": "Battery internal resistance, terminal voltage as R increases"
+    },
+    {
+      "label": "8",
+      "summary": "Bulbs A and B, switch closed effect"
+    },
+    {
+      "label": "9",
+      "summary": "Bulbs A, B, C identical, rank brightness and wire connection"
+    },
+    {
+      "label": "10",
+      "summary": "Resistance between points 1 and 2"
+    },
+    {
+      "label": "11",
+      "summary": "Bulbs A and B identical, switch closed effect"
+    },
+    {
+      "label": "12",
+      "summary": "Voltage vs time capacitor discharge, rank resistances"
+    }
+  ],
+  "figures": [
+    {
+      "figure_id": 0,
+      "printed_label": "FIGURE Q28.1",
+      "matched_question_label": "1",
+      "confidence": "high",
+      "reasoning": "Four resistors with currents I_A to I_D matches Q28.1 ranking currents."
+    },
+    {
+      "figure_id": 1,
+      "printed_label": "FIGURE Q28.8",
+      "matched_question_label": "8",
+      "confidence": "high",
+      "reasoning": "Shows bulbs A and B with a switch, matching Q28.8."
+    },
+    {
+      "figure_id": 2,
+      "printed_label": "FIGURE Q28.9",
+      "matched_question_label": "9",
+      "confidence": "high",
+      "reasoning": "Shows bulbs A, B, C with points 1 and 2, matching Q28.9."
+    },
+    {
+      "figure_id": 3,
+      "printed_label": "FIGURE Q28.2",
+      "matched_question_label": "2",
+      "confidence": "high",
+      "reasoning": "Shows flashlight bulb on 3V battery, matching Q28.2."
+    },
+    {
+      "figure_id": 4,
+      "printed_label": "FIGURE Q28.3",
+      "matched_question_label": "3",
+      "confidence": "high",
+      "reasoning": "Shows 6V battery with 2Ω resistor and points 1,2 with broken wire, matching Q28.3."
+    },
+    {
+      "figure_id": 5,
+      "printed_label": "FIGURE Q28.5",
+      "matched_question_label": "5",
+      "confidence": "high",
+      "reasoning": "Shows parallel resistors R1 and R2, matching Q28.5."
+    },
+    {
+      "figure_id": 6,
+      "printed_label": "FIGURE Q28.4",
+      "matched_question_label": "4",
+      "confidence": "high",
+      "reasoning": "Shows series resistors R1 and R2 with battery, matching Q28.4."
+    },
+    {
+      "figure_id": 7,
+      "printed_label": "FIGURE Q28.11",
+      "matched_question_label": "11",
+      "confidence": "high",
+      "reasoning": "Faint image of bulbs A and B with switch, matching Q28.11."
+    },
+    {
+      "figure_id": 8,
+      "printed_label": "FIGURE Q28.10",
+      "matched_question_label": "10",
+      "confidence": "high",
+      "reasoning": "Shows 100Ω, 50Ω, R1, R2, R3 with points 1 and 2, matching Q28.10."
+    },
+    {
+      "figure_id": 9,
+      "printed_label": "FIGURE Q28.6",
+      "matched_question_label": "6",
+      "confidence": "high",
+      "reasoning": "Four resistors labeled A-D with voltages, matching Q28.6 power ranking."
+    },
+    {
+      "figure_id": 10,
+      "printed_label": "FIGURE Q28.12",
+      "matched_question_label": "12",
+      "confidence": "high",
+      "reasoning": "Graph of ΔVc vs time for R1,R2,R3, matching Q28.12 capacitor discharge."
+    }
+  ]
+}

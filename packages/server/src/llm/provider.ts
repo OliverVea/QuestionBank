@@ -33,6 +33,10 @@ export interface CompleteOpts {
   /** Purpose tag for the per-call audit log (e.g. 'grading', 'transcription'). Defaults
    *  to the provider method name when unset. */
   tag?: string;
+  /** Force strict structured output — the API guarantees the tool input matches the schema.
+   *  Only set when the schema is strict-compliant (additionalProperties:false + every
+   *  property listed in `required`); a non-compliant schema is rejected with a 400. */
+  strict?: boolean;
 }
 
 /**

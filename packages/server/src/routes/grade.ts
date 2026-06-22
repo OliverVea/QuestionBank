@@ -72,6 +72,9 @@ export function questionGradeRouter(store: Store, provider: LlmProvider): Router
         timeoutMs: GRADING_TIMEOUT_MS,
         effort: 'medium',
         tag: 'grading',
+        // The model intermittently returned `issues` as a non-array, 502'ing the grade.
+        // strict guarantees the schema shape; gradingTurnSchema is strict-compliant.
+        strict: true,
       });
       const turn = validateGradingTurn(raw);
       const recommendedGrade = deriveGrade(turn.issues);

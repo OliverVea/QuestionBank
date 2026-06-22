@@ -240,15 +240,18 @@ export class AnthropicApiProvider implements LlmProvider {
     // Force a single tool call whose input matches the schema. This is the reliable
     // structured-output path: the model returns a tool_use block with validated input,
     // not free-form prose we have to parse (and fail to parse) out of a text block.
+    // `strict` (opt-in) makes the API guarantee the input conforms to the schema — use it
+    // only where the schema is strict-compliant (additionalProperties:false + every property
+    // in `required`); a non-compliant schema (e.g. extraction's optional fields) would 400.
+    const tool = {
+      name: RESULT_TOOL_NAME,
+      input_schema: schema as Anthropic.Tool.InputSchema,
+      ...(opts?.strict ? { strict: true } : {}),
+    };
     const message = await this.request(
       'completeStructured',
       conversation,
-      {
-        tools: [
-          { name: RESULT_TOOL_NAME, input_schema: schema as Anthropic.Tool.InputSchema },
-        ],
-        tool_choice: { type: 'tool', name: RESULT_TOOL_NAME },
-      },
+      { tools: [tool], tool_choice: { type: 'tool', name: RESULT_TOOL_NAME } },
       opts,
     );
     return toolInputFromMessage<T>(message);

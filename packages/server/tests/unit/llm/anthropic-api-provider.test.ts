@@ -87,6 +87,20 @@ describe('AnthropicApiProvider', () => {
     expect(create).toHaveBeenCalledTimes(1);
   });
 
+  it('marks the tool strict only when the call site opts in', async () => {
+    const create = vi.fn().mockResolvedValue({
+      stop_reason: 'tool_use',
+      content: [{ type: 'tool_use', name: 'result', input: {} }],
+    });
+    const provider = new AnthropicApiProvider({ messages: { create } } as never);
+
+    await provider.completeStructured([{ role: 'user', text: 'go' }], {});
+    expect(create.mock.calls[0]![0].tools[0].strict).toBeUndefined();
+
+    await provider.completeStructured([{ role: 'user', text: 'go' }], {}, { strict: true });
+    expect(create.mock.calls[1]![0].tools[0].strict).toBe(true);
+  });
+
   it('passes output_config.effort when a call site sets it', async () => {
     const create = vi.fn().mockResolvedValue({
       stop_reason: 'tool_use',

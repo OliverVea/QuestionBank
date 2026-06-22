@@ -101,3 +101,48 @@ describe('QB_LOG_FORMAT=json', () => {
     expect(parsed.b).toBe(2);
   });
 });
+
+describe('QB_LOG_FORMAT default + fallback', () => {
+  const prevFormat = process.env.QB_LOG_FORMAT;
+  const prevLevel = process.env.QB_LOG_LEVEL;
+  let logSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    process.env.QB_LOG_LEVEL = 'debug';
+    logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    logSpy.mockRestore();
+    if (prevFormat === undefined) delete process.env.QB_LOG_FORMAT;
+    else process.env.QB_LOG_FORMAT = prevFormat;
+    if (prevLevel === undefined) delete process.env.QB_LOG_LEVEL;
+    else process.env.QB_LOG_LEVEL = prevLevel;
+  });
+
+  it('emits the ANSI pretty format when QB_LOG_FORMAT is unset', () => {
+    delete process.env.QB_LOG_FORMAT;
+    log.info('hello', { a: 1 });
+    const line = logSpy.mock.calls[0][0] as string;
+    expect(line).toMatch(/\x1b\[/); // contains ANSI
+    expect(() => JSON.parse(line)).toThrow(); // not JSON
+  });
+
+  it('falls back to pretty for an unrecognized format value', () => {
+    process.env.QB_LOG_FORMAT = 'yaml';
+    log.info('hello', { a: 1 });
+    const line = logSpy.mock.calls[0][0] as string;
+    expect(line).toMatch(/\x1b\[/);
+  });
+
+  it('does not throw and emits a fallback record for unserializable context in json mode', () => {
+    process.env.QB_LOG_FORMAT = 'json';
+    const circular: Record<string, unknown> = {};
+    circular.self = circular;
+    expect(() => log.info('round', circular)).not.toThrow();
+    const parsed = JSON.parse(logSpy.mock.calls[0][0] as string);
+    expect(parsed.msg).toBe('round');
+    expect(parsed.level).toBe('info');
+    expect(parsed.logError).toBe('unserializable context');
+  });
+});

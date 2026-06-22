@@ -35,7 +35,7 @@ function activeFormat(): LogFormat {
 }
 
 function timestamp(): string {
-  // HH:MM:SS.mmm — local time, enough to correlate with the client without date noise.
+  // HH:MM:SS.mmm — UTC, enough to correlate with the client without date noise.
   return new Date().toISOString().slice(11, 23);
 }
 
@@ -65,7 +65,13 @@ function renderJson(level: LogLevel, message: string, context?: Record<string, u
       record[key] = value;
     }
   }
-  return JSON.stringify(record);
+  try {
+    return JSON.stringify(record);
+  } catch {
+    // Context held an un-serializable value (circular ref, BigInt). Never let a log
+    // call throw — emit a minimal record that always serializes.
+    return JSON.stringify({ ts: record.ts, level, msg: message, logError: 'unserializable context' });
+  }
 }
 
 /** Today's human format: dim timestamp, colored level tag, dim context. */

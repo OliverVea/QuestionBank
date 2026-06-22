@@ -77,7 +77,10 @@ export function questionGradeRouter(store: Store, provider: LlmProvider): Router
       res.json({ reasoning: turn.reasoning, issues: turn.issues, recommendedGrade });
     } catch (err) {
       if (err instanceof LlmError) {
-        log.warn('grading failed', { question: questionId });
+        // Log the cause: provider-side failures (API/refusal/truncation) already log their
+        // own detail, but a validateGradingTurn rejection (malformed tool output) throws here
+        // with no other trace — without err.message, prod sees a bare 502 and no reason.
+        log.warn('grading failed', { question: questionId, error: err.message });
         res.status(502).json({ error: 'grading failed' });
         return;
       }

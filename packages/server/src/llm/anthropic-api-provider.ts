@@ -131,9 +131,16 @@ function toolInputFromMessage<T>(message: Anthropic.Message): T {
 /** The single tool we force the model into for structured output. */
 const RESULT_TOOL_NAME = 'result';
 
-/** Direct Anthropic API backend. The client is injectable for testing. */
+/** Direct Anthropic API backend. The client is injectable for testing.
+ *
+ *  The default client carries an explicit `timeout`. Without a client-level timeout, the
+ *  SDK applies a client-side guard that REFUSES any non-streaming request whose `max_tokens`
+ *  implies >10 min at its 128k-tokens/hour heuristic (throws "Streaming is required" before
+ *  any network call) — which our 32k transcription/grading ceilings trip. Setting a
+ *  client-level timeout skips that guard; the real cap is the per-request `timeoutMs` (≤300s)
+ *  we pass on every call, which is far stricter than the 10-min heuristic anyway. */
 export class AnthropicApiProvider implements LlmProvider {
-  constructor(private readonly client: Anthropic = new Anthropic()) {}
+  constructor(private readonly client: Anthropic = new Anthropic({ timeout: REQUEST_TIMEOUT_MS })) {}
 
   /**
    * Send one request and return the raw response. Retries transient failures itself (the

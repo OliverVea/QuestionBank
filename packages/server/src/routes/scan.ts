@@ -114,7 +114,9 @@ export function scanRouter(
     // (A) extract — REQUIRED. (B) flatten — best-effort, NEVER rejects (self-catch), so the
     // Promise.all only rejects via A, which maps to a 502 like /api/extract today.
     const extractTask = (async (): Promise<ExtractionEnvelope> => {
-      const raw = await provider.completeStructured<unknown>(messages, extractionEnvelopeSchema);
+      const raw = await provider.completeStructured<unknown>(messages, extractionEnvelopeSchema, {
+        tag: 'extraction',
+      });
       return validateExtractionEnvelope(raw, existing.map((e) => e.id), images.length);
     })();
 

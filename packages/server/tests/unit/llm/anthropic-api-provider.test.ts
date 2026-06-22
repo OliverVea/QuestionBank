@@ -83,6 +83,61 @@ describe('AnthropicApiProvider', () => {
     const create = vi.fn().mockRejectedValue(new Error('boom'));
     const provider = new AnthropicApiProvider({ messages: { create } } as never);
     await expect(provider.complete([{ role: 'user', text: 'x' }])).rejects.toThrow(LlmError);
+    // No status, no error code ⇒ not retryable ⇒ a single attempt.
+    expect(create).toHaveBeenCalledTimes(1);
   });
 
+  it('passes output_config.effort when a call site sets it', async () => {
+    const create = vi.fn().mockResolvedValue({
+      stop_reason: 'tool_use',
+      content: [{ type: 'tool_use', name: 'result', input: {} }],
+    });
+    const provider = new AnthropicApiProvider({ messages: { create } } as never);
+    await provider.completeStructured([{ role: 'user', text: 'go' }], {}, { effort: 'medium' });
+    expect(create.mock.calls[0]![0].output_config).toEqual({ effort: 'medium' });
+  });
+
+  it('omits output_config when no effort is set (Haiku rejects it)', async () => {
+    const create = vi.fn().mockResolvedValue({
+      stop_reason: 'end_turn',
+      content: [{ type: 'text', text: 'ok' }],
+    });
+    const provider = new AnthropicApiProvider({ messages: { create } } as never);
+    await provider.complete([{ role: 'user', text: 'x' }], { model: 'claude-haiku-4-5' });
+    expect(create.mock.calls[0]![0].output_config).toBeUndefined();
+  });
+
+  it('disables the SDK retry so app-level retry owns it', async () => {
+    const create = vi.fn().mockResolvedValue({
+      stop_reason: 'end_turn',
+      content: [{ type: 'text', text: 'ok' }],
+    });
+    const provider = new AnthropicApiProvider({ messages: { create } } as never);
+    await provider.complete([{ role: 'user', text: 'x' }]);
+    expect(create.mock.calls[0]![1]).toMatchObject({ maxRetries: 0 });
+  });
+
+  it('does not retry a non-retryable 400', async () => {
+    const create = vi.fn().mockRejectedValue(Object.assign(new Error('bad'), { status: 400 }));
+    const provider = new AnthropicApiProvider({ messages: { create } } as never);
+    await expect(provider.complete([{ role: 'user', text: 'x' }])).rejects.toThrow(LlmError);
+    expect(create).toHaveBeenCalledTimes(1);
+  });
+
+  it('retries a transient 503 then succeeds', async () => {
+    vi.useFakeTimers();
+    try {
+      const create = vi
+        .fn()
+        .mockRejectedValueOnce(Object.assign(new Error('overloaded'), { status: 503 }))
+        .mockResolvedValueOnce({ stop_reason: 'end_turn', content: [{ type: 'text', text: 'ok' }] });
+      const provider = new AnthropicApiProvider({ messages: { create } } as never);
+      const p = provider.complete([{ role: 'user', text: 'x' }]);
+      await vi.runAllTimersAsync(); // advance the backoff sleep
+      expect(await p).toEqual('ok');
+      expect(create).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

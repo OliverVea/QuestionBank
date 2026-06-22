@@ -52,7 +52,9 @@ export function extractRouter(provider: LlmProvider, store: Store): Router {
     });
 
     try {
-      const raw = await provider.completeStructured<unknown>(messages, extractionEnvelopeSchema);
+      const raw = await provider.completeStructured<unknown>(messages, extractionEnvelopeSchema, {
+        tag: 'extraction',
+      });
       const envelope = validateExtractionEnvelope(raw, existing.map((e) => e.id), images.length);
       res.json(envelope);
     } catch (err) {
@@ -119,7 +121,9 @@ export function extractRouter(provider: LlmProvider, store: Store): Router {
     log.info('refining extraction', { pages: images.length, answers: answerLines.length });
 
     try {
-      const raw = await provider.completeStructured<unknown>(messages, extractionEnvelopeSchema);
+      const raw = await provider.completeStructured<unknown>(messages, extractionEnvelopeSchema, {
+        tag: 'extraction',
+      });
       const envelope = validateExtractionEnvelope(raw, existing.map((e) => e.id), images.length);
       res.json(envelope);
     } catch (err) {

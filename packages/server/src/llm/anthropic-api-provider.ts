@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
+import sharp from 'sharp';
 import { describeError, errorCode, log } from '../logging/logger.js';
 import {
   type CompleteOpts,
@@ -8,8 +9,9 @@ import {
   type Message,
 } from './provider.js';
 
-/** Hard cap on a single request. Without this the SDK's 10-minute default (retried
- *  up to 2×) could hang the HTTP request for tens of minutes; a timeout → 502. */
+/** Hard cap on a single request. Without this the SDK's 10-minute default could hang the
+ *  HTTP request for tens of minutes; a timeout → 502. Call sites whose payload runs long
+ *  (transcription, grading) raise it via `timeoutMs`. */
 const REQUEST_TIMEOUT_MS = 120_000;
 const DEFAULT_MODEL = 'claude-sonnet-4-6';
 
@@ -21,11 +23,48 @@ const DEFAULT_MAX_TOKENS = 8000;
  *  for two minutes or retry through an outage. */
 const PROBE_TIMEOUT_MS = 5_000;
 
-/** Build the Anthropic content blocks for one Message (images first, then text). */
-async function toApiContent(message: Message): Promise<Anthropic.ContentBlockParam[]> {
+/** App-level retry: the SDK's own retry is disabled (maxRetries: 0) so we can log every
+ *  attempt — a retry means a transient backend failure that "should not be necessary", so
+ *  it is worth surfacing. Capped at 2 retries with exponential backoff. */
+const MAX_RETRIES = 2;
+const RETRY_BASE_MS = 500;
+
+const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** Retry only transient failures: retryable HTTP statuses, or a transport error that carries
+ *  a system error code (ETIMEDOUT/ECONNRESET/ENOTFOUND…). An unclassifiable throw (no status,
+ *  no code) is treated as permanent — retrying it just delays the inevitable 502. */
+function isRetryable(err: unknown): boolean {
+  const status = (err as { status?: number }).status;
+  if (status !== undefined) {
+    return status === 408 || status === 409 || status === 429 || status >= 500;
+  }
+  return errorCode(err) !== undefined;
+}
+
+/** Resolution of one image sent to the model, captured for the audit log. */
+interface ImageAudit {
+  width?: number;
+  height?: number;
+}
+
+/** Build the Anthropic content blocks for one Message (images first, then text). Appends
+ *  one {@link ImageAudit} per image to `audit` (best-effort dimensions for the audit log). */
+async function toApiContent(
+  message: Message,
+  audit: ImageAudit[],
+): Promise<Anthropic.ContentBlockParam[]> {
   const blocks: Anthropic.ContentBlockParam[] = [];
   for (const image of message.images ?? []) {
     const bytes = await image.load();
+    let dims: ImageAudit = {};
+    try {
+      const meta = await sharp(bytes).metadata();
+      dims = { width: meta.width, height: meta.height };
+    } catch {
+      // Audit is best-effort — a header sharp can't parse must not fail the LLM call.
+    }
+    audit.push(dims);
     blocks.push({
       type: 'image',
       source: { type: 'base64', media_type: image.mimeType, data: bytes.toString('base64') },
@@ -35,9 +74,12 @@ async function toApiContent(message: Message): Promise<Anthropic.ContentBlockPar
   return blocks;
 }
 
-async function toApiMessages(conversation: Message[]): Promise<Anthropic.MessageParam[]> {
+async function toApiMessages(
+  conversation: Message[],
+  audit: ImageAudit[],
+): Promise<Anthropic.MessageParam[]> {
   return Promise.all(
-    conversation.map(async (m) => ({ role: m.role, content: await toApiContent(m) })),
+    conversation.map(async (m) => ({ role: m.role, content: await toApiContent(m, audit) })),
   );
 }
 
@@ -94,11 +136,12 @@ export class AnthropicApiProvider implements LlmProvider {
   constructor(private readonly client: Anthropic = new Anthropic()) {}
 
   /**
-   * Send one request and return the raw response. Logs the model, message/image counts,
-   * timing, and — on failure — the underlying SDK error (status, type, message), which
-   * is otherwise hidden behind the generic LlmError. `label` distinguishes call sites
-   * in the logs (e.g. "complete" vs "completeStructured"). `extra` carries optional
-   * tool/tool_choice for the structured path.
+   * Send one request and return the raw response. Retries transient failures itself (the
+   * SDK's own retry is off so each attempt is logged), emits a per-call audit line (tokens,
+   * model, effort, image count + resolutions, tag) on success, and on terminal failure logs
+   * the underlying SDK error (status, code, message) that the bare LlmError would otherwise
+   * hide. `label` distinguishes the provider method; `opts.tag` names the call's purpose for
+   * the audit log. `extra` carries optional tool/tool_choice for the structured path.
    */
   private async request(
     label: string,
@@ -106,40 +149,75 @@ export class AnthropicApiProvider implements LlmProvider {
     extra: Partial<Anthropic.MessageCreateParamsNonStreaming>,
     opts?: CompleteOpts,
   ): Promise<Anthropic.Message> {
-    const messages = await toApiMessages(conversation);
+    const imageAudit: ImageAudit[] = [];
+    const messages = await toApiMessages(conversation, imageAudit);
     const model = opts?.model ?? DEFAULT_MODEL;
-    const imageCount = conversation.reduce((n, m) => n + (m.images?.length ?? 0), 0);
-    log.debug(`llm ${label} request`, { model, turns: messages.length, images: imageCount });
+    const tag = opts?.tag ?? label;
+    log.debug(`llm ${label} request`, { model, turns: messages.length, images: imageAudit.length });
+
+    // `output_config.effort` is GA (no beta header) on Sonnet 4.6 / Opus-tier; Haiku rejects
+    // it, so only send it when a call site opted in. Cast: the SDK type may lag the GA param.
+    const params = {
+      model,
+      max_tokens: opts?.maxTokens ?? DEFAULT_MAX_TOKENS,
+      messages,
+      ...extra,
+      ...(opts?.effort ? { output_config: { effort: opts.effort } } : {}),
+    } as Anthropic.MessageCreateParamsNonStreaming;
 
     const start = process.hrtime.bigint();
-    let message: Anthropic.Message;
-    try {
-      message = await this.client.messages.create(
-        { model, max_tokens: opts?.maxTokens ?? DEFAULT_MAX_TOKENS, messages, ...extra },
-        { timeout: opts?.timeoutMs ?? REQUEST_TIMEOUT_MS, maxRetries: 2 },
-      );
-    } catch (err) {
-      const ms = Math.round(Number(process.hrtime.bigint() - start) / 1e6);
-      // Surface the real cause. SDK errors carry .status and .name (e.g. 400
-      // BadRequestError "unknown field"), which the bare LlmError ate. Transport
-      // failures carry no status — the discriminator is a system error `code` buried
-      // a few causes deep (APIConnectionError "Connection error." → "fetch failed" →
-      // { code: "ETIMEDOUT" }), so log that too: "Connection error." alone never said
-      // whether egress was down, DNS failed, or the connection was refused.
-      const sdkStatus = (err as { status?: number }).status;
-      log.error(`llm ${label} request failed`, {
-        model,
-        ms,
-        status: sdkStatus,
-        code: errorCode(err),
-        error: describeError(err).message,
-      });
-      throw new LlmError('anthropic API request failed', { cause: err });
+    for (let attempt = 0; ; attempt++) {
+      try {
+        const message = await this.client.messages.create(params, {
+          timeout: opts?.timeoutMs ?? REQUEST_TIMEOUT_MS,
+          maxRetries: 0,
+        });
+        const ms = Math.round(Number(process.hrtime.bigint() - start) / 1e6);
+        // Per-call audit line for cost/usage review. usage is absent in some test doubles.
+        log.info('llm audit', {
+          tag,
+          model,
+          effort: opts?.effort,
+          inputTokens: message.usage?.input_tokens,
+          outputTokens: message.usage?.output_tokens,
+          cacheReadTokens: message.usage?.cache_read_input_tokens,
+          cacheCreateTokens: message.usage?.cache_creation_input_tokens,
+          images: imageAudit.length,
+          resolutions: imageAudit.map((i) =>
+            i.width && i.height ? `${i.width}x${i.height}` : 'unknown',
+          ),
+          ms,
+        });
+        return message;
+      } catch (err) {
+        const ms = Math.round(Number(process.hrtime.bigint() - start) / 1e6);
+        const sdkStatus = (err as { status?: number }).status;
+        // A retry means a transient backend failure that should not be necessary — log it.
+        if (attempt < MAX_RETRIES && isRetryable(err)) {
+          log.warn(`llm ${tag} retry`, {
+            attempt: attempt + 1,
+            model,
+            ms,
+            status: sdkStatus,
+            code: errorCode(err),
+            error: describeError(err).message,
+          });
+          await sleep(RETRY_BASE_MS * 2 ** attempt);
+          continue;
+        }
+        // Terminal. Surface the real cause — SDK errors carry .status (e.g. 400 "unknown
+        // field"); transport failures carry no status but a system error `code` buried a
+        // few causes deep (APIConnectionError → "fetch failed" → { code: "ETIMEDOUT" }).
+        log.error(`llm ${label} request failed`, {
+          model,
+          ms,
+          status: sdkStatus,
+          code: errorCode(err),
+          error: describeError(err).message,
+        });
+        throw new LlmError('anthropic API request failed', { cause: err });
+      }
     }
-
-    const ms = Math.round(Number(process.hrtime.bigint() - start) / 1e6);
-    log.debug(`llm ${label} response`, { ms, stop: message.stop_reason ?? undefined });
-    return message;
   }
 
   async complete(conversation: Message[], opts?: CompleteOpts): Promise<string> {

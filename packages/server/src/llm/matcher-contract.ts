@@ -161,6 +161,7 @@ export async function runMatcher(
   const raw = await provider.completeStructured<unknown>(messages, matcherSchema, {
     model: MATCHER_MODEL,
     maxTokens: MATCHER_MAX_TOKENS,
+    tag: 'figure-matching',
   });
   return validateMatchResult(raw, cropImages.length, candidates.length);
 }

@@ -27,6 +27,12 @@ export interface CompleteOpts {
    *  Raise it for call sites whose structured response can be long (e.g. grading,
    *  where a verbose reasoning + issues list truncates and 502s at the default). */
   maxTokens?: number;
+  /** Reasoning effort (`output_config.effort`). Supported on Sonnet 4.6 / Opus-tier;
+   *  Haiku rejects it, so leave it unset for Haiku call sites. */
+  effort?: 'low' | 'medium' | 'high' | 'max';
+  /** Purpose tag for the per-call audit log (e.g. 'grading', 'transcription'). Defaults
+   *  to the provider method name when unset. */
+  tag?: string;
 }
 
 /**

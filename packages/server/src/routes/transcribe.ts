@@ -11,6 +11,13 @@ import {
 } from '../llm/transcription-contract.js';
 import type { Store } from '../storage/store.js';
 
+/** Transcription is OCR-shaped — Haiku 4.5 is cheaper/faster and ample for reading an answer
+ *  off a photo. Haiku rejects `effort`, so none is set. Tokens/timeout raised: a long answer
+ *  transcribes to a lot of inline-LaTeX, and the read can run past the 120s default. */
+const TRANSCRIPTION_MODEL = 'claude-haiku-4-5';
+const TRANSCRIPTION_MAX_TOKENS = 32_000;
+const TRANSCRIPTION_TIMEOUT_MS = 300_000;
+
 const IMAGE_EXTS: Record<string, ImageMimeType> = {
   'image/png': 'image/png',
   'image/jpeg': 'image/jpeg',
@@ -63,6 +70,12 @@ export function questionTranscribeRouter(store: Store, provider: LlmProvider): R
       const out = await provider.completeStructured<{ transcription: string }>(
         [message],
         transcriptionSchema,
+        {
+          model: TRANSCRIPTION_MODEL,
+          maxTokens: TRANSCRIPTION_MAX_TOKENS,
+          timeoutMs: TRANSCRIPTION_TIMEOUT_MS,
+          tag: 'transcription',
+        },
       );
       res.json({ transcription: out.transcription });
     } catch (err) {
@@ -116,6 +129,12 @@ export function questionTranscribeRouter(store: Store, provider: LlmProvider): R
       const out = await provider.completeStructured<{ transcription: string }>(
         [message],
         transcriptionSchema,
+        {
+          model: TRANSCRIPTION_MODEL,
+          maxTokens: TRANSCRIPTION_MAX_TOKENS,
+          timeoutMs: TRANSCRIPTION_TIMEOUT_MS,
+          tag: 'retranscription',
+        },
       );
       res.json({ transcription: out.transcription });
     } catch (err) {

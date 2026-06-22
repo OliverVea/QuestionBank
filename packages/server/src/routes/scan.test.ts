@@ -81,7 +81,7 @@ describe('POST /api/scan', () => {
     expect(res.body.matchError).toBeUndefined();
   });
 
-  it('downscales the rectified page + crops before the matcher call (10 MB/image limit)', async () => {
+  it('sends the rectified page + one crop per figure to the matcher', async () => {
     const provider = new FakeProvider({
       structured: {
         resolved: [
@@ -93,8 +93,8 @@ describe('POST /api/scan', () => {
         ],
       },
     });
-    // An oversized rectified page like the real device emits (3472×4624). Full-res this is
-    // ~19 MB base64, over Anthropic's 10 MB/image hard limit — the matcher must downscale it.
+    // An oversized rectified page like the real device emits (3472×4624). The route passes it
+    // full-res to the matcher; the provider caps it on send (covered in the provider tests).
     const bigPng = await sharp({
       create: { width: 3472, height: 4624, channels: 3, background: { r: 200, g: 150, b: 100 } },
     })
@@ -115,17 +115,13 @@ describe('POST /api/scan', () => {
     expect(res.status).toEqual(200);
     expect(res.body.matchError).toBeUndefined();
 
-    // lastConversation is the matcher call (it runs after extraction). Its images are
-    // [page, crop] — both must be capped and well under the 10 MB/image limit.
+    // lastConversation is the matcher call (it runs after extraction): images = [page, crop].
     const images = provider.lastConversation[0]!.images ?? [];
     expect(images).toHaveLength(2);
-    for (const ref of images) {
-      expect(ref.mimeType).toEqual('image/jpeg');
-      const bytes = await ref.load();
-      expect(bytes.toString('base64').length).toBeLessThan(10 * 1024 * 1024);
-      const meta = await sharp(bytes).metadata();
-      expect(Math.max(meta.width ?? 0, meta.height ?? 0)).toBeLessThanOrEqual(1568);
-    }
+    // The page is passed through at full resolution — the provider downscales on send.
+    const pageMeta = await sharp(await images[0]!.load()).metadata();
+    expect(pageMeta.width).toEqual(3472);
+    expect(pageMeta.height).toEqual(4624);
   });
 
   it('skips the matcher when no add cites a figure', async () => {

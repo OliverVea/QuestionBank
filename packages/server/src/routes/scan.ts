@@ -34,28 +34,8 @@ interface ScanResponseFigure {
   confidence?: 'high' | 'medium' | 'low';
 }
 
-/**
- * Long-edge cap (px) for images sent to the matcher. Anthropic vision downsamples anything
- * over ~1568px anyway, and the full-res rectified page (3472×4624 PNG ≈ 19 MB base64) blows
- * the hard 10 MB/image limit. Downscaling fixes the size AND cuts cost/latency at no quality
- * loss the model would see.
- */
-const VISION_MAX_EDGE = 1568;
-
-/**
- * Prepare an image for the matcher: cap the long edge at {@link VISION_MAX_EDGE} and re-encode
- * as JPEG. JPEG (not PNG) because these are photographs of textbook pages — far smaller bytes,
- * keeping us well under the 10 MB/image limit even before the resize takes effect. Never
- * enlarges, so small crops pass through untouched.
- */
-async function downscaleForVision(img: Buffer): Promise<Buffer> {
-  return sharp(img)
-    .resize(VISION_MAX_EDGE, VISION_MAX_EDGE, { fit: 'inside', withoutEnlargement: true })
-    .jpeg({ quality: 85 })
-    .toBuffer();
-}
-
-/** Cut one crop from a rectified PNG buffer, clamping the box to the image bounds. */
+/** Cut one crop from a rectified PNG buffer, clamping the box to the image bounds. Crops are
+ *  cut at FULL resolution; the provider caps every image at the model's vision edge on send. */
 async function cutCrop(
   png: Buffer,
   box: [number, number, number, number],
@@ -190,17 +170,12 @@ export function scanRouter(
           label: d.path ?? '',
           figureRefs: d.figureRefs ?? [],
         }));
-        // Downscale pages + crops before the call — the full-res rectified PNG is ~19 MB
-        // base64, over Anthropic's 10 MB/image hard limit. Crops are cut at full res first
-        // (above) for sharpness, then capped here.
-        const pageImages = await Promise.all(
-          flat.pages.map(async (p) =>
-            bufferImage(await downscaleForVision(pageBuffers.get(p.pageIndex)!), 'image/jpeg'),
-          ),
+        // Pass full-res page + crop buffers; the provider caps each at the matcher model's
+        // vision edge (and re-encodes to JPEG) on send, keeping us under the 10 MB/image limit.
+        const pageImages = flat.pages.map((p) =>
+          bufferImage(pageBuffers.get(p.pageIndex)!, 'image/png'),
         );
-        const cropImages = await Promise.all(
-          cropBuffers.map(async (b) => bufferImage(await downscaleForVision(b), 'image/jpeg')),
-        );
+        const cropImages = cropBuffers.map((b) => bufferImage(b, 'image/png'));
         const result = await runMatcher(provider, { pageImages, cropImages, candidates });
         for (const m of result.matches) matchByFigIndex.set(m.figureIndex, m);
       } catch (err) {

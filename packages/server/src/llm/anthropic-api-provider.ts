@@ -42,32 +42,61 @@ function isRetryable(err: unknown): boolean {
   return errorCode(err) !== undefined;
 }
 
-/** Resolution of one image sent to the model, captured for the audit log. */
+/** Long-edge cap (px) for images sent to the model, by vision tier. Anthropic downsamples
+ *  anything larger server-side, so sending more wastes bandwidth/memory at no quality gain —
+ *  and the full-res rectified page (≈19 MB base64) would blow the 10 MB/image limit. Opus
+ *  4.7+ / Fable 5 support high-res (~2576 px); everything else caps at ~1568 px. */
+const VISION_MAX_EDGE_DEFAULT = 1568;
+const VISION_MAX_EDGE_HIGH_RES = 2576;
+const HIGH_RES_MODELS = new Set(['claude-opus-4-8', 'claude-opus-4-7', 'claude-fable-5']);
+
+/** The long-edge cap for `model`. Unknown models fall back to the conservative default —
+ *  under-sending is safe (no quality loss below a model's true cap); over-sending wastes. */
+function visionMaxEdge(model: string): number {
+  return HIGH_RES_MODELS.has(model) ? VISION_MAX_EDGE_HIGH_RES : VISION_MAX_EDGE_DEFAULT;
+}
+
+/** Resolution of one image actually sent to the model, captured for the audit log. */
 interface ImageAudit {
   width?: number;
   height?: number;
 }
 
-/** Build the Anthropic content blocks for one Message (images first, then text). Appends
- *  one {@link ImageAudit} per image to `audit` (best-effort dimensions for the audit log). */
+/** Build the Anthropic content blocks for one Message (images first, then text). Each image
+ *  is capped at `maxEdge` (long edge) and re-encoded as JPEG before sending — same pixels the
+ *  model would see after its own downsample, but a fraction of the bytes. Appends the SENT
+ *  resolution per image to `audit`. If sharp can't decode the buffer (e.g. a test stub), the
+ *  original bytes are sent unchanged so a bad header never fails the LLM call. */
 async function toApiContent(
   message: Message,
   audit: ImageAudit[],
+  maxEdge: number,
 ): Promise<Anthropic.ContentBlockParam[]> {
   const blocks: Anthropic.ContentBlockParam[] = [];
   for (const image of message.images ?? []) {
     const bytes = await image.load();
+    let outBytes = bytes;
+    let mediaType: string = image.mimeType;
     let dims: ImageAudit = {};
     try {
-      const meta = await sharp(bytes).metadata();
+      outBytes = await sharp(bytes)
+        .resize(maxEdge, maxEdge, { fit: 'inside', withoutEnlargement: true })
+        .jpeg({ quality: 85 })
+        .toBuffer();
+      mediaType = 'image/jpeg';
+      const meta = await sharp(outBytes).metadata();
       dims = { width: meta.width, height: meta.height };
     } catch {
-      // Audit is best-effort — a header sharp can't parse must not fail the LLM call.
+      // Best-effort — an undecodable buffer is sent as-is with its original media type.
     }
     audit.push(dims);
     blocks.push({
       type: 'image',
-      source: { type: 'base64', media_type: image.mimeType, data: bytes.toString('base64') },
+      source: {
+        type: 'base64',
+        media_type: mediaType as Anthropic.Base64ImageSource['media_type'],
+        data: outBytes.toString('base64'),
+      },
     });
   }
   blocks.push({ type: 'text', text: message.text });
@@ -77,9 +106,10 @@ async function toApiContent(
 async function toApiMessages(
   conversation: Message[],
   audit: ImageAudit[],
+  maxEdge: number,
 ): Promise<Anthropic.MessageParam[]> {
   return Promise.all(
-    conversation.map(async (m) => ({ role: m.role, content: await toApiContent(m, audit) })),
+    conversation.map(async (m) => ({ role: m.role, content: await toApiContent(m, audit, maxEdge) })),
   );
 }
 
@@ -156,10 +186,10 @@ export class AnthropicApiProvider implements LlmProvider {
     extra: Partial<Anthropic.MessageCreateParamsNonStreaming>,
     opts?: CompleteOpts,
   ): Promise<Anthropic.Message> {
-    const imageAudit: ImageAudit[] = [];
-    const messages = await toApiMessages(conversation, imageAudit);
     const model = opts?.model ?? DEFAULT_MODEL;
     const tag = opts?.tag ?? label;
+    const imageAudit: ImageAudit[] = [];
+    const messages = await toApiMessages(conversation, imageAudit, visionMaxEdge(model));
     log.debug(`llm ${label} request`, { model, turns: messages.length, images: imageAudit.length });
 
     // `output_config.effort` is GA (no beta header) on Sonnet 4.6 / Opus-tier; Haiku rejects

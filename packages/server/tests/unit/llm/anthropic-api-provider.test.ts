@@ -1,3 +1,4 @@
+import sharp from 'sharp';
 import { describe, expect, it, vi } from 'vitest';
 import { AnthropicApiProvider } from '@/llm/anthropic-api-provider.js';
 import { bufferImage } from '@/llm/image-ref.js';
@@ -6,6 +7,20 @@ import { LlmError } from '@/llm/provider.js';
 /** Build a fake Anthropic client whose messages.create returns a canned message. */
 function fakeClient(message: unknown) {
   return { messages: { create: vi.fn().mockResolvedValue(message) } } as never;
+}
+
+/** A real PNG of the given size, so sharp can resize it on send. */
+function pngOf(width: number, height: number): Promise<Buffer> {
+  return sharp({ create: { width, height, channels: 3, background: { r: 200, g: 150, b: 100 } } })
+    .png()
+    .toBuffer();
+}
+
+/** Decode the image block of the Nth recorded create() call: media type + sent dimensions. */
+async function sentImage(create: ReturnType<typeof vi.fn>, callIdx = 0) {
+  const block = create.mock.calls[callIdx]![0].messages[0].content[0];
+  const meta = await sharp(Buffer.from(block.source.data, 'base64')).metadata();
+  return { mediaType: block.source.media_type, longEdge: Math.max(meta.width ?? 0, meta.height ?? 0) };
 }
 
 describe('AnthropicApiProvider', () => {
@@ -136,6 +151,35 @@ describe('AnthropicApiProvider', () => {
     const provider = new AnthropicApiProvider({ messages: { create } } as never);
     await expect(provider.complete([{ role: 'user', text: 'x' }])).rejects.toThrow(LlmError);
     expect(create).toHaveBeenCalledTimes(1);
+  });
+
+  it('caps a large image at 1568px JPEG for the default vision tier', async () => {
+    const create = vi.fn().mockResolvedValue({
+      stop_reason: 'end_turn',
+      content: [{ type: 'text', text: 'ok' }],
+    });
+    const provider = new AnthropicApiProvider({ messages: { create } } as never);
+    const big = await pngOf(3472, 4624);
+    await provider.complete([{ role: 'user', text: 'x', images: [bufferImage(big, 'image/png')] }]);
+    const img = await sentImage(create);
+    expect(img.mediaType).toEqual('image/jpeg');
+    expect(img.longEdge).toBeLessThanOrEqual(1568);
+  });
+
+  it('caps by model: Opus 4.8 keeps high-res that Sonnet 4.6 would shrink', async () => {
+    const create = vi.fn().mockResolvedValue({
+      stop_reason: 'end_turn',
+      content: [{ type: 'text', text: 'ok' }],
+    });
+    const provider = new AnthropicApiProvider({ messages: { create } } as never);
+    const mid = await pngOf(2200, 2200); // between the 1568 and 2576 caps
+    const img = [{ role: 'user' as const, text: 'x', images: [bufferImage(mid, 'image/png')] }];
+
+    await provider.complete(img, { model: 'claude-sonnet-4-6' });
+    expect((await sentImage(create, 0)).longEdge).toEqual(1568); // shrunk to the default cap
+
+    await provider.complete(img, { model: 'claude-opus-4-8' });
+    expect((await sentImage(create, 1)).longEdge).toEqual(2200); // under 2576 → kept as-is
   });
 
   it('retries a transient 503 then succeeds', async () => {

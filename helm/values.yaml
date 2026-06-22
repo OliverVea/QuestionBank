@@ -58,6 +58,9 @@ config:
   QB_ALLOW_DEFAULT_CUSTOMER: "0"
   # In-cluster figure-service Service DNS.
   FIGURE_SERVICE_URL: "http://questionbank-figures.apps.svc.cluster.local"
+  # Emit one JSON object per log line for machine ingestion (cluster log shipping).
+  # Backend-agnostic: names no specific log sink. Unset/"pretty" = human ANSI format.
+  QB_LOG_FORMAT: "json"
 
 # Secret-backed env vars. The Secret is created out-of-band (kubectl apply,
 # OpenBao sync, etc.) — chart never commits secret values.

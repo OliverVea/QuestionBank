@@ -28,8 +28,14 @@ function enabled(level: LogLevel): boolean {
   return LEVEL_ORDER[level] >= LEVEL_ORDER[activeLevel()];
 }
 
+type LogFormat = 'pretty' | 'json';
+
+function activeFormat(): LogFormat {
+  return (process.env.QB_LOG_FORMAT ?? '').toLowerCase() === 'json' ? 'json' : 'pretty';
+}
+
 function timestamp(): string {
-  // HH:MM:SS.mmm — local time, enough to correlate with the client without date noise.
+  // HH:MM:SS.mmm — UTC, enough to correlate with the client without date noise.
   return new Date().toISOString().slice(11, 23);
 }
 
@@ -44,11 +50,43 @@ function fmtContext(context?: Record<string, unknown>): string {
   return parts.length > 0 ? ` ${DIM}${parts.join(' ')}${RESET}` : '';
 }
 
-function emit(level: LogLevel, message: string, context?: Record<string, unknown>): void {
-  if (!enabled(level)) return;
+const RESERVED_JSON_KEYS = new Set(['ts', 'level', 'msg']);
+
+/** One JSON object per line: { ts, level, msg, ...context }. No ANSI. */
+function renderJson(level: LogLevel, message: string, context?: Record<string, unknown>): string {
+  const record: Record<string, unknown> = {
+    ts: new Date().toISOString(),
+    level,
+    msg: message,
+  };
+  if (context) {
+    for (const [key, value] of Object.entries(context)) {
+      if (value === undefined || RESERVED_JSON_KEYS.has(key)) continue;
+      record[key] = value;
+    }
+  }
+  try {
+    return JSON.stringify(record);
+  } catch {
+    // Context held an un-serializable value (circular ref, BigInt). Never let a log
+    // call throw — emit a minimal record that always serializes.
+    return JSON.stringify({ ts: record.ts, level, msg: message, logError: 'unserializable context' });
+  }
+}
+
+/** Today's human format: dim timestamp, colored level tag, dim context. */
+function renderPretty(level: LogLevel, message: string, context?: Record<string, unknown>): string {
   const color = COLORS[level];
   const tag = `${color}${level.toUpperCase().padEnd(5)}${RESET}`;
-  const line = `${DIM}${timestamp()}${RESET} ${tag} ${message}${fmtContext(context)}`;
+  return `${DIM}${timestamp()}${RESET} ${tag} ${message}${fmtContext(context)}`;
+}
+
+function emit(level: LogLevel, message: string, context?: Record<string, unknown>): void {
+  if (!enabled(level)) return;
+  const line =
+    activeFormat() === 'json'
+      ? renderJson(level, message, context)
+      : renderPretty(level, message, context);
   if (level === 'error') console.error(line);
   else if (level === 'warn') console.warn(line);
   else console.log(line);

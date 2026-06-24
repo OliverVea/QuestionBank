@@ -8,6 +8,11 @@ import { describeError, log } from './logger.js';
  *
  * Status drives the level: 5xx → error, 4xx → warn, else info. So a failing
  * transcription stands out in red instead of scrolling past as plain text.
+ *
+ * Exception: a *successful* `/api/health` probe logs at debug, not info. Kubernetes
+ * probes hit it every few seconds and were ~97% of log volume; k8s already surfaces
+ * health via Events/RESTARTS/endpoint removal, so the success line carries no new
+ * signal. A *failing* probe (4xx/5xx) still logs at warn/error — that's worth seeing.
  */
 export function requestLogger(req: Request, res: Response, next: NextFunction): void {
   const start = process.hrtime.bigint();
@@ -17,8 +22,11 @@ export function requestLogger(req: Request, res: Response, next: NextFunction): 
     const ms = Number(process.hrtime.bigint() - start) / 1e6;
     const ctx = { status: res.statusCode, ms: Math.round(ms) };
     const line = `← ${req.method} ${req.originalUrl}`;
+    // req.path, not req.originalUrl: the latter carries query strings.
+    const isHealthProbe = req.path === '/api/health';
     if (res.statusCode >= 500) log.error(line, ctx);
     else if (res.statusCode >= 400) log.warn(line, ctx);
+    else if (isHealthProbe) log.debug(line, ctx);
     else log.info(line, ctx);
   });
 

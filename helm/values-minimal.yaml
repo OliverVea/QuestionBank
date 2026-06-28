@@ -17,25 +17,25 @@
 ingress:
   enabled: false
 
-# Tenancy/auth defaults for an auth-OFF deploy. "0" = strict multi-tenant: without
-# an X-authentik-uid header (nothing injects it here), /api/* returns 401 while
-# /api/health stays open. The deploy step can override via
-# --set config.QB_ALLOW_DEFAULT_CUSTOMER=... (pipeline-owned toggle); baselining "0"
-# here guarantees unset can never silently fall back to the Dockerfile's "1".
+# App-level OIDC: /api/* requires a valid Authentik bearer token (issued for this
+# authority, aud=questionbank) while /api/health stays open. There is no
+# default-customer fallback any more — the server authenticates every /api request
+# against the token, so prod is gated by Authentik regardless of ingress.
 config:
   NODE_ENV: "production"
   PORT: "3001"
   QB_DATA_DIR: "/data"
-  QB_CUSTOMER_HEADER: "X-authentik-uid"
-  QB_ALLOW_DEFAULT_CUSTOMER: "0"
-  # In-cluster figure-service (deployed to apps first by deploy-figures).
+  QB_OIDC_AUTHORITY: "https://auth.ovea.pro/application/o/questionbank/"
+  QB_OIDC_AUDIENCE: "questionbank"
+  # In-cluster figure-service (deployed to apps first within the deploy step).
   FIGURE_SERVICE_URL: "http://questionbank-figures.apps.svc.cluster.local"
 
 # Prod LLM key. deploy.sh materializes questionbank-secrets in `apps` from the
 # ANTHROPIC_API_KEY pipeline secret before the helm upgrade; mounted here (mirrors beta).
 #
-# figure-service-auth (key api-key) is created in apps by deploy-figures; mounted
-# here as FIGURE_SERVICE_API_KEY so the server authenticates to the figure-service.
+# figure-service-auth (key api-key) is created in apps by deploy.sh (figures deploy
+# first, in the same step); mounted here as FIGURE_SERVICE_API_KEY so the server
+# authenticates to the figure-service.
 secrets:
   - name: questionbank-secrets
     envMap:

@@ -22,12 +22,12 @@
  *     the network. It is invoked explicitly by name: `npm run test:beta`
  *     (vitest --project beta).
  *
- *   • IDENTITY: beta runs QB_ALLOW_DEFAULT_CUSTOMER=0 (strict) and normally has
- *     its identity injected by the ingress forwardAuth. Hitting the Service URL
- *     bypasses the ingress, so EVERY /api request must send the customer header
- *     itself: `X-authentik-uid: pipeline-smoke`. That value doubles as a
- *     dedicated, isolated TENANT — these test writes never touch real beta
- *     users' data, and there is no separate test DB.
+ *   • IDENTITY: the deployed beta API validates Authentik-issued bearer tokens
+ *     (app-level OIDC; no ingress forwardAuth). EVERY /api request must carry a
+ *     real `Authorization: Bearer <token>`. The suite obtains one once via the
+ *     beta machine client (client-credentials grant) from `QB_BETA_OIDC_*` env.
+ *     That client's token `sub` is a dedicated, isolated TENANT — these test
+ *     writes never touch real beta users' data, and there is no separate test DB.
  *
  *   • MUST NOT exercise LLM routes — beta wires a real ANTHROPIC_API_KEY (real
  *     money): no POST /api/extract(/refine), /api/questions/:id/transcribe(/retry),
@@ -39,7 +39,7 @@
  *     run must not go red over cleanup.
  */
 import request from 'supertest';
-import { afterAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 const BASE_URL = process.env.QB_BETA_BASE_URL;
 if (!BASE_URL) {
@@ -52,20 +52,53 @@ if (!BASE_URL) {
   );
 }
 
-// The dedicated tenant header. Sending it both authenticates past the strict
-// in-cluster check AND scopes every write to an isolated `pipeline-smoke` tenant.
-const UID = 'pipeline-smoke';
+// Machine-client credentials: the suite mints a bearer token via the beta
+// client-credentials grant. The token's `sub` is the isolated smoke tenant.
+const TOKEN_URL = process.env.QB_BETA_OIDC_TOKEN_URL; // e.g. https://auth-beta.ovea.pro/application/o/token/
+const CLIENT_ID = process.env.QB_BETA_OIDC_CLIENT_ID;
+const CLIENT_SECRET = process.env.QB_BETA_OIDC_CLIENT_SECRET;
+if (!TOKEN_URL || !CLIENT_ID || !CLIENT_SECRET) {
+  throw new Error(
+    'Beta smoke needs QB_BETA_OIDC_TOKEN_URL, QB_BETA_OIDC_CLIENT_ID, QB_BETA_OIDC_CLIENT_SECRET ' +
+      '(the machine client used to obtain a bearer token).',
+  );
+}
 
 /** A supertest agent bound to the live beta base URL. */
 const agent = request(BASE_URL);
 
-/** Issue a request with the identity header pre-stamped. */
+// The bearer token, fetched once and cached for the whole run.
+let bearer = '';
+async function getBearer(): Promise<string> {
+  if (bearer) return bearer;
+  const body = new URLSearchParams({
+    grant_type: 'client_credentials',
+    client_id: CLIENT_ID!,
+    client_secret: CLIENT_SECRET!,
+    scope: 'openid',
+  });
+  const res = await fetch(TOKEN_URL!, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body,
+  });
+  if (!res.ok) throw new Error(`client-credentials token request failed: ${res.status}`);
+  bearer = `Bearer ${((await res.json()) as { access_token: string }).access_token}`;
+  return bearer;
+}
+
+/** Issue a request with the bearer token pre-stamped. */
 function authed(method: 'get' | 'post' | 'put' | 'delete', path: string) {
-  return agent[method](path).set('X-authentik-uid', UID);
+  return agent[method](path).set('Authorization', bearer);
 }
 
 // Books created during the run, torn down at the end (cascade removes questions + attempts).
 const createdBookIds: string[] = [];
+
+beforeAll(async () => {
+  // Mint the bearer once before any authed request runs.
+  await getBearer();
+});
 
 afterAll(async () => {
   for (const id of createdBookIds) {
@@ -99,7 +132,9 @@ describe('beta deployment smoke (LLM-free surface)', () => {
     });
     expect(create.status).toEqual(201);
     expect(create.body.id).toEqual(expect.any(String));
-    expect(create.body).toMatchObject({ title: 'Pipeline smoke book', customerId: UID });
+    // customerId is now the machine-client token's `sub` (not known statically) — assert shape only.
+    expect(create.body).toMatchObject({ title: 'Pipeline smoke book' });
+    expect(create.body.customerId).toEqual(expect.any(String));
     createdBookIds.push(create.body.id);
 
     const read = await authed('get', `/api/books/${create.body.id}`);

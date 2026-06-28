@@ -6,7 +6,7 @@ import { bufferImage } from '../llm/image-ref.js';
 import { LlmError, type LlmProvider, type Message } from '../llm/provider.js';
 import { runMatcher, type FigureMatch, type MatchCandidate } from '../llm/matcher-contract.js';
 import { log } from '../logging/logger.js';
-import { requireCustomerId } from '../middleware/resolve-customer.js';
+import { requireCustomerId } from '../auth/index.js';
 import type { FigureServiceClient, ProcessResult } from '../services/figure-service-client.js';
 import type { Store } from '../storage/store.js';
 import { acceptImages, loadExisting, readImages } from './extract-shared.js';

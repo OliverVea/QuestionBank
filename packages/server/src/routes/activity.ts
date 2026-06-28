@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { nowIso } from '../domain/ids.js';
-import { requireCustomerId } from '../middleware/resolve-customer.js';
+import { requireCustomerId } from '../auth/index.js';
 import { computeActivity } from '../services/activity.js';
 import type { Store } from '../storage/store.js';
 import { customerGoals } from './settings.js';

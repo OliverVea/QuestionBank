@@ -4,7 +4,7 @@ import multer from 'multer';
 import { newId, nowIso } from '../domain/ids.js';
 import type { Figure } from '../domain/types.js';
 import { log } from '../logging/logger.js';
-import { requireCustomerId } from '../middleware/resolve-customer.js';
+import { requireCustomerId } from '../auth/index.js';
 import type { Store } from '../storage/store.js';
 
 /** Canonical UUID shape — image serving validates :figId against this before touching the FS. */

@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { newId, nowIso } from '../domain/ids.js';
 import type { Attempt, Grade, GradingIssue, IssueSeverity } from '../domain/types.js';
-import { requireCustomerId } from '../middleware/resolve-customer.js';
+import { requireCustomerId } from '../auth/index.js';
 import type { Store } from '../storage/store.js';
 
 const GRADES: readonly Grade[] = ['correct', 'partial', 'incorrect'];

@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { newId, nowIso } from '../domain/ids.js';
 import type { Attempt, Question, Relevance } from '../domain/types.js';
-import { requireCustomerId } from '../middleware/resolve-customer.js';
+import { requireCustomerId } from '../auth/index.js';
 import { planBatchSave, type IncomingQuestion } from '../services/batch-save.js';
 import { deleteFiguresForQuestions } from '../services/cascade.js';
 import { compareProblems } from '../services/problem-order.js';

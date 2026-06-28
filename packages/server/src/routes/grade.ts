@@ -7,7 +7,7 @@ import {
   type GradingContext,
 } from '../llm/grading-contract.js';
 import { LlmError, type LlmProvider, type Message, type Role } from '../llm/provider.js';
-import { requireCustomerId } from '../middleware/resolve-customer.js';
+import { requireCustomerId } from '../auth/index.js';
 import { log } from '../logging/logger.js';
 import type { Store } from '../storage/store.js';
 

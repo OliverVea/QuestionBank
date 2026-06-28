@@ -26,11 +26,8 @@ import {
 import type { LlmProvider } from './llm/provider.js';
 import { errorLogger, requestLogger } from './logging/http.js';
 import { log } from './logging/logger.js';
-import {
-  configFromEnv,
-  resolveCustomer,
-  type ResolveCustomerConfig,
-} from './middleware/resolve-customer.js';
+import { requireAuth, verifierFromEnv } from './auth/index.js';
+import type { VerifyBearer } from './auth/index.js';
 import { Store } from './storage/store.js';
 
 const PORT = Number(process.env.PORT ?? 3001);
@@ -43,7 +40,7 @@ export function createApp(
   store: Store,
   provider: LlmProvider,
   figureService: FigureServiceClient | null = figureServiceFromEnv(),
-  customerConfig: ResolveCustomerConfig = configFromEnv(process.env),
+  verify: VerifyBearer = verifierFromEnv(),
 ): Express {
   const app = express();
   app.use(requestLogger);
@@ -70,8 +67,8 @@ export function createApp(
     });
   });
 
-  // Every /api route below resolves the owning customer first.
-  app.use('/api', resolveCustomer(customerConfig));
+  // Every /api route below requires a valid Authentik-issued bearer token.
+  app.use('/api', requireAuth(verify));
 
   app.use('/api/books', booksRouter(store));
   app.use('/api/books/:bookId/questions', bookQuestionsRouter(store));
@@ -104,6 +101,9 @@ export function createApp(
 }
 
 async function main(): Promise<void> {
+  if (!process.env.QB_OIDC_AUTHORITY) {
+    throw new Error('QB_OIDC_AUTHORITY is required (OIDC authority, e.g. https://auth.ovea.pro/application/o/questionbank/)');
+  }
   const store = await Store.open(DATA_DIR);
   const provider = new AnthropicApiProvider();
   const app = createApp(store, provider);

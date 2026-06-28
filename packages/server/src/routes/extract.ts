@@ -5,7 +5,7 @@ import {
   extractionEnvelopeSchema,
 } from '../llm/extraction-contract.js';
 import { validateExtractionEnvelope, type ExtractionEnvelope } from '../llm/extraction-delta.js';
-import { requireCustomerId } from '../middleware/resolve-customer.js';
+import { requireCustomerId } from '../auth/index.js';
 import type { Store } from '../storage/store.js';
 import { log } from '../logging/logger.js';
 import { acceptImages, loadExisting, readImages } from './extract-shared.js';

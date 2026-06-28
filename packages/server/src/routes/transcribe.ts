@@ -2,7 +2,7 @@ import { Router } from 'express';
 import multer from 'multer';
 import { bufferImage, type ImageMimeType } from '../llm/image-ref.js';
 import { LlmError, type LlmProvider, type Message } from '../llm/provider.js';
-import { requireCustomerId } from '../middleware/resolve-customer.js';
+import { requireCustomerId } from '../auth/index.js';
 import { log } from '../logging/logger.js';
 import {
   buildRetranscriptionPrompt,

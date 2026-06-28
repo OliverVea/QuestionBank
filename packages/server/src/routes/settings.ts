@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import type { Settings } from '../domain/types.js';
-import { requireCustomerId } from '../middleware/resolve-customer.js';
+import { requireCustomerId } from '../auth/index.js';
 import { DEFAULT_GOALS, type Goals } from '../services/activity.js';
 import type { Store } from '../storage/store.js';
 

@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { newId, nowIso } from '../domain/ids.js';
 import type { Skip } from '../domain/types.js';
-import { requireCustomerId } from '../middleware/resolve-customer.js';
+import { requireCustomerId } from '../auth/index.js';
 import type { Store } from '../storage/store.js';
 
 const SKIP_HOURS = 12;

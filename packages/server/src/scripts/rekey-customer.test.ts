@@ -26,6 +26,16 @@ async function seed(customerId: string): Promise<void> {
     recommendedGrade: 'correct', rating: 'correct', issues: [],
     createdAt: '2026-01-01T00:00:00.000Z',
   } as Parameters<typeof store.attempts.create>[1]);
+  await store.skips.create(customerId, {
+    id: 's1', customerId, questionId: 'q1',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    expiresAt: '2026-01-02T00:00:00.000Z',
+  } as Parameters<typeof store.skips.create>[1]);
+  await store.figures.create(customerId, {
+    id: 'f1', customerId, questionId: 'q1',
+    printedLabel: 'Figure 1.1', confidence: 'high',
+    createdAt: '2026-01-01T00:00:00.000Z',
+  } as Parameters<typeof store.figures.create>[1]);
   await store.settings.create(customerId, {
     id: customerId, customerId, daysGoal: 5, problemsGoal: 10, pauseEvery: 3,
   } as Parameters<typeof store.settings.create>[1]);
@@ -46,13 +56,19 @@ describe('rekeyCustomer', () => {
     expect(summary.changed.books).toBe(1);
     expect(summary.changed.questions).toBe(1);
     expect(summary.changed.attempts).toBe(1);
+    expect(summary.changed.skips).toBe(1);
+    expect(summary.changed.figures).toBe(1);
     expect(summary.changed.settings).toBe(1);
 
     const store = await Store.open(dir);
     expect(await store.books.getAll(NEW)).toHaveLength(1);
     expect(await store.questions.getAll(NEW)).toHaveLength(1);
     expect(await store.attempts.getAll(NEW)).toHaveLength(1);
+    expect(await store.skips.getAll(NEW)).toHaveLength(1);
+    expect(await store.figures.getAll(NEW)).toHaveLength(1);
     expect(await store.books.getAll(OLD)).toHaveLength(0);
+    expect(await store.questions.getAll(OLD)).toHaveLength(0);
+    expect(await store.attempts.getAll(OLD)).toHaveLength(0);
 
     const settings = await store.settings.getById(NEW, NEW);
     expect(settings?.customerId).toBe(NEW);
@@ -75,5 +91,15 @@ describe('rekeyCustomer', () => {
     const store = await Store.open(dir);
     expect(await store.books.getAll(OLD)).toHaveLength(1); // unchanged on disk
     expect(await store.books.getAll(NEW)).toHaveLength(0);
+  });
+
+  it('refuses to create a duplicate settings row when newId already exists', async () => {
+    await seed(OLD);
+    // The new user already has a settings row (e.g. logged in before migration).
+    const store = await Store.open(dir);
+    await store.settings.create(NEW, {
+      id: NEW, customerId: NEW, daysGoal: 1, problemsGoal: 1, pauseEvery: 1,
+    } as Parameters<typeof store.settings.create>[1]);
+    await expect(rekeyCustomer({ dataDir: dir, oldId: OLD, newId: NEW })).rejects.toThrow(/duplicate/i);
   });
 });

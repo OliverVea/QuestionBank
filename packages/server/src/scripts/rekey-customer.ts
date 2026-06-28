@@ -1,4 +1,4 @@
-import { cp, readFile, writeFile } from 'node:fs/promises';
+import { cp, readFile, rename, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -48,6 +48,16 @@ export async function rekeyCustomer(opts: RekeyOptions): Promise<RekeySummary> {
       continue;
     }
     const rows = JSON.parse(await readFile(path, 'utf8')) as Row[];
+    if (remapId) {
+      const hasOld = rows.some((r) => r.customerId === opts.oldId);
+      const hasNew = rows.some((r) => r.id === opts.newId);
+      if (hasOld && hasNew) {
+        throw new Error(
+          `${file}: a row with id "${opts.newId}" already exists; re-keying "${opts.oldId}" ` +
+            `would create a duplicate. Resolve the existing ${file} row before migrating.`,
+        );
+      }
+    }
     let count = 0;
     for (const row of rows) {
       if (row.customerId === opts.oldId) {
@@ -59,7 +69,10 @@ export async function rekeyCustomer(opts: RekeyOptions): Promise<RekeySummary> {
     changed[name] = count;
     if (!opts.dryRun && count > 0) {
       // Match JsonCollection's on-disk format (2-space pretty print).
-      await writeFile(path, JSON.stringify(rows, null, 2), 'utf8');
+      // Atomic write: write to a temp file then rename to avoid partial-write corruption.
+      const tmp = `${path}.tmp`;
+      await writeFile(tmp, JSON.stringify(rows, null, 2), 'utf8');
+      await rename(tmp, path);
     }
   }
   return { changed };
@@ -116,7 +129,7 @@ async function main(): Promise<void> {
   if (!ok) throw new Error('Re-key verification failed — restore from backup.');
 }
 
-const isEntry = process.argv[1]?.endsWith('rekey-customer.ts');
+const isEntry = /rekey-customer\.(ts|js)$/.test(process.argv[1] ?? '');
 if (isEntry) {
   void main();
 }

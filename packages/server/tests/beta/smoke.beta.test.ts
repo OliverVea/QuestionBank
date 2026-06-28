@@ -75,7 +75,11 @@ async function getBearer(): Promise<string> {
     grant_type: 'client_credentials',
     client_id: CLIENT_ID!,
     client_secret: CLIENT_SECRET!,
-    scope: 'openid',
+    // The machine client lives under its own Authentik application, so its token defaults to
+    // aud/iss of `questionbank-smoke`. The `questionbank-aud` scope rewrites both claims to the
+    // questionbank app's issuer + audience (the values the API trusts). Must be requested
+    // explicitly — Authentik only applies a scope mapping when its scope is asked for.
+    scope: 'openid questionbank-aud',
   });
   const res = await fetch(TOKEN_URL!, {
     method: 'POST',

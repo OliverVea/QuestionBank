@@ -78,11 +78,8 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createApp } from '../index.js';
 import { FakeProvider } from '../llm/fake-provider.js';
 import { LlmError } from '../llm/provider.js';
-import {
-  configFromEnv,
-  resolveCustomer,
-  type ResolveCustomerConfig,
-} from '../middleware/resolve-customer.js';
+import { requireAuth } from '../auth/index.js';
+import { fakeVerifier, identityFromTokenVerifier } from '../test-support/auth.js';
 import { lookupRouter } from '../routes/lookup.js';
 import type { BookMetadata } from '../services/isbn-lookup.js';
 import { Store } from '../storage/store.js';
@@ -107,7 +104,7 @@ beforeEach(async () => {
   dir = await mkdtemp(join(tmpdir(), 'qb-uat-'));
   store = await Store.open(dir);
   provider = new FakeProvider();
-  app = createApp(store, provider, undefined);
+  app = createApp(store, provider, undefined, fakeVerifier());
 });
 
 afterEach(async () => {
@@ -438,7 +435,7 @@ describe('UAT: API flows on the flat problems model', () => {
           }
         : undefined;
     const lookupApp = express();
-    lookupApp.use('/api', resolveCustomer(configFromEnv(process.env)));
+    lookupApp.use('/api', requireAuth(fakeVerifier()));
     lookupApp.use('/api/lookup', lookupRouter(fakeFetcher));
 
     const hit = await request(lookupApp).get(`/api/lookup/isbn/${KNOWN}`);
@@ -478,6 +475,7 @@ describe('UAT: API flows on the flat problems model', () => {
         },
       }),
       undefined,
+      fakeVerifier(),
     );
 
     const extract = await request(scanApp)
@@ -521,6 +519,7 @@ describe('UAT: API flows on the flat problems model', () => {
         },
       }),
       undefined,
+      fakeVerifier(),
     );
 
     const first = await request(extractApp)
@@ -546,6 +545,7 @@ describe('UAT: API flows on the flat problems model', () => {
         },
       }),
       undefined,
+      fakeVerifier(),
     );
 
     const refined = await request(refineApp)
@@ -592,6 +592,7 @@ describe('UAT: API flows on the flat problems model', () => {
         },
       }),
       undefined,
+      fakeVerifier(),
     );
 
     const extract = await request(scanApp)
@@ -686,7 +687,7 @@ describe('UAT: API flows on the flat problems model', () => {
   /** Swap the running app onto a freshly-scripted provider mid-test. */
   function scriptProvider(structured: unknown): FakeProvider {
     const p = new FakeProvider({ structured });
-    app = createApp(store, p, undefined);
+    app = createApp(store, p, undefined, fakeVerifier());
     return p;
   }
 });
@@ -703,11 +704,6 @@ describe('UAT: API flows on the flat problems model', () => {
 // ---------------------------------------------------------------------------
 
 describe('UAT (security): customer segmentation is airtight', () => {
-  const STRICT: ResolveCustomerConfig = {
-    customerHeader: 'X-Customer-Id',
-    allowDefaultCustomer: false,
-    proxySecretHeader: 'X-Proxy-Secret',
-  };
   const A = 'alice';
   const B = 'bob';
 
@@ -718,15 +714,15 @@ describe('UAT (security): customer segmentation is airtight', () => {
   beforeEach(async () => {
     segDir = await mkdtemp(join(tmpdir(), 'qb-uat-seg-'));
     segStore = await Store.open(segDir);
-    segApp = createApp(segStore, new FakeProvider(), undefined, STRICT);
+    segApp = createApp(segStore, new FakeProvider(), undefined, identityFromTokenVerifier());
   });
 
   afterEach(async () => {
     await rm(segDir, { recursive: true, force: true });
   });
 
-  /** Tag a supertest request with a customer identity header. */
-  const as = (r: request.Test, customer: string) => r.set('X-Customer-Id', customer);
+  /** Tag a supertest request with a customer identity (token value = customer id). */
+  const as = (r: request.Test, customer: string) => r.set('Authorization', `Bearer ${customer}`);
 
   /** Seed a book → question → attempt chain owned by `customer`; return their ids. */
   async function seedChain(customer: string): Promise<{ bookId: string; questionId: string }> {

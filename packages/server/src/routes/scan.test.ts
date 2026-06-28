@@ -6,6 +6,7 @@ import request from 'supertest';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createApp } from '../index.js';
 import { FakeProvider } from '../llm/fake-provider.js';
+import { fakeVerifier } from '../test-support/auth.js';
 import { FakeFigureService } from '../services/figure-service-fake.js';
 import type { ProcessResult } from '../services/figure-service-client.js';
 import { Store } from '../storage/store.js';
@@ -62,7 +63,7 @@ describe('POST /api/scan', () => {
       figures: [{ id: 0, box: [0, 0, 10, 10], score: 0.9 }],
     };
     const figureService = new FakeFigureService(result);
-    const app = createApp(store, provider, figureService);
+    const app = createApp(store, provider, figureService, fakeVerifier());
     const bookId = await seedBook(app);
 
     const res = await request(app)
@@ -104,7 +105,7 @@ describe('POST /api/scan', () => {
       rectified: { pngBase64: bigPng.toString('base64'), width: 3472, height: 4624 },
       figures: [{ id: 0, box: [100, 100, 2000, 3000], score: 0.9 }],
     });
-    const app = createApp(store, provider, figureService);
+    const app = createApp(store, provider, figureService, fakeVerifier());
     const bookId = await seedBook(app);
 
     const res = await request(app)
@@ -136,7 +137,7 @@ describe('POST /api/scan', () => {
       rectified: { pngBase64: pngB64, width: 20, height: 20 },
       figures: [{ id: 0, box: [0, 0, 10, 10], score: 0.9 }],
     });
-    const app = createApp(store, provider, figureService);
+    const app = createApp(store, provider, figureService, fakeVerifier());
     const bookId = await seedBook(app);
 
     const res = await request(app)
@@ -158,7 +159,7 @@ describe('POST /api/scan', () => {
     });
     const figureService = new FakeFigureService();
     figureService.failWith(new Error('service down'));
-    const app = createApp(store, provider, figureService);
+    const app = createApp(store, provider, figureService, fakeVerifier());
     const bookId = await seedBook(app);
 
     const res = await request(app)
@@ -180,7 +181,7 @@ describe('POST /api/scan', () => {
         needsSection: [],
       },
     });
-    const app = createApp(store, provider, null);
+    const app = createApp(store, provider, null, fakeVerifier());
     const bookId = await seedBook(app);
     const res = await request(app)
       .post('/api/scan')
@@ -193,7 +194,7 @@ describe('POST /api/scan', () => {
   it('returns 502 when extraction fails', async () => {
     const provider = new FakeProvider();
     provider.failWith(new (await import('../llm/provider.js')).LlmError('boom'));
-    const app = createApp(store, provider, new FakeFigureService());
+    const app = createApp(store, provider, new FakeFigureService(), fakeVerifier());
     const bookId = await seedBook(app);
     const res = await request(app)
       .post('/api/scan')
@@ -203,7 +204,7 @@ describe('POST /api/scan', () => {
   });
 
   it('rejects a missing bookId (400) and unknown book (404)', async () => {
-    const app = createApp(store, new FakeProvider(), new FakeFigureService());
+    const app = createApp(store, new FakeProvider(), new FakeFigureService(), fakeVerifier());
     const noBook = await request(app)
       .post('/api/scan')
       .attach('images', PNG, { filename: 'p1.png', contentType: 'image/png' });

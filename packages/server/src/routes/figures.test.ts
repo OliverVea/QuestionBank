@@ -6,6 +6,7 @@ import request from 'supertest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createApp } from '../index.js';
 import { FakeProvider } from '../llm/fake-provider.js';
+import { fakeVerifier, identityFromTokenVerifier } from '../test-support/auth.js';
 import { Store } from '../storage/store.js';
 
 let dir: string;
@@ -20,7 +21,7 @@ afterEach(async () => {
 });
 
 function app(): ReturnType<typeof createApp> {
-  return createApp(store, new FakeProvider(), null);
+  return createApp(store, new FakeProvider(), null, fakeVerifier());
 }
 
 async function seedQuestion(a: ReturnType<typeof createApp>): Promise<{ bookId: string; questionId: string }> {
@@ -110,11 +111,17 @@ describe('figure CRUD', () => {
   });
 
   it('404s posting to a question owned by another customer', async () => {
-    const a = app();
-    const { questionId } = await seedQuestion(a);
+    // Use identityFromTokenVerifier so different bearer tokens map to different customers.
+    const a = createApp(store, new FakeProvider(), null, identityFromTokenVerifier());
+    const book = await request(a).post('/api/books').set('Authorization', 'Bearer local').send({ title: 'Calc' });
+    const saved = await request(a)
+      .put(`/api/books/${book.body.id}/questions`)
+      .set('Authorization', 'Bearer local')
+      .send({ questions: [{ label: '1.A.1', canonicalText: 'q' }] });
+    const questionId = saved.body[0].id;
     const res = await request(a)
       .post(`/api/questions/${questionId}/figures`)
-      .set('X-Customer-Id', 'someone-else')
+      .set('Authorization', 'Bearer someone-else')
       .attach('crop', await webp(), { filename: 'c.webp', contentType: 'image/webp' });
     expect(res.status).toEqual(404);
   });
@@ -128,14 +135,21 @@ describe('figure CRUD', () => {
   });
 
   it('404s serving another customer\'s crop', async () => {
-    const a = app();
-    const { questionId } = await seedQuestion(a);
+    // Use identityFromTokenVerifier so different bearer tokens map to different customers.
+    const a = createApp(store, new FakeProvider(), null, identityFromTokenVerifier());
+    const book = await request(a).post('/api/books').set('Authorization', 'Bearer local').send({ title: 'Calc' });
+    const saved = await request(a)
+      .put(`/api/books/${book.body.id}/questions`)
+      .set('Authorization', 'Bearer local')
+      .send({ questions: [{ label: '1.A.1', canonicalText: 'q' }] });
+    const questionId = saved.body[0].id;
     const created = await request(a)
       .post(`/api/questions/${questionId}/figures`)
+      .set('Authorization', 'Bearer local')
       .attach('crop', await webp(), { filename: 'c.webp', contentType: 'image/webp' });
     const otherOwner = await request(a)
       .get(`/api/figures/${created.body.id}/image`)
-      .set('X-Customer-Id', 'someone-else');
+      .set('Authorization', 'Bearer someone-else');
     expect(otherOwner.status).toEqual(404);
   });
 });

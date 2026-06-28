@@ -56,7 +56,7 @@ export function createApp(
   // Deep health: does this pod actually reach the LLM backend right now? Probes via the
   // same client extraction uses (no tokens billed) and reports exactly what's wrong —
   // `down` with a system error code (egress dead), `auth` (key rejected), or `ok`.
-  // Unauthenticated and registered before resolveCustomer so a probe needs no identity.
+  // Unauthenticated and registered before requireAuth so a probe needs no identity.
   // 200 when reachable, 503 otherwise, so an automated check can gate on the status code.
   app.get('/api/health/connectivity', async (_req, res) => {
     const anthropic = await provider.checkConnectivity();

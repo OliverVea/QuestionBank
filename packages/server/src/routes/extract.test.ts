@@ -5,6 +5,7 @@ import request from 'supertest';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createApp } from '../index.js';
 import { FakeProvider } from '../llm/fake-provider.js';
+import { fakeVerifier } from '../test-support/auth.js';
 import { Store } from '../storage/store.js';
 
 const PNG = Buffer.from('89504e470d0a1a0a', 'hex');
@@ -32,7 +33,7 @@ async function seedBook(app: ReturnType<typeof createApp>): Promise<{ bookId: st
 describe('POST /api/extract (multi-page)', () => {
   it('passes existing problems into the provider and returns resolved + needsSection', async () => {
     const provider = new FakeProvider();
-    const app = createApp(store, provider, undefined);
+    const app = createApp(store, provider, undefined, fakeVerifier());
     const { bookId, questionId } = await seedBook(app);
 
     // Script the model: skip the known problem, add a new one, flag one ambiguous page.
@@ -64,14 +65,14 @@ describe('POST /api/extract (multi-page)', () => {
   });
 
   it('rejects a request with no images (400)', async () => {
-    const app = createApp(store, new FakeProvider(), undefined);
+    const app = createApp(store, new FakeProvider(), undefined, fakeVerifier());
     const { bookId } = await seedBook(app);
     const res = await request(app).post('/api/extract').field('bookId', bookId);
     expect(res.status).toEqual(400);
   });
 
   it('rejects a missing bookId (400)', async () => {
-    const app = createApp(store, new FakeProvider(), undefined);
+    const app = createApp(store, new FakeProvider(), undefined, fakeVerifier());
     const res = await request(app)
       .post('/api/extract')
       .attach('images', PNG, { filename: 'p1.png', contentType: 'image/png' });
@@ -79,7 +80,7 @@ describe('POST /api/extract (multi-page)', () => {
   });
 
   it('rejects an unknown book (404)', async () => {
-    const app = createApp(store, new FakeProvider(), undefined);
+    const app = createApp(store, new FakeProvider(), undefined, fakeVerifier());
     const res = await request(app)
       .post('/api/extract')
       .field('bookId', 'ghost')
@@ -88,7 +89,7 @@ describe('POST /api/extract (multi-page)', () => {
   });
 
   it('rejects a 6th image (400)', async () => {
-    const app = createApp(store, new FakeProvider(), undefined);
+    const app = createApp(store, new FakeProvider(), undefined, fakeVerifier());
     const { bookId } = await seedBook(app);
     let req = request(app).post('/api/extract').field('bookId', bookId);
     for (let i = 0; i < 6; i++) {
@@ -102,7 +103,7 @@ describe('POST /api/extract (multi-page)', () => {
     const provider = new FakeProvider({
       structured: { resolved: [{ kind: 'edit', path: '1.A.1', canonicalText: 'x' }], needsSection: [] },
     });
-    const app = createApp(store, provider, undefined);
+    const app = createApp(store, provider, undefined, fakeVerifier());
     const { bookId } = await seedBook(app);
     const res = await request(app)
       .post('/api/extract')
@@ -118,7 +119,7 @@ describe('POST /api/extract (multi-page)', () => {
         needsSection: [],
       },
     });
-    const app = createApp(store, provider, undefined);
+    const app = createApp(store, provider, undefined, fakeVerifier());
 
     // A goal-bearing book: the prompt includes the relevance instruction and the result keeps it.
     const goalBook = await request(app).post('/api/books').send({ title: 'Calc', learningGoal: 'master derivatives' });
@@ -148,7 +149,7 @@ describe('POST /api/extract/refine', () => {
         needsSection: [],
       },
     });
-    const app = createApp(store, provider, undefined);
+    const app = createApp(store, provider, undefined, fakeVerifier());
     const { bookId } = await seedBook(app);
 
     const prior = {
@@ -177,7 +178,7 @@ describe('POST /api/extract/refine', () => {
   });
 
   it('rejects refine with a missing bookId (400)', async () => {
-    const app = createApp(store, new FakeProvider(), undefined);
+    const app = createApp(store, new FakeProvider(), undefined, fakeVerifier());
     const res = await request(app)
       .post('/api/extract/refine')
       .field('sectionAnswers', JSON.stringify({ '1': '1.A' }))

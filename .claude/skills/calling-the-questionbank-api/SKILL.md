@@ -1,6 +1,6 @@
 ---
 name: calling-the-questionbank-api
-description: Use when you need to call the deployed QuestionBank HTTP API end-to-end (e.g. to verify a deployed feature, smoke-test beta, or reproduce an API bug against the real cluster) — explains how to reach the in-cluster beta instance, authenticate as an isolated tenant, the endpoint surface, and the two standing gotchas (LLM-route auth, undeployed routes).
+description: Use when you need to call the deployed QuestionBank HTTP API end-to-end (e.g. to verify a deployed feature, smoke-test beta, or reproduce an API bug against the real cluster) — explains how to reach the in-cluster beta instance, authenticate with an Authentik bearer token (isolated machine-client tenant), the endpoint surface, and the standing gotchas (LLM-route auth, undeployed routes, expired token).
 ---
 
 # Calling the QuestionBank API (deployed beta)
@@ -8,16 +8,19 @@ description: Use when you need to call the deployed QuestionBank HTTP API end-to
 ## Overview
 
 Beta runs in the homelab k3s cluster (namespace `apps-beta`) as a **ClusterIP
-Service with no public ingress** — Olve.Homelab owns routing. To call it from a
-dev machine you `kubectl port-forward` the Service and stamp an identity header
-yourself (the ingress forwardAuth that normally injects identity is bypassed).
+Service with no public ingress** — Olve.Homelab owns routing. The API validates
+**Authentik-issued JWT bearer tokens** (app-level OIDC; the SPA logs in via the
+browser, there is no identity header any more). To call it from a dev machine you
+`kubectl port-forward` the Service and send a bearer token you mint yourself from
+the beta machine client.
 
 This is the same access path the pipeline's after-beta smoke suite uses
 (`packages/server/tests/beta/smoke.beta.test.ts`) — read that file for the
 canonical assertions; this skill is the manual/interactive version.
 
-**Core principle:** beta is a real shared instance. Use the dedicated test
-tenant, never exercise paid LLM routes casually, and always clean up what you write.
+**Core principle:** beta is a real shared instance. The machine-client token's
+`sub` is a dedicated, isolated tenant — use it, never exercise paid LLM routes
+casually, and always clean up what you write.
 
 ## 1. Reach the instance (port-forward)
 
@@ -34,28 +37,34 @@ cluster. Port-forward (or run from inside the cluster) is the only way in.
 Companion service: `svc/questionbank-figures` (the dewarp + figure-detection
 service) on the same namespace, also ClusterIP-only.
 
-## 2. Authenticate (the tenant header)
+## 2. Authenticate (bearer token from the machine client)
 
-Beta runs `QB_ALLOW_DEFAULT_CUSTOMER=0` (strict). Every `/api` request must carry
-its own identity header — there is no session/login here:
-
-```
-X-authentik-uid: pipeline-smoke
-```
-
-That value is BOTH the auth credential AND a **tenant id**. `pipeline-smoke` is the
-shared, isolated test tenant — its data is disposable and never belongs to a real
-user. Reuse it; do not invent new tenant ids and do not use a real user's uid.
-
-- `GET /api/health` — open readiness probe, **no header** (returns `{"status":"ok"}`).
-- Any `/api/*` with **no header → 401** (proves strict mode is live).
-- With the header → scoped to the `pipeline-smoke` tenant.
+The API validates Authentik JWTs — there is no identity header. To call `/api/*`
+you mint a bearer token from the beta **machine client** (client-credentials grant),
+then send it as `Authorization: Bearer <token>`. Needs the machine-client creds in
+your env (`QB_BETA_OIDC_CLIENT_ID`, `QB_BETA_OIDC_CLIENT_SECRET` — same values the
+pipeline smoke suite uses; `questionbank-smoke` is the id):
 
 ```bash
-H='X-authentik-uid: pipeline-smoke'
+TOKEN=$(curl -s -X POST https://auth-beta.ovea.pro/application/o/token/ \
+  -d grant_type=client_credentials \
+  -d client_id="$QB_BETA_OIDC_CLIENT_ID" \
+  -d client_secret="$QB_BETA_OIDC_CLIENT_SECRET" \
+  -d scope=openid | jq -r .access_token)
+```
+
+The token's `sub` is the isolated tenant for that machine client (it replaces the
+old `pipeline-smoke` tenant) — its data is disposable and never belongs to a real
+user. Reuse this client; do not mint tokens for a real user.
+
+- `GET /api/health` — open readiness probe, **no token** (returns `{"status":"ok"}`).
+- Any `/api/*` with **no/invalid token → 401**.
+- With a valid bearer → scoped to the machine client's tenant.
+
+```bash
 curl -s http://localhost:8088/api/health                 # {"status":"ok"}
-curl -s -o /dev/null -w '%{http_code}\n' http://localhost:8088/api/books   # 401 (no header)
-curl -s -H "$H" http://localhost:8088/api/books          # [] or the tenant's books
+curl -s -o /dev/null -w '%{http_code}\n' http://localhost:8088/api/books   # 401 (no token)
+curl -s -H "Authorization: Bearer $TOKEN" http://localhost:8088/api/books  # [] or the tenant's books
 ```
 
 ## 3. Endpoint surface (verified E2E, LLM-free)
@@ -64,7 +73,8 @@ All of these are writeable without spending LLM money. `Content-Type: applicatio
 for JSON bodies; multipart for image uploads.
 
 ```bash
-H='X-authentik-uid: pipeline-smoke'; J='Content-Type: application/json'; B=http://localhost:8088
+# $TOKEN from section 2. H is the bearer header reused by every call below.
+H="Authorization: Bearer $TOKEN"; J='Content-Type: application/json'; B=http://localhost:8088
 
 # Books
 curl -s -H "$H" -H "$J" -X POST "$B/api/books" -d '{"title":"probe","author":"me"}'   # 201 → {id,...}
@@ -135,7 +145,11 @@ curl -s -H "$H" "$B/api/books"                                      # confirm []
    (tag is a `YYYYMMDD-HHMMSS` build stamp). The figure routes (`/api/scan`, `/api/figures`)
    only exist once an image built from the figure-extraction commit is deployed.
 
-3. **`for`-loops with command substitution can drop `PATH` in this shell** — if `curl`/`kubectl`
+3. **A `401` on an `/api/*` route now also means an expired/invalid bearer.** Tokens
+   are short-lived — if calls that worked start returning `401 {"error":"unauthorized"}`,
+   re-mint `$TOKEN` (section 2) rather than assuming the route or tenant changed.
+
+4. **`for`-loops with command substitution can drop `PATH` in this shell** — if `curl`/`kubectl`
    report "command not found" inside a loop but work standalone, unroll the loop into
    sequential calls.
 
@@ -145,7 +159,8 @@ curl -s -H "$H" "$B/api/books"                                      # confirm []
 | --- | --- |
 | Open the instance | `kubectl -n apps-beta port-forward svc/questionbank 8088:80 &` |
 | Health (no auth) | `curl -s localhost:8088/api/health` |
-| Auth header | `-H 'X-authentik-uid: pipeline-smoke'` |
+| Mint a token | `TOKEN=$(curl -s -X POST https://auth-beta.ovea.pro/application/o/token/ -d grant_type=client_credentials -d client_id="$QB_BETA_OIDC_CLIENT_ID" -d client_secret="$QB_BETA_OIDC_CLIENT_SECRET" -d scope=openid \| jq -r .access_token)` |
+| Auth header | `-H "Authorization: Bearer $TOKEN"` |
 | Deployed build | `kubectl -n apps-beta get deploy questionbank -o jsonpath='{..image}'` |
 | Server logs | `kubectl -n apps-beta logs deploy/questionbank --tail=50` |
 | Canonical assertions | `packages/server/tests/beta/smoke.beta.test.ts` |

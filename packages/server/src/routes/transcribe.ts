@@ -14,7 +14,7 @@ import type { Store } from '../storage/store.js';
 /** Transcription is OCR-shaped — Haiku 4.5 is cheaper/faster and ample for reading an answer
  *  off a photo. Haiku rejects `effort`, so none is set. Tokens/timeout raised: a long answer
  *  transcribes to a lot of inline-LaTeX, and the read can run past the 120s default. */
-const TRANSCRIPTION_MODEL = 'claude-haiku-4-5';
+const TRANSCRIPTION_MODEL = 'claude-sonnet-4-6';
 const TRANSCRIPTION_MAX_TOKENS = 32_000;
 const TRANSCRIPTION_TIMEOUT_MS = 300_000;
 

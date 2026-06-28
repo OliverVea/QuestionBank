@@ -1,4 +1,5 @@
 import { html } from '@/lib/html';
+import { authFetch } from '@/lib/auth';
 import { TopBar } from '@/components/TopBar';
 import { CoverSlot } from '@/components/CoverSlot';
 import { Spinner } from '@/components/Spinner';
@@ -70,8 +71,8 @@ export function ViewBookPage(): HTMLElement {
     if (!bookId) { spinner.remove(); return; }
     try {
       const [book, problems]: [Book, QuestionWithSummary[]] = await Promise.all([
-        fetch(`/api/books/${bookId}`).then((r) => r.json()),
-        fetch(`/api/books/${bookId}/questions`).then((r) => r.json()),
+        authFetch(`/api/books/${bookId}`).then((r) => r.json()),
+        authFetch(`/api/books/${bookId}/questions`).then((r) => r.json()),
       ]);
 
       titleEl.textContent = book.title;

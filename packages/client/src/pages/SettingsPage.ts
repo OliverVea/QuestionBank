@@ -1,4 +1,5 @@
 import { html } from '@/lib/html';
+import { authFetch } from '@/lib/auth';
 import { TopBar } from '@/components/TopBar';
 import { Spinner } from '@/components/Spinner';
 import type { Settings } from '@/lib/types';
@@ -106,7 +107,7 @@ export function SettingsPage(): HTMLElement {
     saveBtn.textContent = 'Saving…';
     saveError.hidden = true;
     try {
-      const res = await fetch('/api/settings', {
+      const res = await authFetch('/api/settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ daysGoal, problemsGoal, pauseEvery }),
@@ -134,7 +135,7 @@ export function SettingsPage(): HTMLElement {
   return page;
 
   async function loadSettings(): Promise<void> {
-    const fetched = await fetch('/api/settings')
+    const fetched = await authFetch('/api/settings')
       .then((r) => (r.ok ? (r.json() as Promise<Settings>) : null))
       .catch(() => null);
     // Fall back to the defaults the server would apply, so the form is still usable offline.

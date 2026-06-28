@@ -1,4 +1,5 @@
 import { html } from '@/lib/html';
+import { authFetch } from '@/lib/auth';
 import { TopBar } from '@/components/TopBar';
 import { QuestionCard } from '@/components/QuestionCard';
 import { Spinner } from '@/components/Spinner';
@@ -56,7 +57,7 @@ export function LearnPage(): HTMLElement {
     const id = currentQuestion.id;
     // Bug 1 fix: disable actions immediately to prevent race
     setActionsEnabled(false);
-    void fetch(`/api/skip/${id}`, { method: 'POST' }).then(() => loadNext());
+    void authFetch(`/api/skip/${id}`, { method: 'POST' }).then(() => loadNext());
   });
 
   const topBar = TopBar({ onBack: () => { window.location.hash = '#/'; }, right: skipBtn });
@@ -131,7 +132,7 @@ export function LearnPage(): HTMLElement {
     loading = true;
     setActionsEnabled(false);
     try {
-      const res = await fetch('/api/learn/next');
+      const res = await authFetch('/api/learn/next');
       if (!res.ok) { renderError(); return; }
       render(await res.json() as LearnNextResponse);
     } catch {

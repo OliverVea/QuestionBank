@@ -1,4 +1,5 @@
 import { html } from '@/lib/html';
+import { authFetch } from '@/lib/auth';
 import { TopBar } from '@/components/TopBar';
 import { CoverSlot } from '@/components/CoverSlot';
 import '@/styles/forms.css';
@@ -55,7 +56,7 @@ export function AddBookPage(): HTMLElement {
     lookupStatus.innerHTML = '<span class="spinner"></span> Looking up…';
 
     try {
-      const res = await fetch(`/api/lookup/isbn/${encodeURIComponent(isbn)}`);
+      const res = await authFetch(`/api/lookup/isbn/${encodeURIComponent(isbn)}`);
       if (!res.ok) {
         lookupStatus.classList.add('warn');
         lookupStatus.textContent = res.status === 404 ? 'Not found — enter details manually.' : 'Lookup failed.';
@@ -91,7 +92,7 @@ export function AddBookPage(): HTMLElement {
 
     try {
       const yearNum = Number.parseInt(yearInput.value.trim(), 10);
-      const res = await fetch('/api/books', {
+      const res = await authFetch('/api/books', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -43,7 +43,7 @@ describe('grade-api', () => {
     const out = await api.grade('q1', [{ role: 'user', text: 'x = 4' }]);
     expect(out).toEqual(payload);
     const init = fn.mock.calls[0]![1];
-    expect(init.headers['Content-Type']).toBe('application/json');
+    expect(new Headers(init.headers).get('Content-Type')).toBe('application/json');
     expect(JSON.parse(init.body)).toEqual({ conversation: [{ role: 'user', text: 'x = 4' }] });
   });
 

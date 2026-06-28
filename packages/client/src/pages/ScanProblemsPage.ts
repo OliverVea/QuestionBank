@@ -1,4 +1,5 @@
 import { html } from '@/lib/html';
+import { getAccessToken } from '@/lib/auth';
 import { renderLatex } from '@/lib/latex';
 import { TopBar } from '@/components/TopBar';
 import { ChatContainer } from '@/components/ChatContainer';
@@ -268,14 +269,16 @@ export function ScanProblemsPage(): HTMLElement {
    * actual byte upload and flips to "reading" only once the images are fully received.
    * Resolves with the parsed JSON body on 2xx; rejects with a tagged Error otherwise.
    */
-  function postWithProgress(
+  async function postWithProgress(
     url: string,
     form: FormData,
     onUploaded: () => void,
   ): Promise<unknown> {
+    const token = await getAccessToken();
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       xhr.open('POST', url);
+      if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
       let uploaded = false;
       const markUploaded = () => {
         if (!uploaded) { uploaded = true; onUploaded(); }

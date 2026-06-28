@@ -1,4 +1,5 @@
 import { html } from '@/lib/html';
+import { authFetch } from '@/lib/auth';
 import { TopBar } from '@/components/TopBar';
 import { Spinner } from '@/components/Spinner';
 import { CiStrip } from '@/components/CiStrip';
@@ -79,8 +80,8 @@ export function AttemptsPage(): HTMLElement {
     try {
       const [question, fetched]: [{ label?: string; canonicalText?: string; bookId?: string }, Attempt[]] =
         await Promise.all([
-          fetch(`/api/questions/${questionId}`).then((r) => r.json()),
-          fetch(`/api/questions/${questionId}/attempts`).then((r) => r.json()),
+          authFetch(`/api/questions/${questionId}`).then((r) => r.json()),
+          authFetch(`/api/questions/${questionId}/attempts`).then((r) => r.json()),
         ]);
 
       // Server returns attempts oldest-first; the CI strip wants that order.
@@ -197,7 +198,7 @@ export function AttemptsPage(): HTMLElement {
   async function doDelete(at: Attempt, det: HTMLElement, countEl: HTMLElement): Promise<void> {
     if (!window.confirm('Delete this attempt?')) return;
     try {
-      const res = await fetch(`/api/questions/${questionId}/attempts/${at.id}`, { method: 'DELETE' });
+      const res = await authFetch(`/api/questions/${questionId}/attempts/${at.id}`, { method: 'DELETE' });
       if (!res.ok) return;
     } catch {
       return;

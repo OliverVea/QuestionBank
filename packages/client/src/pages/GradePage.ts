@@ -1,4 +1,5 @@
 import { html } from '@/lib/html';
+import { authFetch } from '@/lib/auth';
 import { renderLatex } from '@/lib/latex';
 import { TopBar } from '@/components/TopBar';
 import { ChatContainer } from '@/components/ChatContainer';
@@ -318,13 +319,13 @@ export function GradePage(): HTMLElement {
   // ---- Boot ----
   async function boot(): Promise<void> {
     try {
-      const qRes = await fetch(`/api/questions/${questionId}`);
+      const qRes = await authFetch(`/api/questions/${questionId}`);
       if (!qRes.ok) throw new Error('question not found');
       const question = await qRes.json() as { canonicalText: string; label: string; bookId: string };
       completedChapter = splitLabel(question.label)?.chapter ?? null;
       renderLatex(qBody, question.canonicalText);
       try {
-        const bRes = await fetch(`/api/books/${question.bookId}`);
+        const bRes = await authFetch(`/api/books/${question.bookId}`);
         qEyebrow.textContent = bRes.ok ? `${(await bRes.json() as { title: string }).title} · ${question.label}` : question.label;
       } catch { qEyebrow.textContent = question.label; }
 

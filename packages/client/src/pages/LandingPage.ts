@@ -1,4 +1,5 @@
 import { html } from '@/lib/html';
+import { authFetch } from '@/lib/auth';
 import { Spinner } from '@/components/Spinner';
 import { ActivityHeader } from '@/components/ActivityHeader';
 import { BookCard, isFinished } from '@/components/BookCard';
@@ -67,8 +68,8 @@ export function LandingPage(): HTMLElement {
 
 async function loadData(headerHost: HTMLElement, booksHost: HTMLElement): Promise<void> {
   const [activity, books] = await Promise.all([
-    fetch('/api/activity').then((r) => r.json() as Promise<Activity>).catch(() => null),
-    fetch('/api/books/summaries').then((r) => r.json() as Promise<BookWithSummary[]>).catch(() => [] as BookWithSummary[]),
+    authFetch('/api/activity').then((r) => r.json() as Promise<Activity>).catch(() => null),
+    authFetch('/api/books/summaries').then((r) => r.json() as Promise<BookWithSummary[]>).catch(() => [] as BookWithSummary[]),
   ]);
 
   if (activity) headerHost.replaceChildren(ActivityHeader(activity));

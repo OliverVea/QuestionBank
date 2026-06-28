@@ -1,4 +1,5 @@
 import { html } from '@/lib/html';
+import { authFetch } from '@/lib/auth';
 import { TopBar } from '@/components/TopBar';
 import { ManageBookRow } from '@/components/ManageBookRow';
 import { UndoToast } from '@/components/UndoToast';
@@ -51,7 +52,7 @@ export function ManageBooksPage(): HTMLElement {
   return page;
 
   async function loadBooks() {
-    const books: Book[] = await fetch('/api/books').then((r) => r.json()).catch(() => []);
+    const books: Book[] = await authFetch('/api/books').then((r) => r.json()).catch(() => []);
     spinner.remove();
     if (books.length === 0) {
       emptyState.hidden = false;
@@ -108,7 +109,7 @@ export function ManageBooksPage(): HTMLElement {
     const id = pendingDeleteId;
     pendingDeleteId = null;
     pendingDeleteTimer = null;
-    void fetch(`/api/books/${id}`, { method: 'DELETE' });
+    void authFetch(`/api/books/${id}`, { method: 'DELETE' });
   }
 
   function getOrderedIds(): string[] {
@@ -119,7 +120,7 @@ export function ManageBooksPage(): HTMLElement {
 
   function persistOrder() {
     const bookIds = getOrderedIds();
-    void fetch('/api/books/order', {
+    void authFetch('/api/books/order', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ bookIds }),

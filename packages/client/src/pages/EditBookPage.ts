@@ -1,4 +1,5 @@
 import { html } from '@/lib/html';
+import { authFetch } from '@/lib/auth';
 import { TopBar } from '@/components/TopBar';
 import { CoverSlot } from '@/components/CoverSlot';
 import { ProblemsList } from '@/components/ProblemsList';
@@ -80,7 +81,7 @@ export function EditBookPage(): HTMLElement {
     lookupStatus.innerHTML = '<span class="spinner"></span> Looking up…';
 
     try {
-      const res = await fetch(`/api/lookup/isbn/${encodeURIComponent(isbn)}`);
+      const res = await authFetch(`/api/lookup/isbn/${encodeURIComponent(isbn)}`);
       if (!res.ok) {
         lookupStatus.classList.add('warn');
         lookupStatus.textContent = res.status === 404 ? 'Not found — edit details manually.' : 'Lookup failed.';
@@ -117,7 +118,7 @@ export function EditBookPage(): HTMLElement {
    */
   async function putProblems(): Promise<Question[]> {
     const problems = problemsList.getProblems();
-    const res = await fetch(`/api/books/${bookId}/questions`, {
+    const res = await authFetch(`/api/books/${bookId}/questions`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -141,7 +142,7 @@ export function EditBookPage(): HTMLElement {
 
     try {
       const yearNum = Number.parseInt(yearInput.value.trim(), 10);
-      await fetch(`/api/books/${bookId}`, {
+      await authFetch(`/api/books/${bookId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -238,8 +239,8 @@ export function EditBookPage(): HTMLElement {
     if (!bookId) { showForm(); return; }
     try {
       const [book, questions]: [Book, Question[]] = await Promise.all([
-        fetch(`/api/books/${bookId}`).then((r) => r.json()),
-        fetch(`/api/books/${bookId}/questions`).then((r) => r.json()),
+        authFetch(`/api/books/${bookId}`).then((r) => r.json()),
+        authFetch(`/api/books/${bookId}/questions`).then((r) => r.json()),
       ]);
 
       titleInput.value = book.title;
@@ -286,7 +287,7 @@ export function EditBookPage(): HTMLElement {
       // response) so the rows land in DERIVED path order — the PUT echoes questionIds
       // (insertion) order, which would show a scanned problem out of place.
       await putProblems();
-      const saved: Question[] = await fetch(`/api/books/${bookId}/questions`).then((r) => r.json());
+      const saved: Question[] = await authFetch(`/api/books/${bookId}/questions`).then((r) => r.json());
       const validRelevance = new Set<string>(['high', 'medium', 'low']);
       problemsList.setProblems(
         saved.map((q) => {

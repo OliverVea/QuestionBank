@@ -1,4 +1,5 @@
 import { html } from '@/lib/html';
+import { authFetch } from '@/lib/auth';
 import { renderLatex } from '@/lib/latex';
 import { TopBar } from '@/components/TopBar';
 import { unstashPhotos } from '@/lib/photo-transfer';
@@ -223,7 +224,7 @@ export function FigureScanPage(): HTMLElement {
       const form = new FormData();
       form.append('bookId', bookId);
       for (const f of files) form.append('images', f);
-      const res = await fetch('/api/scan', { method: 'POST', body: form });
+      const res = await authFetch('/api/scan', { method: 'POST', body: form });
       if (!res.ok) throw new Error(`http-${res.status}`);
       const data = (await res.json()) as ScanResponse;
       await seedFromScan(data);
@@ -468,7 +469,7 @@ export function FigureScanPage(): HTMLElement {
     form.append('currentExtraction', JSON.stringify({ resolved, needsSection }));
     form.append('sectionAnswers', JSON.stringify(sectionAnswers));
     try {
-      const res = await fetch('/api/extract/refine', { method: 'POST', body: form });
+      const res = await authFetch('/api/extract/refine', { method: 'POST', body: form });
       if (!res.ok) throw new Error('refine-failed');
       const env = (await res.json()) as Envelope;
       resolved = env.resolved ?? [];
@@ -776,7 +777,7 @@ export function FigureScanPage(): HTMLElement {
     // 1. Current saved rows (full list — every existing row must be kept WITH its id, else
     //    planBatchSave deletes it and loses its attempts AND figures).
     const current: Array<{ id: string; label: string; canonicalText: string; relevance?: Relevance }> =
-      await fetch(`/api/books/${bookId}/questions`).then((r) => r.json());
+      await authFetch(`/api/books/${bookId}/questions`).then((r) => r.json());
 
     // Map an accepted edit's targetId → its replacement delta.
     const editByTarget = new Map<string, Delta>();
@@ -820,7 +821,7 @@ export function FigureScanPage(): HTMLElement {
     });
 
     // 2. PUT — the response echoes incoming order (NOT re-sorted), so saved[slot] aligns.
-    const saved: Array<{ id: string }> = await fetch(`/api/books/${bookId}/questions`, {
+    const saved: Array<{ id: string }> = await authFetch(`/api/books/${bookId}/questions`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ questions: put }),
@@ -838,7 +839,7 @@ export function FigureScanPage(): HTMLElement {
         form.append('crop', blob, 'figure.webp');
         if (f.printedLabel) form.append('printedLabel', f.printedLabel);
         if (f.confidence) form.append('confidence', f.confidence);
-        const res = await fetch(`/api/questions/${newId}/figures`, { method: 'POST', body: form });
+        const res = await authFetch(`/api/questions/${newId}/figures`, { method: 'POST', body: form });
         if (!res.ok) figureFailures++;
       }
     }

@@ -1,4 +1,5 @@
 import { html } from '@/lib/html';
+import { authFetch } from '@/lib/auth';
 import { TopBar } from '@/components/TopBar';
 import { QuestionCard } from '@/components/QuestionCard';
 import { Spinner } from '@/components/Spinner';
@@ -55,7 +56,7 @@ export function RevisitPage(): HTMLElement {
     if (!currentQuestion || loading) return;
     const id = currentQuestion.id;
     setActionsEnabled(false);
-    void fetch(`/api/skip/${id}`, { method: 'POST' }).then(() => loadNext());
+    void authFetch(`/api/skip/${id}`, { method: 'POST' }).then(() => loadNext());
   });
 
   const topBar = TopBar({ onBack: () => { window.location.hash = '#/'; }, right: skipBtn });
@@ -128,7 +129,7 @@ export function RevisitPage(): HTMLElement {
     loading = true;
     setActionsEnabled(false);
     try {
-      const res = await fetch('/api/practice/due');
+      const res = await authFetch('/api/practice/due');
       if (!res.ok) { renderError(); return; }
       const items = await res.json() as DueItem[];
       render(items[0] ?? null);
@@ -137,7 +138,7 @@ export function RevisitPage(): HTMLElement {
     }
   }
 
-  void fetch('/api/settings')
+  void authFetch('/api/settings')
     .then((r) => (r.ok ? (r.json() as Promise<{ pauseEvery?: number }>) : null))
     .then((s) => { if (s && typeof s.pauseEvery === 'number') pauseEvery = s.pauseEvery; })
     .catch(() => { /* keep the default 10 */ });

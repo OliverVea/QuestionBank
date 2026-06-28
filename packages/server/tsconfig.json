@@ -7,9 +7,12 @@
     "moduleResolution": "NodeNext",
     "types": ["node"],
     "baseUrl": ".",
-    "paths": { "@/*": ["src/*"] },
+    "paths": {
+      "@/*": ["src/*"]
+    },
     "ignoreDeprecations": "6.0"
   },
+  "references": [{ "path": "../auth-config" }],
   "include": ["src/**/*"],
   "exclude": ["src/**/*.test.ts"]
 }

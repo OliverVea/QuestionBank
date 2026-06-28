@@ -278,9 +278,9 @@ Then edit `packages/server/package.json` to add `@qb/auth-config` under `depende
 ```
 (Use whatever `jose` version `npm install` resolved; keep alphabetical order.)
 
-- [ ] **Step 2: Reference + path-map `@qb/auth-config` in the server tsconfig**
+- [ ] **Step 2: Reference `@qb/auth-config` in the server tsconfig**
 
-Edit `packages/server/tsconfig.json`. Add the `paths` entry (so `tsx` dev resolves the TS source) and a project reference:
+Edit `packages/server/tsconfig.json`. Add a project **reference** only — do NOT add a `paths` alias for `@qb/auth-config`. NodeNext resolves the bare `@qb/auth-config` specifier through the workspace symlink to the built `dist/index.d.ts`, and the reference guarantees `tsc -b` builds it first. (A `paths` alias pointing at `../auth-config/src/index.ts` would make `tsc -b` treat that source as a server input outside `rootDir` and fail with `TS6059`; `tsx` dev resolves via node→dist and vitest via the alias in `vitest.config.ts`, so no `paths` entry is needed.)
 ```json
 {
   "extends": "../../tsconfig.base.json",
@@ -292,8 +292,7 @@ Edit `packages/server/tsconfig.json`. Add the `paths` entry (so `tsx` dev resolv
     "types": ["node"],
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"],
-      "@qb/auth-config": ["../auth-config/src/index.ts"]
+      "@/*": ["src/*"]
     },
     "ignoreDeprecations": "6.0"
   },

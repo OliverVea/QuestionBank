@@ -34,10 +34,15 @@ while [ "$i" -le 10 ]; do
   sleep 5
 done
 
-# The beta suite reads QB_BETA_BASE_URL and sends X-authentik-uid: pipeline-smoke
-# on every request — its OWN isolated tenant, so test writes never touch real beta
-# users' data. The suite is inert (throws/skips) without QB_BETA_BASE_URL, so it
-# never runs in a normal `npm test`.
-QB_BETA_BASE_URL="$BASE" npm run test:beta
+# The beta suite reads QB_BETA_BASE_URL and authenticates with a real Authentik
+# bearer token minted from the beta machine client (client-credentials) via the
+# QB_BETA_OIDC_* env. The token's `sub` is its OWN isolated tenant, so test writes
+# never touch real beta users' data. The suite is inert (throws) without
+# QB_BETA_BASE_URL, so it never runs in a normal `npm test`.
+QB_BETA_BASE_URL="$BASE" \
+QB_BETA_OIDC_TOKEN_URL="https://auth-beta.ovea.pro/application/o/token/" \
+QB_BETA_OIDC_CLIENT_ID="$QB_BETA_OIDC_CLIENT_ID" \
+QB_BETA_OIDC_CLIENT_SECRET="$QB_BETA_OIDC_CLIENT_SECRET" \
+  npm run test:beta
 
 echo "After-beta smoke tests passed."

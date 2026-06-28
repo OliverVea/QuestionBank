@@ -72,6 +72,14 @@ secrets:
   # API before deploy.
   - name: FIGURE_SERVICE_API_KEY
     description: Shared X-API-Key for the figure-service. Materialized into figure-service-auth in apps/apps-beta; mounted by both the service and the QB server.
+  # Beta machine client (client-credentials) used by the after-beta smoke suite to
+  # mint an Authentik bearer token. The smoke suite hits the in-cluster beta Service
+  # directly (no ingress), so it must authenticate itself. Set both values via the
+  # secrets API after the Authentik machine client exists (homelab Phase 8).
+  - name: QB_BETA_OIDC_CLIENT_ID
+    description: Beta OIDC machine-client id (client-credentials) for the after-beta smoke suite. e.g. questionbank-smoke.
+  - name: QB_BETA_OIDC_CLIENT_SECRET
+    description: Beta OIDC machine-client secret (client-credentials) for the after-beta smoke suite.
 
 # Production steps run in parallel and write to bundle/<step-name>/. BOTH must
 # succeed before any processing (deploy) step runs.

@@ -2225,7 +2225,22 @@ git commit -m "docs(skill): document bearer-token auth for the QB API"
 
 **Files:** Modify `homelab/infra/authentik/beta/blueprints/applications.yaml`
 
-- [ ] **Step 1: Add the public SPA OAuth2 provider + application**
+> ✅ DONE 2026-06-28 (commits homelab `b3a4d8e`, `348d77c`; QB `175a9ec`). Deviations from the
+> draft below, discovered during Step-4 verification:
+> - **`iss` rewrite, not just `aud`.** Authentik issues per-application `iss`/`aud`; the smoke
+>   client lives under its own app `questionbank-smoke`, so its token defaulted to
+>   `iss/aud=questionbank-smoke` (the API rejects it). The `questionbank-aud` scope mapping now
+>   rewrites BOTH claims to the questionbank app's `iss`+`aud`. Shared signing key ⇒ validates
+>   against the questionbank JWKS, so NO server change. Verified via the real `createVerifier`.
+> - **Override is smoke-only.** The SPA (client_id `questionbank`) has correct natives and does
+>   NOT request `questionbank-aud`, so the mapping is detached from the SPA provider. The QB
+>   smoke suite now requests `scope=openid questionbank-aud` (Authentik applies a mapping only
+>   when its scope is requested).
+> - **Smoke `sub` (beta tenant):** `5295d533cb80482627e140c2463176c03616eb07f36a74f961c8a369de9d275f`.
+> - **Deferred (cutover, auth-gated):** set pipeline secrets `QB_BETA_OIDC_CLIENT_ID=questionbank-smoke`
+>   and `QB_BETA_OIDC_CLIENT_SECRET` (value in the cluster Secret / `/tmp/qb-smoke-secret.txt`).
+
+- [x] **Step 1: Add the public SPA OAuth2 provider + application**
 
 Append to the beta `applications.yaml` entries (adapt `!Find`/`!KeyOf`/flow slugs to the exact ones already used in this file — copy them from the existing `olve-template-api-provider` block in the same file):
 ```yaml
@@ -2262,7 +2277,7 @@ Append to the beta `applications.yaml` entries (adapt `!Find`/`!KeyOf`/flow slug
 ```
 > Note: the existing forward-auth `questionbank-proxy-provider` and its application stay for now (retired at cutover, Task 10.x). If the existing app slug is `questionbank` and collides, give the new app a distinct slug (e.g. `questionbank-oidc`) — the OIDC issuer path is the *provider* application slug, so set it to match `AUTHORITIES.beta` (`.../application/o/questionbank/`). Confirm the issuer path the provider exposes via the discovery doc in Step 4 and reconcile `@qb/auth-config` if it differs.
 
-- [ ] **Step 2: Add the beta machine client (client-credentials) with aud mapping**
+- [x] **Step 2: Add the beta machine client (client-credentials) with aud mapping**
 
 ```yaml
       # Audience mapping so machine-client tokens carry aud: questionbank (the API audience).
@@ -2304,7 +2319,7 @@ Also add the same `questionbank-aud-scope` mapping to the SPA provider's `proper
             - !KeyOf questionbank-aud-scope
 ```
 
-- [ ] **Step 3: Provide the machine-client secret + push**
+- [x] **Step 3: Provide the machine-client secret + push**
 
 - Add `QUESTIONBANK_SMOKE_OIDC_CLIENT_SECRET` to the beta Authentik secret source (mirror how `OLVE_PIPELINES_OIDC_CLIENT_SECRET` is provided in beta `values.yaml`/secret).
 - Commit and push to `main` (homelab convention: no PR):
@@ -2315,7 +2330,7 @@ git commit -m "feat(authentik-beta): add questionbank OIDC provider + smoke mach
 git push origin main
 ```
 
-- [ ] **Step 4: Verify after ArgoCD syncs**
+- [x] **Step 4: Verify after ArgoCD syncs**
 
 ```bash
 # Discovery doc resolves and issuer matches @qb/auth-config AUTHORITIES.beta

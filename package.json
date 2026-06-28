@@ -13,10 +13,11 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "npm-run-all --parallel dev:server dev:client",
+    "dev": "npm run build:auth-config && npm-run-all --parallel dev:server dev:client",
     "dev:server": "npm --workspace @qb/server run dev",
     "dev:client": "npm --workspace @qb/client run dev",
-    "build": "npm-run-all --serial build:server build:client",
+    "build": "npm-run-all --serial build:auth-config build:server build:client",
+    "build:auth-config": "npm --workspace @qb/auth-config run build",
     "build:server": "npm --workspace @qb/server run build",
     "build:client": "npm --workspace @qb/client run build",
     "test": "vitest run --project server --project client",

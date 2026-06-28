@@ -24,7 +24,10 @@ export default defineConfig({
           setupFiles: ['packages/server/src/test-setup.ts'],
         },
         resolve: {
-          alias: { '@': r('./packages/server/src') },
+          alias: {
+            '@': r('./packages/server/src'),
+            '@qb/auth-config': r('./packages/auth-config/src/index.ts'),
+          },
         },
       },
       {
@@ -36,7 +39,10 @@ export default defineConfig({
           exclude: [...configDefaults.exclude, '**/dist/**'],
         },
         resolve: {
-          alias: { '@': r('./packages/client/src') },
+          alias: {
+            '@': r('./packages/client/src'),
+            '@qb/auth-config': r('./packages/auth-config/src/index.ts'),
+          },
         },
       },
       {
@@ -51,6 +57,9 @@ export default defineConfig({
           environment: 'node',
           include: ['packages/server/tests/beta/**/*.beta.test.ts'],
           exclude: [...configDefaults.exclude, '**/dist/**'],
+        },
+        resolve: {
+          alias: { '@qb/auth-config': r('./packages/auth-config/src/index.ts') },
         },
       },
     ],

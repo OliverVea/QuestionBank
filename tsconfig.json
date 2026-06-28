@@ -1,6 +1,7 @@
 {
   "files": [],
   "references": [
+    { "path": "./packages/auth-config" },
     { "path": "./packages/server" },
     { "path": "./packages/client" }
   ]

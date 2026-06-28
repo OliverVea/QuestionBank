@@ -5,6 +5,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src'),
+      '@qb/auth-config': path.resolve(__dirname, '../auth-config/src/index.ts'),
     },
   },
   server: {

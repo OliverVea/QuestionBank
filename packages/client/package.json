@@ -13,6 +13,7 @@
     "vite": "^8.0.16"
   },
   "dependencies": {
+    "@qb/auth-config": "*",
     "katex": "^0.16.22",
     "navigo": "^8.11.1"
   }

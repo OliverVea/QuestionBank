@@ -2350,7 +2350,22 @@ Expected: `issuer` equals `https://auth-beta.ovea.pro/application/o/questionbank
 
 **Files:** Modify `homelab/infra/authentik/prod/blueprints/applications.yaml`
 
-- [ ] **Step 1: Add the public SPA provider + app (prod hostnames)**
+> ✅ DONE 2026-06-29 (commits homelab `dd58106`, `2e861ee`). Deviations from the draft below:
+> - **Slug collision handled by retiring the proxy app early.** Unlike beta (proxy was
+>   `questionbank-beta`), the prod forward-auth proxy app owned slug `questionbank` — needed for
+>   the OIDC issuer to match `AUTHORITIES.prod`. With the user's explicit OK to break prod
+>   forward-auth, the proxy *app* was deleted via `state: absent` (Push 1, slug freed, verified
+>   discovery→404), then the OIDC app created on slug `questionbank` (Push 2). The proxy
+>   *provider* + outpost binding remain (inert) for the Phase 10 retirement. **Prod forward-auth
+>   for questionbank is now DOWN by design** — OIDC serving needs Phase 9.2 + the prod deploy.
+> - **No scope-mapping.** The draft says to copy beta's `questionbank-aud-scope`; it's NOT needed
+>   in prod. The SPA's client_id `questionbank` yields native `aud=questionbank` and the slug
+>   yields native `iss=.../questionbank/`. The override is beta-only (for the smoke machine
+>   client under its own app). See [[authentik-per-app-issuer-aud]].
+> - **Verified:** discovery issuer = `https://auth.ovea.pro/application/o/questionbank/`,
+>   jwks_uri resolves. No token decode (prod has no machine client to mint from).
+
+- [x] **Step 1: Add the public SPA provider + app (prod hostnames)**
 
 Mirror Task 8.1 Step 1 in the prod file, with the prod redirect URI and launch URL:
 ```yaml
@@ -2363,7 +2378,7 @@ Mirror Task 8.1 Step 1 in the prod file, with the prod redirect URI and launch U
 ```
 Add the `questionbank-aud-scope` mapping (Task 8.1 Step 2's scope-mapping block) to the prod file too, and include it in the provider's `property_mappings`. **Do not** add a machine client to prod (smoke tests run against beta only).
 
-- [ ] **Step 2: Push + verify**
+- [x] **Step 2: Push + verify**
 
 ```bash
 cd /home/oliver/projects/homelab

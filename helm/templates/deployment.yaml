@@ -40,6 +40,11 @@ spec:
                   key: {{ $key }}
             {{- end }}
             {{- end }}
+            {{- if .Values.oidcCaCert }}
+            # Trust the authority's internal self-signed cert so verifyBearer can fetch JWKS.
+            - name: NODE_EXTRA_CA_CERTS
+              value: /etc/oidc-ca/auth-ca.crt
+            {{- end }}
           livenessProbe:
             httpGet:
               path: /api/health
@@ -52,16 +57,30 @@ spec:
               port: {{ .Values.container.port }}
             initialDelaySeconds: 3
             periodSeconds: 5
-          {{- if .Values.persistence.enabled }}
+          {{- if or .Values.persistence.enabled .Values.oidcCaCert }}
           volumeMounts:
+            {{- if .Values.persistence.enabled }}
             - name: data
               mountPath: {{ .Values.config.QB_DATA_DIR | default "/data" }}
+            {{- end }}
+            {{- if .Values.oidcCaCert }}
+            - name: oidc-ca
+              mountPath: /etc/oidc-ca
+              readOnly: true
+            {{- end }}
           {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-      {{- if .Values.persistence.enabled }}
+      {{- if or .Values.persistence.enabled .Values.oidcCaCert }}
       volumes:
+        {{- if .Values.persistence.enabled }}
         - name: data
           persistentVolumeClaim:
             claimName: {{ .Values.persistence.existingClaim | default (printf "%s-data" .Release.Name) }}
+        {{- end }}
+        {{- if .Values.oidcCaCert }}
+        - name: oidc-ca
+          configMap:
+            name: {{ .Release.Name }}-oidc-ca
+        {{- end }}
       {{- end }}

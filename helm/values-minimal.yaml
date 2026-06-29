@@ -43,3 +43,28 @@ secrets:
   - name: figure-service-auth
     envMap:
       FIGURE_SERVICE_API_KEY: api-key
+
+# Trust the authority's internal self-signed cert (CN=auth.ovea.pro) so the in-cluster
+# server can fetch the OIDC JWKS. The public LE cert is only at the Cloudflare edge;
+# Traefik serves this self-signed cert for auth.ovea.pro inside the cluster. Mounted via
+# NODE_EXTRA_CA_CERTS. Valid until 2027-03-24; rotate this block if the cert is reissued.
+oidcCaCert: |
+  -----BEGIN CERTIFICATE-----
+  MIIDKzCCAhOgAwIBAgIUNcjaPup9jqbw+M4iyliQuTwVBuEwDQYJKoZIhvcNAQEL
+  BQAwGDEWMBQGA1UEAwwNYXV0aC5vdmVhLnBybzAeFw0yNjAzMjQxMjMzMTJaFw0y
+  NzAzMjQxMjMzMTJaMBgxFjAUBgNVBAMMDWF1dGgub3ZlYS5wcm8wggEiMA0GCSqG
+  SIb3DQEBAQUAA4IBDwAwggEKAoIBAQCvVo41M9sVBjtEtdrtQdRFj6V8tkRWhE1O
+  UkKWspqURgGcFuvkb7twibanO+WrXk7tY+fBNJRIX1HEQt6g6m8uNZ3G9fZyRsQp
+  SUhzxAghccPtvQdTzil0dQacDOnCHu7X466xcRb7k7KLLfXIEHORqGLrTR+9Uajm
+  0fv9sjnuKPhrjiCZ+VkeI+iD0ZDFe3R9ugoAB4s0xgW2IF2TYrlYxSwdBx4OIFHZ
+  bM6hhzDmnLUtVMD0tU8h/RFmSTzTrVeFisEVMmDuAxelwZkqQoWeRL1A20l7ZaWi
+  xonitsk5suzbl5CJQEjMfZLr+Owi1AI16u3+d7NFAMxQkom/Z847AgMBAAGjbTBr
+  MB0GA1UdDgQWBBQ2beFxTeyWgkx0s+Icu37A3G+IdDAfBgNVHSMEGDAWgBQ2beFx
+  TeyWgkx0s+Icu37A3G+IdDAPBgNVHRMBAf8EBTADAQH/MBgGA1UdEQQRMA+CDWF1
+  dGgub3ZlYS5wcm8wDQYJKoZIhvcNAQELBQADggEBACBkp/c29H8GYpHII20tg+/x
+  pmZpQRBwZxij9SJWgZ3+1o08HpWmlReWa2KdyPHf+UjEQFmcKEY5LsDCCRxkA04j
+  W9c9AOasT3zfY3FU+H52l1app6T4iwReOBZS6eqVhSyCmuy+0wLAKWpDbt//KnxY
+  2S00yU/NyJk5VOrOpInm8FogVn5Qz2nSlH1jPNFeaR/+KoSG46ukjWs27Buft+Oy
+  z4AH65s1jf011euyMHBh+FySVmj98uv187H4CUrdQlnG3843igf8jd5wKSOKqwix
+  idiNhwirJuloriglPKfbPs9Qykyz73fo+obdKsEAEeklaqeeXv/tl1ucxYpnLDY=
+  -----END CERTIFICATE-----

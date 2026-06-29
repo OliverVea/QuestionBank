@@ -27,6 +27,12 @@ ingress:
   annotations:
     external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
 
+# PEM of a CA/self-signed cert to add to the Node trust store (NODE_EXTRA_CA_CERTS).
+# Used so the in-cluster server can fetch the OIDC JWKS over TLS when the authority's
+# valid cert lives only at the public edge and Traefik serves a self-signed cert
+# internally. Empty (default) → no extra CA mounted. Set in values-minimal.yaml (prod).
+oidcCaCert: ""
+
 persistence:
   enabled: true
   size: 5Gi

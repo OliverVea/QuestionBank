@@ -1,0 +1,14 @@
+{{- if .Values.oidcCaCert }}
+# Mounted into the pod and trusted via NODE_EXTRA_CA_CERTS so the server can fetch the
+# OIDC discovery/JWKS from the authority over TLS (its public cert is only at the edge;
+# Traefik serves a self-signed cert for that host in-cluster).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-oidc-ca
+  labels:
+    app: {{ .Release.Name }}
+data:
+  auth-ca.crt: |
+{{ .Values.oidcCaCert | indent 4 }}
+{{- end }}

@@ -17,6 +17,7 @@
     "dev:server": "npm --workspace @qb/server run dev",
     "dev:client": "npm --workspace @qb/client run dev",
     "build": "npm-run-all --serial build:auth-config build:server build:client build:cli",
+    "build:image": "npm-run-all --serial build:auth-config build:server build:client",
     "build:auth-config": "npm --workspace @qb/auth-config run build",
     "build:server": "npm --workspace @qb/server run build",
     "build:client": "npm --workspace @qb/client run build",

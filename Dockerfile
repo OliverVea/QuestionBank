@@ -12,7 +12,7 @@ COPY tsconfig.json tsconfig.base.json ./
 COPY packages/auth-config/ packages/auth-config/
 COPY packages/server/ packages/server/
 COPY packages/client/ packages/client/
-RUN npm run build
+RUN npm run build:image
 
 # --- Production stage ---
 FROM node:20-slim

@@ -3,6 +3,7 @@
   "references": [
     { "path": "./packages/auth-config" },
     { "path": "./packages/server" },
-    { "path": "./packages/client" }
+    { "path": "./packages/client" },
+    { "path": "./packages/cli" }
   ]
 }

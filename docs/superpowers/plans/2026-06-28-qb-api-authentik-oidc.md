@@ -2402,7 +2402,7 @@ Expected: `issuer` equals `https://auth.ovea.pro/application/o/questionbank/` (m
 
 > These files have pre-existing uncommitted edits — only touch the `config:` block; review the diff before committing and stage just these files.
 
-- [ ] **Step 1: Beta values**
+- [x] **Step 1: Beta values**
 
 In `helm/values-beta.yaml` `config:`, remove `QB_CUSTOMER_HEADER` (and `QB_ALLOW_DEFAULT_CUSTOMER` — no longer meaningful) and add:
 ```yaml
@@ -2410,7 +2410,7 @@ In `helm/values-beta.yaml` `config:`, remove `QB_CUSTOMER_HEADER` (and `QB_ALLOW
   QB_OIDC_AUDIENCE: "questionbank"
 ```
 
-- [ ] **Step 2: Prod values (`values-minimal.yaml` — used by the prod deploy)**
+- [x] **Step 2: Prod values (`values-minimal.yaml` — used by the prod deploy)**
 
 In `helm/values-minimal.yaml` `config:`, remove `QB_CUSTOMER_HEADER` / `QB_ALLOW_DEFAULT_CUSTOMER` and add:
 ```yaml
@@ -2418,7 +2418,7 @@ In `helm/values-minimal.yaml` `config:`, remove `QB_CUSTOMER_HEADER` / `QB_ALLOW
   QB_OIDC_AUDIENCE: "questionbank"
 ```
 
-- [ ] **Step 3: Commit (only these files)**
+- [x] **Step 3: Commit (only these files)**
 
 ```bash
 git add helm/values-beta.yaml helm/values-minimal.yaml
@@ -2433,7 +2433,7 @@ git commit -m "deploy(qb): configure OIDC authority/audience, drop header auth"
 
 > Deferred until cutover step ordering (Phase 10) but the edit is mechanical. Removing `forwardAuthMiddleware` makes the conditional in `templates/ingress.yaml` drop the Traefik middleware annotation.
 
-- [ ] **Step 1: Delete the forward-auth line in both files**
+- [x] **Step 1: Delete the forward-auth line in both files**
 
 `helm/values-beta.yaml` — remove:
 ```yaml
@@ -2445,7 +2445,7 @@ git commit -m "deploy(qb): configure OIDC authority/audience, drop header auth"
 ```
 Keep every other key in the `questionbank` entries (host, namespace, externalDnsTarget, clusterIssuer, tlsSecretName, cloudflareProxied).
 
-- [ ] **Step 2: Commit (do not push yet — see cutover ordering)**
+- [x] **Step 2: Commit (do not push yet — see cutover ordering)**
 
 ```bash
 cd /home/oliver/projects/Olve.Homelab
@@ -2457,11 +2457,25 @@ git commit -m "deploy(ingress): remove forward-auth from questionbank (now self-
 
 # Phase 10 — Cutover runbook (big-bang, beta + prod)
 
+> **STATUS: COMPLETE (2026-06-29).** Cutover done; prod serves app-level OIDC and the user
+> verified their data loads. Two deviations from the written runbook:
+> 1. **Re-key was NOT needed.** The legacy prod `customerId` (`384b4957…f256fe`) is
+>    Authentik's `hashed_user_id`, which is stable across the proxy→OIDC switch, so the OIDC
+>    `sub` already equals it. Confirmed empirically (data loaded after login).
+>    `rekey-customer.ts` was never run; no prod data was mutated.
+> 2. **Added a CA-trust fix (commit `e61f741`).** In-cluster, `auth.ovea.pro` resolves to
+>    Traefik (coredns rewrite), which serves a self-signed cert (the valid LE cert is only at
+>    the Cloudflare edge), so `verifyBearer`'s JWKS fetch failed TLS and 401'd every token.
+>    Fixed via an optional `oidcCaCert` Helm value → ConfigMap mounted as `NODE_EXTRA_CA_CERTS`
+>    (set in `values-minimal.yaml`; beta unaffected — `auth-beta` has a real in-cluster cert).
+>    Proxy provider/app retirement done in homelab `0fa58c2`; ingress forward-auth removed in
+>    Olve.Homelab `4ab302d`.
+
 > Additive-first, flip last. Each repo deploys differently; this is the ordered sequence. Do **not** push the QuestionBank app and the ingress change before Authentik exists.
 
 ### Task 10.1: Determine the re-key values (prod)
 
-- [ ] **Step 1: Find the legacy prod customerId**
+- [x] **Step 1: Find the legacy prod customerId**
 
 Identify the current prod tenant value (the old `X-authentik-uid`) from prod data:
 ```bash
@@ -2470,19 +2484,19 @@ kubectl -n apps exec deploy/questionbank -- sh -c 'cat $QB_DATA_DIR/books.json' 
 ```
 Record the single legacy id as `OLD_CUSTOMER_ID`.
 
-- [ ] **Step 2: Find the user's prod `sub`**
+- [x] **Step 2: Find the user's prod `sub`**
 
 After Phase 8.2, log into the prod SPA once (or mint a token) and read the `sub`, or read it from the Authentik user record. Record as `NEW_SUB`.
 
 ### Task 10.2: Deploy order
 
-- [ ] **Step 1: Authentik (already done in Phase 8)** — confirm beta + prod discovery docs resolve and tokens carry `aud: questionbank`. Proxy provider still active; nothing broken yet.
+- [x] **Step 1: Authentik (already done in Phase 8)** — confirm beta + prod discovery docs resolve and tokens carry `aud: questionbank`. Proxy provider still active; nothing broken yet.
 
-- [ ] **Step 2: Set pipeline secrets** — set `QB_BETA_OIDC_CLIENT_ID=questionbank-smoke` and `QB_BETA_OIDC_CLIENT_SECRET=<value>` via the QuestionBank pipeline secrets API (matches Task 6.2 / the Authentik machine-client secret).
+- [x] **Step 2: Set pipeline secrets** — set `QB_BETA_OIDC_CLIENT_ID=questionbank-smoke` and `QB_BETA_OIDC_CLIENT_SECRET=<value>` via the QuestionBank pipeline secrets API (matches Task 6.2 / the Authentik machine-client secret).
 
-- [ ] **Step 3: Ship the QuestionBank image** — push the QuestionBank branch (server `requireAuth` + SPA OIDC + new helm config, Phases 1–7, 9.1). The pipeline builds one image, deploys beta, runs the machine-client smoke suite (gates prod), then deploys prod. Confirm the beta smoke stage is green.
+- [x] **Step 3: Ship the QuestionBank image** — push the QuestionBank branch (server `requireAuth` + SPA OIDC + new helm config, Phases 1–7, 9.1). The pipeline builds one image, deploys beta, runs the machine-client smoke suite (gates prod), then deploys prod. Confirm the beta smoke stage is green.
 
-- [ ] **Step 4: Run the prod re-key** — once the new prod image is live (server ignores the still-attached forward-auth header and reads `sub`):
+- [x] **Step 4: Run the prod re-key** — once the new prod image is live (server ignores the still-attached forward-auth header and reads `sub`):
 ```bash
 kubectl -n apps exec -it deploy/questionbank -- sh -lc \
   'npx tsx packages/server/src/scripts/rekey-customer.ts --old "<OLD_CUSTOMER_ID>" --new "<NEW_SUB>" --dry-run'
@@ -2492,11 +2506,11 @@ kubectl -n apps exec -it deploy/questionbank -- sh -lc \
 ```
 > If the prod image is a slim runtime without `tsx`/sources, instead `kubectl cp` the compiled `dist` script in, or run the script from a one-off job built on the same image. Confirm `tsx` + sources exist in the image first; if not, use the compiled `dist/scripts/rekey-customer.js` via `node`.
 
-- [ ] **Step 5: Drop forward-auth + retire the proxy provider** — push the Olve.Homelab ingress change (Task 9.2) so Traefik stops attaching forward-auth. Then retire the proxy provider from the Authentik outpost in both envs:
+- [x] **Step 5: Drop forward-auth + retire the proxy provider** — push the Olve.Homelab ingress change (Task 9.2) so Traefik stops attaching forward-auth. Then retire the proxy provider from the Authentik outpost in both envs:
   - Edit `homelab/infra/authentik/{beta,prod}/blueprints/outpost.yaml` to remove the `questionbank-proxy-provider` (beta: `questionbank-beta-proxy-provider`) entry from the embedded outpost's `providers` list. Optionally remove the now-dead proxy provider + its application from `applications.yaml`.
   - Commit + push (homelab: `main`, no PR).
 
-- [ ] **Step 6: Smoke prod** — log into `https://questionbank.ovea.pro`, confirm the OIDC redirect works, data is present (re-key succeeded), and API calls carry the bearer.
+- [x] **Step 6: Smoke prod** — log into `https://questionbank.ovea.pro`, confirm the OIDC redirect works, data is present (re-key succeeded), and API calls carry the bearer.
 
 ### Task 10.3: Rollback (if needed)
 - Redeploy the previous QuestionBank image.

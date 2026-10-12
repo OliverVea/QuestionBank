@@ -13,11 +13,22 @@ import {
  *  HTTP request for tens of minutes; a timeout → 502. Call sites whose payload runs long
  *  (transcription, grading) raise it via `timeoutMs`. */
 const REQUEST_TIMEOUT_MS = 120_000;
-const DEFAULT_MODEL = 'claude-sonnet-4-6';
+const DEFAULT_MODEL = 'claude-sonnet-5-5';
 
 /** Default output-token ceiling for a request. Call sites whose structured response can
  *  run long pass a higher `maxTokens` (truncation here surfaces as a 502 to the user). */
-const DEFAULT_MAX_TOKENS = 8000;
+const DEFAULT_MAX_TOKENS = 16_000;
+
+/** Models that reject a forced `tool_choice` (`tool` / `any`) with a 400. For these the
+ *  structured path sends `auto` and steers the model to the result tool from the system prompt. */
+const NO_FORCED_TOOL_CHOICE = new Set(['claude-sonnet-5-5', 'claude-opus-5-5', 'claude-fable-5-1']);
+
+/** Effort used when a call site sets none. Sonnet 5.5 thinks by default and its own default is
+ *  `high`; `medium` keeps single-shot extraction/transcription calls quick. Thinking tokens
+ *  count toward `max_tokens`, which is why the default ceiling above leaves room for them. */
+const DEFAULT_EFFORT: Record<string, NonNullable<CompleteOpts['effort']>> = {
+  'claude-sonnet-5-5': 'medium',
+};
 
 /** The connectivity probe fails fast and never retries — a health check must not hang
  *  for two minutes or retry through an outage. */
@@ -144,7 +155,8 @@ function textFromMessage(message: Anthropic.Message): string {
   return textBlock.text;
 }
 
-/** Pull the forced tool_use block's input — the structured result — out of a response. */
+/** Pull the result tool_use block's input — the structured result — out of a response.
+ *  Blocks are read by type: a response can begin with `thinking` blocks. */
 function toolInputFromMessage<T>(message: Anthropic.Message): T {
   assertUsableStop(message);
   const toolBlock = message.content.find((block) => block.type === 'tool_use');
@@ -158,8 +170,13 @@ function toolInputFromMessage<T>(message: Anthropic.Message): T {
   return toolBlock.input as T;
 }
 
-/** The single tool we force the model into for structured output. */
+/** The single tool the model answers through for structured output. */
 const RESULT_TOOL_NAME = 'result';
+
+/** Steers a model that cannot be forced into the tool (see NO_FORCED_TOOL_CHOICE). */
+const RESULT_TOOL_STEER =
+  `Return your answer by calling the \`${RESULT_TOOL_NAME}\` tool exactly once. ` +
+  'Do not answer in plain text.';
 
 /** Direct Anthropic API backend. The client is injectable for testing.
  *
@@ -192,14 +209,15 @@ export class AnthropicApiProvider implements LlmProvider {
     const messages = await toApiMessages(conversation, imageAudit, visionMaxEdge(model));
     log.debug(`llm ${label} request`, { model, turns: messages.length, images: imageAudit.length });
 
-    // `output_config.effort` is GA (no beta header) on Sonnet 4.6 / Opus-tier; Haiku rejects
-    // it, so only send it when a call site opted in. Cast: the SDK type may lag the GA param.
+    // `output_config.effort` is GA (no beta header). Sent when a call site opted in, or when
+    // the model has a default here. Cast: the SDK type may lag the GA param.
+    const effort = opts?.effort ?? DEFAULT_EFFORT[model];
     const params = {
       model,
       max_tokens: opts?.maxTokens ?? DEFAULT_MAX_TOKENS,
       messages,
       ...extra,
-      ...(opts?.effort ? { output_config: { effort: opts.effort } } : {}),
+      ...(effort ? { output_config: { effort } } : {}),
     } as Anthropic.MessageCreateParamsNonStreaming;
 
     const start = process.hrtime.bigint();
@@ -214,7 +232,7 @@ export class AnthropicApiProvider implements LlmProvider {
         log.info('llm audit', {
           tag,
           model,
-          effort: opts?.effort,
+          effort,
           inputTokens: message.usage?.input_tokens,
           outputTokens: message.usage?.output_tokens,
           cacheReadTokens: message.usage?.cache_read_input_tokens,
@@ -267,23 +285,37 @@ export class AnthropicApiProvider implements LlmProvider {
     schema: object,
     opts?: CompleteOpts,
   ): Promise<T> {
-    // Force a single tool call whose input matches the schema. This is the reliable
+    // Get a single tool call whose input matches the schema. This is the reliable
     // structured-output path: the model returns a tool_use block with validated input,
     // not free-form prose we have to parse (and fail to parse) out of a text block.
+    // The call is forced where the model allows it; Sonnet 5.5 and newer Opus-tier models
+    // reject forced tool use, so there it is `auto` plus a system-prompt instruction.
     // `strict` (opt-in) makes the API guarantee the input conforms to the schema — use it
     // only where the schema is strict-compliant (additionalProperties:false + every property
     // in `required`); a non-compliant schema (e.g. extraction's optional fields) would 400.
     const tool = {
       name: RESULT_TOOL_NAME,
+      description: 'Report the final structured result.',
       input_schema: schema as Anthropic.Tool.InputSchema,
       ...(opts?.strict ? { strict: true } : {}),
     };
-    const message = await this.request(
-      'completeStructured',
-      conversation,
-      { tools: [tool], tool_choice: { type: 'tool', name: RESULT_TOOL_NAME } },
-      opts,
-    );
+    const forced = !NO_FORCED_TOOL_CHOICE.has(opts?.model ?? DEFAULT_MODEL);
+    const extra: Partial<Anthropic.MessageCreateParamsNonStreaming> = forced
+      ? { tools: [tool], tool_choice: { type: 'tool', name: RESULT_TOOL_NAME } }
+      : {
+          tools: [tool],
+          tool_choice: { type: 'auto', disable_parallel_tool_use: true },
+          system: RESULT_TOOL_STEER,
+        };
+    const message = await this.request('completeStructured', conversation, extra, opts);
+    // An unforced model can, rarely, answer in prose. Ask once more before failing the call.
+    if (!forced && message.stop_reason !== 'refusal' && message.stop_reason !== 'max_tokens'
+      && !message.content.some((block) => block.type === 'tool_use')) {
+      log.warn('llm response skipped the result tool — retrying once', { model: message.model });
+      return toolInputFromMessage<T>(
+        await this.request('completeStructured', conversation, extra, opts),
+      );
+    }
     return toolInputFromMessage<T>(message);
   }
 

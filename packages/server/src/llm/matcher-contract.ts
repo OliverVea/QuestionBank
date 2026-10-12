@@ -2,17 +2,19 @@ import type { ImageRef } from './image-ref.js';
 import { LlmError, type LlmProvider, type Message } from './provider.js';
 
 /**
- * The figure→problem matcher: a conditional Claude Haiku 4.5 call (the bare alias the
- * spike proved at 41/42) over the rectified page(s) + figure crops + the candidate `add`
+ * The figure→problem matcher: a conditional Claude Sonnet 5.5 call at low effort. On the
+ * 42-figure spike (experiments/figure-matching) Sonnet 5.5 scored 42/42 and Haiku 4.5 41/42;
+ * Haiku 5.5 dropped to 37/42, missing about half of the densest page on three runs, so it is
+ * not used here. Re-run the spike after any model change over the rectified page(s) + figure crops + the candidate `add`
  * problems. Returns, per figure, the caption it reads off the page and the problem INDEX
  * it belongs to. Indices — not labels — are the join key (labels repeat under one path).
  */
 
-/** Bare alias matching the spike + the provider's alias convention. Haiku rejects `effort`. */
-const MATCHER_MODEL = 'claude-haiku-4-5';
+/** About 2 cents a page at low effort (roughly twice Haiku 4.5). */
+const MATCHER_MODEL = 'claude-sonnet-5-5';
 
-/** One small entry per figure — far below the 8000 default; truncation → matchError. */
-const MATCHER_MAX_TOKENS = 4000;
+/** One small entry per figure, plus room for the thinking that counts toward the cap; truncation → matchError. */
+const MATCHER_MAX_TOKENS = 8000;
 
 /** A candidate `add` problem the matcher may assign figures to (presented by index). */
 export interface MatchCandidate {
@@ -160,6 +162,7 @@ export async function runMatcher(
   ];
   const raw = await provider.completeStructured<unknown>(messages, matcherSchema, {
     model: MATCHER_MODEL,
+    effort: 'low',
     maxTokens: MATCHER_MAX_TOKENS,
     tag: 'figure-matching',
   });

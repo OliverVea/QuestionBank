@@ -34,6 +34,26 @@ describe('AnthropicApiProvider', () => {
   // Guards the production-critical contract: structured output MUST force a single
   // tool call matching the schema (sending unknown top-level fields 502s the request),
   // and the result is read from the returned tool_use block — not parsed from prose.
+  it('completeStructured steers an unforceable model to the tool and retries a prose answer', async () => {
+    const create = vi
+      .fn()
+      .mockResolvedValueOnce({ stop_reason: 'end_turn', content: [{ type: 'text', text: 'here you go' }] })
+      .mockResolvedValueOnce({
+        stop_reason: 'tool_use',
+        content: [{ type: 'thinking', thinking: '' }, { type: 'tool_use', name: 'result', input: { ok: true } }],
+      });
+    const provider = new AnthropicApiProvider({ messages: { create } } as never);
+    const out = await provider.completeStructured([{ role: 'user', text: 'go' }], {});
+
+    const sent = create.mock.calls[0]![0];
+    expect(sent.model).toEqual('claude-sonnet-5-5');
+    expect(sent.tool_choice).toEqual({ type: 'auto', disable_parallel_tool_use: true });
+    expect(sent.system).toContain('`result` tool');
+    expect(sent.output_config).toEqual({ effort: 'medium' });
+    expect(create).toHaveBeenCalledTimes(2);
+    expect(out).toEqual({ ok: true });
+  });
+
   it('completeStructured forces tool use and returns the tool_use input', async () => {
     const create = vi.fn().mockResolvedValue({
       stop_reason: 'tool_use',
@@ -41,7 +61,9 @@ describe('AnthropicApiProvider', () => {
     });
     const provider = new AnthropicApiProvider({ messages: { create } } as never);
     const schema = { type: 'object', properties: { x: { type: 'string' } }, required: ['x'] };
-    const out = await provider.completeStructured([{ role: 'user', text: 'go' }], schema);
+    const out = await provider.completeStructured([{ role: 'user', text: 'go' }], schema, {
+      model: 'claude-haiku-5-5',
+    });
 
     const sent = create.mock.calls[0]![0];
     expect(sent.tools).toEqual([expect.objectContaining({ name: 'result', input_schema: schema })]);
@@ -72,7 +94,7 @@ describe('AnthropicApiProvider', () => {
     const provider = new AnthropicApiProvider({ messages: { create } } as never);
 
     await provider.complete([{ role: 'user', text: 'x' }]);
-    expect(create.mock.calls[0]![0].max_tokens).toBe(8000);
+    expect(create.mock.calls[0]![0].max_tokens).toBe(16_000);
 
     await provider.complete([{ role: 'user', text: 'x' }], { maxTokens: 16_000 });
     expect(create.mock.calls[1]![0].max_tokens).toBe(16_000);
@@ -126,13 +148,13 @@ describe('AnthropicApiProvider', () => {
     expect(create.mock.calls[0]![0].output_config).toEqual({ effort: 'medium' });
   });
 
-  it('omits output_config when no effort is set (Haiku rejects it)', async () => {
+  it('omits output_config when no effort is set and the model has no default', async () => {
     const create = vi.fn().mockResolvedValue({
       stop_reason: 'end_turn',
       content: [{ type: 'text', text: 'ok' }],
     });
     const provider = new AnthropicApiProvider({ messages: { create } } as never);
-    await provider.complete([{ role: 'user', text: 'x' }], { model: 'claude-haiku-4-5' });
+    await provider.complete([{ role: 'user', text: 'x' }], { model: 'claude-haiku-5-5' });
     expect(create.mock.calls[0]![0].output_config).toBeUndefined();
   });
 

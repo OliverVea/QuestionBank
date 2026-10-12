@@ -1,0 +1,42 @@
+{
+  "question_labels": [
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8",
+    "9",
+    "10",
+    "11",
+    "12"
+  ],
+  "figures": [
+    {
+      "figure_id": 0,
+      "printed_label": "Q18.11",
+      "matched_question_label": "11",
+      "confidence": "high"
+    },
+    {
+      "figure_id": 1,
+      "printed_label": "Q18.10",
+      "matched_question_label": "10",
+      "confidence": "high"
+    },
+    {
+      "figure_id": 2,
+      "printed_label": "Q18.4",
+      "matched_question_label": "4",
+      "confidence": "high"
+    },
+    {
+      "figure_id": 3,
+      "printed_label": "Q18.12",
+      "matched_question_label": "12",
+      "confidence": "high"
+    }
+  ]
+}

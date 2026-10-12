@@ -38,7 +38,7 @@
 # vars ($GITHUB_TOKEN, etc.) — they are mounted into every job.
 apiVersion: "0.0"
 name: QuestionBank
-description: Build + test, deploy to homelab (beta gates prod) with Helm, minimal profile.
+description: Build + test, deploy to homelab (beta gates prod) with Helm, minimal profile, then the public demo.
 version: "1"
 
 secrets:

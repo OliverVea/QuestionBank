@@ -2,6 +2,8 @@
 
 A question bank for books. Client-side app backed by a small server.
 
+**[Try the demo](https://questionbank-demo.ovea.pro)**: no login, a sample library, and one handwritten answer you can submit to see the reading and the grade. It replays recorded model results, so nothing else can be graded there.
+
 ## What this is
 
 A self-study question bank for working through physics and math textbooks. It solves two problems:

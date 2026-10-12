@@ -3,10 +3,10 @@ import { authFetch } from '@/lib/auth';
 import { renderLatex } from '@/lib/latex';
 import { TopBar } from '@/components/TopBar';
 import { unstashPhotos } from '@/lib/photo-transfer';
+import { createFigureBoxEditor, type Box } from '@/components/FigureBoxEditor';
 import './FigureScanPage.css';
 
 type Relevance = 'high' | 'medium' | 'low';
-type Box = [number, number, number, number];
 
 interface Delta {
   kind: 'add' | 'edit' | 'skip';
@@ -53,10 +53,6 @@ interface WizFigure {
   printedLabel?: string;
   confidence?: Relevance;
 }
-
-const norm = (b: Box): Box => [
-  Math.min(b[0], b[2]), Math.min(b[1], b[3]), Math.max(b[0], b[2]), Math.max(b[1], b[3]),
-];
 
 export function FigureScanPage(): HTMLElement {
   const transfer = unstashPhotos();
@@ -137,7 +133,7 @@ export function FigureScanPage(): HTMLElement {
   const main = html`<main class="fs-main">${step1}${step2}${step3}</main>`;
 
   const navBack = html`<button class="fs-back-btn" type="button">Back</button>` as HTMLButtonElement;
-  const navNext = html`<button class="primary-btn" type="button">Extract figures</button>` as HTMLButtonElement;
+  const navNext = html`<button class="primary-btn" type="button">Extract problems</button>` as HTMLButtonElement;
   navBack.addEventListener('click', () => {
     if (step === 1) { window.history.back(); return; }
     showStep(1);
@@ -152,15 +148,20 @@ export function FigureScanPage(): HTMLElement {
     ${navNext}
   </footer>`;
 
-  // ---- subpage (figure selection) ----
-  const subEls = buildSubpage();
+  // ---- figure selection: the shared box editor over the decoded rectified pages ----
+  const editor = createFigureBoxEditor(() =>
+    pageImgs.map((img, i) => {
+      const dims = pageDims[i];
+      return img && dims ? { img, ...dims, guides: detectedByPage.get(i) ?? [] } : undefined;
+    }),
+  );
 
   const page = html`<div class="figure-scan-page">
     ${TopBar({ onBack: () => window.history.back() })}
     ${stepsNav}
     ${main}
     ${footer}
-    ${subEls.root}
+    ${editor.root}
   </div>`;
 
   // ============================ steps ============================
@@ -173,7 +174,7 @@ export function FigureScanPage(): HTMLElement {
       p.classList.toggle('on', Number((p as HTMLElement).dataset.go) === n);
     });
     navBack.style.visibility = n > 1 ? 'visible' : 'hidden';
-    navNext.textContent = n === 1 ? 'Extract figures' : 'Continue';
+    navNext.textContent = n === 1 ? 'Extract problems' : 'Continue';
     navNext.style.visibility = n === 2 ? 'hidden' : 'visible';
     if (n === 1) { extractionStarted = false; renderPics(); }
     if (n === 2) void runExtraction();
@@ -523,238 +524,24 @@ export function FigureScanPage(): HTMLElement {
     return new Promise((resolve) => c.toBlob((b) => resolve(b), 'image/webp', 0.85));
   }
 
-  // ============================ subpage ============================
-  function buildSubpage() {
-    const img = document.createElement('img');
-    img.className = 'fs-page-img';
-    img.alt = 'rectified page';
-    const overlay = document.createElement('div');
-    overlay.className = 'fs-overlay';
-    const drawRect = document.createElement('div');
-    drawRect.className = 'fs-draw-rect';
-    drawRect.hidden = true;
-    const content = html`<div class="fs-page-content">${img}${overlay}${drawRect}</div>`;
-    const wrap = html`<div class="fs-page-wrap">${content}</div>`;
-    const hint = html`<p class="fs-hint">Tap a detected figure, or drag one finger to draw your own — drag the edges to adjust. Pinch with two fingers to zoom and pan.</p>`;
-    const body = html`<div class="fs-sp-body">${hint}${wrap}</div>`;
-    const cancel = html`<button class="fs-sp-btn" type="button">✕ Cancel</button>` as HTMLButtonElement;
-    const title = html`<span class="fs-sp-title">Figure</span>` as HTMLElement;
-    const attach = html`<button class="fs-sp-btn strong" type="button" disabled>Attach</button>` as HTMLButtonElement;
-    const topbar = html`<header class="fs-sp-topbar">${cancel}${title}${attach}</header>`;
-    const root = html`<div class="fs-subpage" hidden>${topbar}${body}</div>` as HTMLElement;
-    return { root, img, overlay, drawRect, content, wrap, title, attach, cancel };
-  }
-
-  // subpage live state
-  let sub: { addIndex: number; editUid: number | null; pageIndex: number; box: Box | null } | null = null;
-  let editEl: HTMLElement | null = null;
-
-  subEls.cancel.addEventListener('click', closeSub);
-  subEls.attach.addEventListener('click', () => {
-    if (!sub || !sub.box) return;
-    if (sub.editUid !== null) {
-      const f = figures.find((g) => g.uid === sub!.editUid);
-      if (f) { f.box = sub.box.slice() as Box; f.pageIndex = sub.pageIndex; }
-    } else {
-      figures.push({ uid: nextUid++, addIndex: sub.addIndex, pageIndex: sub.pageIndex, box: sub.box.slice() as Box });
-    }
-    closeSub();
-    renderQuestions();
-  });
-
+  // ============================ figure box editor ============================
   function openSub(addIndex: number, editUid: number | null) {
     const editFig = editUid !== null ? figures.find((g) => g.uid === editUid) : undefined;
-    const pageIndex = editFig ? editFig.pageIndex : 0;
-    if (!pageImgs[pageIndex]) return; // no rectified page available (figuresError)
-    sub = {
-      addIndex,
-      editUid,
-      pageIndex,
+    editor.open({
+      title: (editFig ? 'Edit figure · ' : 'Add figure · ') + (resolved[addIndex]?.path ?? ''),
+      pageIndex: editFig ? editFig.pageIndex : 0,
       box: editFig ? (editFig.box.slice() as Box) : null,
-    };
-    subEls.title.textContent = (editFig ? 'Edit figure · ' : 'Add figure · ') + (resolved[addIndex]?.path ?? '');
-    subEls.img.src = pageImgs[pageIndex]!.src;
-    subEls.attach.disabled = !sub.box;
-    resetZoom();
-    renderSub();
-    subEls.root.hidden = false;
-  }
-  function closeSub() { subEls.root.hidden = true; sub = null; editEl = null; }
-
-  function natWH(): [number, number] {
-    // Drive geometry from the in-memory rectified dims (seeded synchronously in
-    // seedFromScan), NOT the live <img> — on first open its naturalWidth may not
-    // be populated yet, which would collapse every box/guide to a 1×1 space.
-    if (sub) {
-      const d = pageDims[sub.pageIndex];
-      if (d) return [d.width, d.height];
-    }
-    return [subEls.img.naturalWidth || 1, subEls.img.naturalHeight || 1];
-  }
-  function setGeom(el: HTMLElement, box: Box) {
-    const [W, H] = natWH();
-    const [x1, y1, x2, y2] = box;
-    Object.assign(el.style, {
-      left: `${(x1 / W) * 100}%`,
-      top: `${(y1 / H) * 100}%`,
-      width: `${((x2 - x1) / W) * 100}%`,
-      height: `${((y2 - y1) / H) * 100}%`,
+      onAttach(pageIndex, box) {
+        if (editFig) {
+          editFig.box = box;
+          editFig.pageIndex = pageIndex;
+        } else {
+          figures.push({ uid: nextUid++, addIndex, pageIndex, box });
+        }
+        renderQuestions();
+      },
     });
   }
-  function renderSub() {
-    if (!sub) return;
-    subEls.overlay.innerHTML = '';
-    editEl = null;
-    const guides = detectedByPage.get(sub.pageIndex) ?? [];
-    for (const gbox of guides) {
-      const g = document.createElement('div');
-      g.className = 'fs-box guide';
-      setGeom(g, gbox);
-      g.addEventListener('click', (e) => {
-        e.stopPropagation();
-        sub!.box = gbox.slice() as Box;
-        subEls.attach.disabled = false;
-        renderSub();
-      });
-      subEls.overlay.appendChild(g);
-    }
-    if (sub.box) {
-      const b = document.createElement('div');
-      b.className = 'fs-box editing';
-      setGeom(b, sub.box);
-      (['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'] as const).forEach((d) => {
-        const h = document.createElement('div');
-        h.className = `fs-handle fs-h-${d}`;
-        h.dataset.dir = d;
-        b.appendChild(h);
-      });
-      subEls.overlay.appendChild(b);
-      editEl = b;
-    }
-  }
-
-  // ---- zoom / pan (ported from the mock) ----
-  const MAX_ZOOM = 6;
-  let zoom = { scale: 1, x: 0, y: 0 };
-  function clampZoom() {
-    const r = subEls.wrap.getBoundingClientRect();
-    zoom.scale = Math.min(MAX_ZOOM, Math.max(1, zoom.scale));
-    zoom.x = Math.min(0, Math.max(r.width - r.width * zoom.scale, zoom.x));
-    zoom.y = Math.min(0, Math.max(r.height - r.height * zoom.scale, zoom.y));
-  }
-  function applyZoom() {
-    clampZoom();
-    subEls.content.style.transform = `translate(${zoom.x}px, ${zoom.y}px) scale(${zoom.scale})`;
-    subEls.content.style.setProperty('--z', String(zoom.scale));
-  }
-  function resetZoom() { zoom = { scale: 1, x: 0, y: 0 }; applyZoom(); }
-  function zoomTo(scale: number, lx: number, ly: number) {
-    const cx = (lx - zoom.x) / zoom.scale, cy = (ly - zoom.y) / zoom.scale;
-    zoom.scale = Math.min(MAX_ZOOM, Math.max(1, scale));
-    zoom.x = lx - cx * zoom.scale;
-    zoom.y = ly - cy * zoom.scale;
-    applyZoom();
-  }
-
-  // ---- gestures ----
-  let g: { mode: 'draw' | 'move' | 'resize'; dir?: string; start: [number, number]; box: Box | null; cur?: Box } | null = null;
-  const pointers = new Map<number, { x: number; y: number }>();
-  let pinch: { dist: number; scale: number; x: number; y: number; mid: { x: number; y: number } } | null = null;
-  const dist = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.hypot(a.x - b.x, a.y - b.y);
-  const mid = (a: { x: number; y: number }, b: { x: number; y: number }) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
-  function ptNat(e: PointerEvent): [number, number] {
-    const r = subEls.wrap.getBoundingClientRect();
-    const [W, H] = natWH();
-    const fx = ((e.clientX - r.left) - zoom.x) / zoom.scale / r.width;
-    const fy = ((e.clientY - r.top) - zoom.y) / zoom.scale / r.height;
-    return [Math.min(1, Math.max(0, fx)) * W, Math.min(1, Math.max(0, fy)) * H];
-  }
-  function cancelDraw() { if (g && g.mode === 'draw') subEls.drawRect.hidden = true; g = null; }
-  function startPinch() {
-    const p = [...pointers.values()];
-    pinch = { dist: dist(p[0]!, p[1]!), scale: zoom.scale, x: zoom.x, y: zoom.y, mid: mid(p[0]!, p[1]!) };
-  }
-  function updatePinch() {
-    const p = [...pointers.values()];
-    if (p.length < 2 || !pinch) return;
-    const r = subEls.wrap.getBoundingClientRect();
-    const m = mid(p[0]!, p[1]!), factor = dist(p[0]!, p[1]!) / (pinch.dist || 1);
-    const scale = Math.min(MAX_ZOOM, Math.max(1, pinch.scale * factor));
-    const cx = (pinch.mid.x - r.left - pinch.x) / pinch.scale;
-    const cy = (pinch.mid.y - r.top - pinch.y) / pinch.scale;
-    zoom.scale = scale;
-    zoom.x = (m.x - r.left) - cx * scale;
-    zoom.y = (m.y - r.top) - cy * scale;
-    applyZoom();
-  }
-  subEls.wrap.addEventListener('pointerdown', (e) => {
-    if (subEls.root.hidden || !sub) return;
-    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (pointers.size >= 2) { cancelDraw(); startPinch(); renderSub(); return; }
-    const target = e.target as HTMLElement;
-    const handle = target.closest('.fs-handle') as HTMLElement | null;
-    const editing = target.closest('.fs-box.editing');
-    const guide = target.closest('.fs-box.guide');
-    if (guide) return; // its click selects
-    e.preventDefault();
-    subEls.wrap.setPointerCapture(e.pointerId);
-    if (handle && sub.box) g = { mode: 'resize', dir: handle.dataset.dir ?? 'se', start: ptNat(e), box: sub.box.slice() as Box };
-    else if (editing && sub.box) g = { mode: 'move', start: ptNat(e), box: sub.box.slice() as Box };
-    else { g = { mode: 'draw', start: ptNat(e), box: null }; subEls.drawRect.hidden = false; }
-  });
-  subEls.wrap.addEventListener('pointermove', (e) => {
-    if (!pointers.has(e.pointerId)) return;
-    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (pinch) { updatePinch(); return; }
-    if (!g || !sub) return;
-    const [W, H] = natWH(), p = ptNat(e), dx = p[0] - g.start[0], dy = p[1] - g.start[1];
-    if (g.mode === 'draw') {
-      const b = norm([g.start[0], g.start[1], p[0], p[1]]);
-      setGeom(subEls.drawRect, b);
-      g.cur = b;
-      return;
-    }
-    let b = g.box!.slice() as Box;
-    if (g.mode === 'move') {
-      const w = b[2] - b[0], h = b[3] - b[1];
-      b[0] = Math.min(Math.max(0, b[0] + dx), W - w);
-      b[1] = Math.min(Math.max(0, b[1] + dy), H - h);
-      b[2] = b[0] + w; b[3] = b[1] + h;
-    } else {
-      const d = g.dir!;
-      if (d.includes('w')) b[0] += dx;
-      if (d.includes('e')) b[2] += dx;
-      if (d.includes('n')) b[1] += dy;
-      if (d.includes('s')) b[3] += dy;
-      b = norm(b);
-      b[0] = Math.max(0, b[0]); b[1] = Math.max(0, b[1]);
-      b[2] = Math.min(W, b[2]); b[3] = Math.min(H, b[3]);
-    }
-    sub.box = b;
-    if (editEl) setGeom(editEl, b);
-  });
-  function endPointer(e: PointerEvent) {
-    if (!pointers.has(e.pointerId)) return;
-    pointers.delete(e.pointerId);
-    if (pinch) { if (pointers.size >= 2) startPinch(); else pinch = null; return; }
-    if (!g || !sub) return;
-    if (g.mode === 'draw') {
-      subEls.drawRect.hidden = true;
-      const b = g.cur, [W, H] = natWH();
-      if (b && (b[2] - b[0]) > W * 0.02 && (b[3] - b[1]) > H * 0.02) sub.box = b;
-    }
-    g = null;
-    subEls.attach.disabled = !sub.box;
-    renderSub();
-  }
-  subEls.wrap.addEventListener('pointerup', endPointer);
-  subEls.wrap.addEventListener('pointercancel', endPointer);
-  subEls.wrap.addEventListener('wheel', (e) => {
-    if (subEls.root.hidden) return;
-    e.preventDefault();
-    const r = subEls.wrap.getBoundingClientRect();
-    zoomTo(zoom.scale * Math.exp(-e.deltaY * 0.0015), e.clientX - r.left, e.clientY - r.top);
-  }, { passive: false });
 
   // ============================ commit ============================
   async function commit() {

@@ -218,5 +218,39 @@ export function scanRouter(
     });
   });
 
+  /**
+   * POST /api/scan/figures — multipart page images only. Flattens each page and detects its
+   * figures, with no problem extraction and no model call. Feeds the "add figures" page, where
+   * the learner attaches a crop to a problem that is already in the book. 503 when the figure
+   * service is missing or fails, so the client can fall back to the unflattened photo.
+   */
+  router.post('/figures', acceptImages, async (req, res) => {
+    requireCustomerId(req);
+    const images = readImages(req);
+    if (!images) {
+      res.status(400).json({ error: 'attach 1–5 image files (png, jpeg, webp, gif)' });
+      return;
+    }
+    if (!figureService) {
+      res.status(503).json({ error: 'figure service unavailable' });
+      return;
+    }
+    try {
+      const pages = [];
+      for (let i = 0; i < images.length; i++) {
+        const result = await figureService.process(images[i]!.buffer, images[i]!.mime);
+        pages.push({
+          pageIndex: i,
+          rectified: result.rectified,
+          figures: result.figures.map((f) => ({ detectionId: f.id, box: f.box, score: f.score })),
+        });
+      }
+      res.json({ pages });
+    } catch (err) {
+      log.warn('figure flatten failed', { error: (err as Error).message });
+      res.status(503).json({ error: 'figure service unavailable' });
+    }
+  });
+
   return router;
 }

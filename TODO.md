@@ -93,6 +93,8 @@ Olve.Diagrams flowchart tool to render it as a Mermaid graph. Each task must be 
   a. (done) Grading refused by Sonnet 5.5 as reasoning extraction because the prompt asked for a reasoning scratchpad
   b. (done) Show a problem's attached figures on the Learn Practice Grade and attempt history pages
   h. Show figures on the compact problem rows of the book page [23b]
+  i. (done) A page for adding figures to problems already in the book reached from Edit book [23b]
+  j. On the add figures page suggest the problem each detected figure belongs to from the figure label in the problem text [23i]
   c. Run the figure matcher whenever figures are detected today it is skipped unless an extracted problem carries a figure reference
   d. Stabilise extracted labels across runs the same two pages gave 4.1.1 once and 4.4.1.1 or a wrong section number on other runs
   e. Transcription should drop a stray heading for the next problem when it is in the photo such as a trailing 4.2

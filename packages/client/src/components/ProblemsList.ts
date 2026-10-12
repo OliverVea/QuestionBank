@@ -100,7 +100,13 @@ export function ProblemsList({ problems = [], onChange, getLearningGoal, bookId 
 
   const scanHead = html`<div class="scan-problems-head">Scan a problems page</div>`;
   const scanPicker = ImageSourcePicker({ onFiles: openReview });
-  const scanBlock = html`<div class="scan-problems">${scanHead}${scanPicker}</div>`;
+  // Figures for problems already in the book are added on their own page.
+  const addFigures = html`<button class="scan-add-figures" type="button">Add figures to existing problems</button>` as HTMLButtonElement;
+  addFigures.hidden = !bookId;
+  addFigures.addEventListener('click', () => {
+    window.location.hash = `#/add-figures?bookId=${encodeURIComponent(bookId ?? '')}`;
+  });
+  const scanBlock = html`<div class="scan-problems">${scanHead}${scanPicker}${addFigures}</div>`;
 
   // Apply problems handed back from the scan page. An `edit` (targetId set) replaces the
   // existing row with that id; everything else is a new row. relevance rides through.

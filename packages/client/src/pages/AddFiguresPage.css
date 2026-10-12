@@ -1,0 +1,7 @@
+/* Add figures to existing problems. Reuses the scan wizard's `fs-` styles. */
+.add-figures-page .af-add-photo { display: block; text-align: center; cursor: pointer; margin-bottom: 0.7rem; }
+.add-figures-page .af-add-photo.busy { opacity: 0.55; pointer-events: none; }
+.add-figures-page .af-status { font-size: 0.85rem; color: var(--muted); margin: 0 0 0.7rem; }
+.add-figures-page .af-q-body { cursor: default; }
+.add-figures-page .fs-thumbs:empty { display: none; }
+.add-figures-page .af-q-body:hover, .add-figures-page .af-q-body:active { background: none; }

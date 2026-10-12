@@ -217,3 +217,36 @@ describe('POST /api/scan', () => {
     expect(ghost.status).toEqual(404);
   });
 });
+
+describe('POST /api/scan/figures', () => {
+  it('flattens the pages and returns their detected figures without calling the model', async () => {
+    const provider = new FakeProvider();
+    provider.failWith(new Error('the model must not be called'));
+    const result: ProcessResult = {
+      rectified: { pngBase64: await realPng(), width: 20, height: 20 },
+      figures: [{ id: 0, box: [2, 2, 10, 10], score: 0.9 }],
+    };
+    const app = createApp(store, provider, new FakeFigureService(result), fakeVerifier());
+    const res = await request(app)
+      .post('/api/scan/figures')
+      .attach('images', PNG, { filename: 'p1.png', contentType: 'image/png' })
+      .attach('images', PNG, { filename: 'p2.png', contentType: 'image/png' });
+    expect(res.status).toEqual(200);
+    expect(res.body.pages.map((p: { pageIndex: number }) => p.pageIndex)).toEqual([0, 1]);
+    expect(res.body.pages[0].rectified.width).toEqual(20);
+    expect(res.body.pages[0].figures).toEqual([{ detectionId: 0, box: [2, 2, 10, 10], score: 0.9 }]);
+  });
+
+  it('answers 503 when there is no figure service or it fails, and 400 without images', async () => {
+    const none = createApp(store, new FakeProvider(), null, fakeVerifier());
+    const attach = (app: ReturnType<typeof createApp>) =>
+      request(app).post('/api/scan/figures').attach('images', PNG, { filename: 'p1.png', contentType: 'image/png' });
+    expect((await attach(none)).status).toEqual(503);
+
+    const failing = new FakeFigureService();
+    failing.failWith(new Error('service down'));
+    expect((await attach(createApp(store, new FakeProvider(), failing, fakeVerifier()))).status).toEqual(503);
+
+    expect((await request(none).post('/api/scan/figures')).status).toEqual(400);
+  });
+});

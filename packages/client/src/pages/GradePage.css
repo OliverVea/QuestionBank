@@ -10,6 +10,9 @@
   height: 100dvh;
   display: grid;
   grid-template-rows: auto auto auto 1fr auto;
+  /* One column that may shrink below its content: without this a long, non-wrapping
+     question label widens the whole page past the viewport instead of being ellipsised. */
+  grid-template-columns: minmax(0, 1fr);
   overflow: hidden;
   max-width: 760px;
   margin: 0 auto;

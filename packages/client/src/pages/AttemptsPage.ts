@@ -184,7 +184,8 @@ export function AttemptsPage(): HTMLElement {
       const li = html`<li class="at-issue"><span class="at-issue-sev"></span><span class="at-issue-text"></span></li>`;
       li.querySelector('.at-issue-sev')!.textContent = iss.severity;
       (li.querySelector('.at-issue-sev') as HTMLElement).classList.add(`sev-${iss.severity}`);
-      li.querySelector('.at-issue-text')!.textContent = iss.description;
+      // The grader writes maths as LaTeX, so render it like the answer above.
+      renderLatex(li.querySelector('.at-issue-text') as HTMLElement, iss.description, '');
       return li;
     });
     const list = html`<ul class="at-issues"></ul>`;

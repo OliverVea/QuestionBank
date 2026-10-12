@@ -17,6 +17,7 @@ import { UserBubble } from './grade/UserBubble';
 import { ReadingBubble } from './grade/ReadingBubble';
 import { PhotoBubble } from '@/components/PhotoBubble';
 import { unstashPhotos } from '@/lib/photo-transfer';
+import { DEMO_NO_RECORDING, isDemo } from '@/lib/demo-samples';
 import { ImageSourcePicker } from '@/components/ImageSourcePicker';
 import './GradePage.css';
 
@@ -175,7 +176,7 @@ export function GradePage(): HTMLElement {
       sending = false;
       render();
       const err = ChatBubble('agent');
-      err.textContent = 'Grading failed. Send your message again to retry.';
+      err.textContent = isDemo() ? DEMO_NO_RECORDING : 'Grading failed. Send your message again to retry.';
       chat.el.appendChild(err);
     }
   }
@@ -275,7 +276,7 @@ export function GradePage(): HTMLElement {
       sending = false;
       render();
       const err = ChatBubble('agent');
-      err.textContent = 'Transcription failed. Try typing your answer instead.';
+      err.textContent = isDemo() ? DEMO_NO_RECORDING : 'Transcription failed. Try typing your answer instead.';
       chat.el.appendChild(err);
     }
   }
@@ -300,7 +301,7 @@ export function GradePage(): HTMLElement {
       sending = false;
       render();
       const err = ChatBubble('agent');
-      err.textContent = 'Re-reading failed. Try again.';
+      err.textContent = isDemo() ? DEMO_NO_RECORDING : 'Re-reading failed. Try again.';
       chat.el.appendChild(err);
     }
   }

@@ -99,4 +99,23 @@ describe('suggestNext — relevance-aware next-to-learn', () => {
     const next = await suggestNext(store, 'c', NOW);
     expect(next?.question.id).toBe('q1'); // first book wins even though its only question is low
   });
+
+  it('with a bookId, suggests from that book even when an earlier book has work left', async () => {
+    const store = fakeStore(
+      [book('first', ['q1']), book('second', ['q2'])],
+      [q('q1', 'first', '1'), q('q2', 'second', '1')],
+      [],
+    );
+    expect((await suggestNext(store, 'c', NOW))?.question.id).toBe('q1');
+    expect((await suggestNext(store, 'c', NOW, 'second'))?.question.id).toBe('q2');
+  });
+
+  it('with a bookId, returns nothing once that book is done, not another book\'s question', async () => {
+    const store = fakeStore(
+      [book('first', ['q1']), book('second', ['q2'])],
+      [q('q1', 'first', '1'), q('q2', 'second', '1')],
+      [attempt('q2')],
+    );
+    expect(await suggestNext(store, 'c', NOW, 'second')).toBeUndefined();
+  });
 });

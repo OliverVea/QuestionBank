@@ -51,7 +51,7 @@ function showDemoBanner(): void {
   const banner = document.createElement('button');
   banner.type = 'button';
   banner.className = 'demo-banner';
-  banner.textContent = 'Demo with a sample library. Scanning and grading are switched off here. Tap to hide.';
+  banner.textContent = 'Demo with a sample library. It replays recorded model results, so only the sample answer can be graded. Tap to hide.';
   banner.addEventListener('click', () => {
     sessionStorage.setItem('qb.demo.dismissed', '1');
     banner.remove();

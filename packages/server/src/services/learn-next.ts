@@ -23,15 +23,19 @@ function relevanceRank(q: Question): number {
  * PATH order (compareProblems) as the tiebreak. Low-relevance questions are thus postponed
  * until every higher-relevance question in the book is attempted (TODO 7d). Returns undefined
  * when nothing is eligible. Excludes questions with active (non-expired) server-side skips.
+ * With `bookId`, only that book is considered: the learner chose it on the library page.
  */
 export async function suggestNext(
   store: Store,
   customerId: string,
   _now: string,
+  bookId?: string,
 ): Promise<LearnNext | undefined> {
   const attempted = new Set((await store.attempts.getAll(customerId)).map((a) => a.questionId));
   const skipped = await activeSkippedIds(store, customerId);
-  const books = await store.books.getAll(customerId);
+  const books = (await store.books.getAll(customerId)).filter(
+    (b) => bookId === undefined || b.id === bookId,
+  );
   const allQuestions = await store.questions.getAll(customerId);
   const byBook = new Map<string, Question[]>();
   for (const q of allQuestions) {

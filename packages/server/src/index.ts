@@ -29,7 +29,7 @@ import { log } from './logging/logger.js';
 import { requireAuth, verifierFromEnv } from './auth/index.js';
 import type { VerifyBearer } from './auth/index.js';
 import { Store } from './storage/store.js';
-import { DemoProvider } from './demo/demo-provider.js';
+import { loadRecordings, RecordingProvider, ReplayProvider } from './demo/replay.js';
 import { createDemoVerifier } from './demo/guest.js';
 
 const PORT = Number(process.env.PORT ?? 3001);
@@ -106,10 +106,15 @@ export function createApp(
 
 /**
  * The public demo: no login, no model key, no figure service. Each visitor is a guest
- * tenant seeded with the sample library (see demo/guest.ts). Opt-in by env only.
+ * tenant seeded with the sample library (see demo/guest.ts), and model calls replay the
+ * results recorded for the sample inputs (see demo/replay.ts). Opt-in by env only.
+ * QB_DEMO_RECORD=1 is the local, one-off way those recordings are made.
  */
-function createDemoApp(store: Store): Express {
-  return createApp(store, new DemoProvider(), null, createDemoVerifier(store), 'demo');
+async function createDemoApp(store: Store): Promise<Express> {
+  const provider = process.env.QB_DEMO_RECORD === '1'
+    ? new RecordingProvider(new AnthropicApiProvider())
+    : new ReplayProvider(await loadRecordings());
+  return createApp(store, provider, null, createDemoVerifier(store), 'demo');
 }
 
 async function main(): Promise<void> {
@@ -118,12 +123,12 @@ async function main(): Promise<void> {
     throw new Error('QB_OIDC_AUTHORITY is required (OIDC authority, e.g. https://auth.ovea.pro/application/o/questionbank/)');
   }
   const store = await Store.open(DATA_DIR);
-  const app = demo ? createDemoApp(store) : createApp(store, new AnthropicApiProvider());
+  const app = demo ? await createDemoApp(store) : createApp(store, new AnthropicApiProvider());
   const HOST = process.env.HOST ?? '0.0.0.0';
   app.listen(PORT, HOST, () => {
     log.info(`listening on http://${HOST}:${PORT}`);
     log.info(`data dir: ${DATA_DIR}`);
-    if (demo) log.info('demo mode: guest tenants, no login, no model calls');
+    if (demo) log.info('demo mode: guest tenants, no login, recorded model results only');
   });
 }
 

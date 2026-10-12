@@ -1,12 +1,13 @@
 import { html } from '@/lib/html';
 import { authFetch } from '@/lib/auth';
+import { sampleAnswerUrl, sampleFile } from '@/lib/demo-samples';
 import { TopBar } from '@/components/TopBar';
 import { QuestionCard } from '@/components/QuestionCard';
 import { Spinner } from '@/components/Spinner';
 import { PhotoReviewModal } from '@/components/PhotoReviewModal';
 import { ImageSourcePicker } from '@/components/ImageSourcePicker';
 import { stashPhotos } from '@/lib/photo-transfer';
-import { shouldPause, getCount, getLastChapter, reset } from '@/lib/session';
+import { shouldPause, getCount, getLastChapter, reset, LEARN_BOOK_KEY } from '@/lib/session';
 import { splitLabel } from '@/lib/problem-grouping';
 import { SessionPause } from '@/components/SessionPause';
 import './LearnPage.css';
@@ -33,7 +34,14 @@ export function LearnPage(): HTMLElement {
     },
   });
   const typeBtn = html`<button class="type-link">or type it instead</button>`;
-  const footer = html`<footer class="learn-actions">${picker}${typeBtn}</footer>`;
+  // Public demo only: feed the recorded sample photo through the normal photo flow.
+  const sampleBtn = html`<button class="type-link sample-link" hidden>Use the sample handwritten answer</button>`;
+  let sampleUrl: string | null = null;
+  sampleBtn.addEventListener('click', () => {
+    if (sampleUrl === null || !currentQuestion || loading) return;
+    void sampleFile(sampleUrl).then((file) => showPhotoModal([file]));
+  });
+  const footer = html`<footer class="learn-actions">${picker}${sampleBtn}${typeBtn}</footer>`;
 
   function showPhotoModal(initialFiles: File[]) {
     const modal = PhotoReviewModal({
@@ -107,6 +115,8 @@ export function LearnPage(): HTMLElement {
 
   function renderQuestion(question: Question, book: Book) {
     currentQuestion = question;
+    sampleUrl = sampleAnswerUrl(book.title, question.label);
+    sampleBtn.hidden = sampleUrl === null;
     eyebrow.querySelector('span')!.textContent = `${book.title} · ${question.label}`;
     const card = QuestionCard({ canonicalText: question.canonicalText, questionId: question.id });
     card.classList.add('animate-in');
@@ -132,7 +142,9 @@ export function LearnPage(): HTMLElement {
     loading = true;
     setActionsEnabled(false);
     try {
-      const res = await authFetch('/api/learn/next');
+      // Stay in the book chosen on the library page (it survives the trip through grading).
+      const bookId = sessionStorage.getItem(LEARN_BOOK_KEY);
+      const res = await authFetch(bookId ? `/api/learn/next?bookId=${encodeURIComponent(bookId)}` : '/api/learn/next');
       if (!res.ok) { renderError(); return; }
       render(await res.json() as LearnNextResponse);
     } catch {

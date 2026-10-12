@@ -1,3 +1,4 @@
+import { LEARN_BOOK_KEY } from '@/lib/session';
 import { html } from '@/lib/html';
 import { authFetch } from '@/lib/auth';
 import { Spinner } from '@/components/Spinner';
@@ -84,7 +85,11 @@ async function loadData(headerHost: HTMLElement, booksHost: HTMLElement): Promis
       book,
       onOpen: () => { window.location.hash = `#/view-book?id=${encodeURIComponent(book.id)}`; },
       onRevisit: () => { window.location.hash = '#/revisit'; },
-      onLearn: () => { window.location.hash = '#/learn'; },
+      onLearn: () => {
+        // Learn works through the book whose button was pressed, not the first one listed.
+        sessionStorage.setItem(LEARN_BOOK_KEY, book.id);
+        window.location.hash = '#/learn';
+      },
     }));
   });
 }

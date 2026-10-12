@@ -5,7 +5,8 @@ import request from 'supertest';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createApp } from '../index.js';
 import { Store } from '../storage/store.js';
-import { DemoProvider } from './demo-provider.js';
+import { bufferImage } from '../llm/image-ref.js';
+import { ReplayProvider, requestKey } from './replay.js';
 import { createDemoVerifier } from './guest.js';
 
 const ALICE = 'demo-11111111-1111-4111-8111-111111111111';
@@ -17,7 +18,7 @@ let app: ReturnType<typeof createApp>;
 beforeEach(async () => {
   dir = await mkdtemp(join(tmpdir(), 'qb-demo-'));
   const store = await Store.open(dir);
-  app = createApp(store, new DemoProvider(), null, createDemoVerifier(store), 'demo');
+  app = createApp(store, new ReplayProvider([]), null, createDemoVerifier(store), 'demo');
 });
 afterEach(async () => {
   await rm(dir, { recursive: true, force: true });
@@ -56,7 +57,19 @@ describe('demo mode', () => {
     expect((await request(app).get(`/api/books/${mine[1]!.id}`).set(as(BOB))).status).toEqual(404);
   });
 
-  it('fails a model call without reaching any backend', async () => {
+  it('replays a recorded result for the same request and nothing else', async () => {
+    const photo = bufferImage(Buffer.from('sample photo bytes'), 'image/jpeg');
+    const request = [{ role: 'user' as const, text: 'read this', images: [photo] }];
+    const provider = new ReplayProvider([
+      { tag: 'transcription', key: await requestKey('transcription', request), result: { transcription: 'x = 1' } },
+    ]);
+    expect(await provider.completeStructured(request, {}, { tag: 'transcription' })).toEqual({ transcription: 'x = 1' });
+    const other = [{ role: 'user' as const, text: 'read this', images: [bufferImage(Buffer.from('another photo'), 'image/jpeg')] }];
+    await expect(provider.completeStructured(other, {}, { tag: 'transcription' })).rejects.toThrow('no recording');
+    await expect(provider.completeStructured(request, {}, { tag: 'grading' })).rejects.toThrow('no recording');
+  });
+
+  it('fails an unrecorded model call without reaching any backend', async () => {
     const books = (await request(app).get('/api/books').set(as(ALICE))).body as { questionIds: string[] }[];
     const res = await request(app)
       .post(`/api/questions/${books[0]!.questionIds[0]}/grade`)

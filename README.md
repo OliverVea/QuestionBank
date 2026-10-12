@@ -6,7 +6,7 @@ A question bank for books. Client-side app backed by a small server.
 
 A self-study question bank for working through physics and math textbooks. It solves two problems:
 
-**1. Grading handwritten solutions.** Capture questions from a textbook (photo or text), then submit a handwritten solution and get LLM-assisted feedback. The flow separates concerns deliberately: one agent faithfully transcribes your answer to LaTeX (blind to the problem, no hints), a second agent critiques the transcribed answer and suggests a rating, and you set the final rating (DNM / partial / full).
+**1. Grading handwritten solutions.** Capture questions from a textbook (photo or text), then submit a handwritten solution and get LLM-assisted feedback. The flow separates concerns deliberately: one agent faithfully transcribes your answer to LaTeX (told only to read it: no solving, no hints), a second agent critiques the transcribed answer and suggests a rating, and you set the final rating (DNM / partial / full).
 
 **2. Retaining understanding.** A spaced-repetition system resurfaces questions over time (1 week, then 1 month) so the material sticks, prioritizing weaker results.
 
@@ -23,7 +23,7 @@ From a printed page to a scheduled review, in nine steps:
   <tr>
     <td width="33%" valign="top"><img src="docs/screenshots/story-4-maths.png" alt="Maths-heavy pages too: A page of integrals, read from a photo of the sheet held in the air."><br><b>4. Maths-heavy pages too.</b> A page of integrals, read from a photo of the sheet held in the air.</td>
     <td width="33%" valign="top"><img src="docs/screenshots/story-5-answer-photo.png" alt="Answer on paper: Solve the next problem by hand and photograph your working."><br><b>5. Answer on paper.</b> Solve the next problem by hand and photograph your working.</td>
-    <td width="33%" valign="top"><img src="docs/screenshots/story-6-reading.png" alt="Check the reading: A first agent, which never sees the problem, reads your handwriting into LaTeX."><br><b>6. Check the reading.</b> A first agent, which never sees the problem, reads your handwriting into LaTeX.</td>
+    <td width="33%" valign="top"><img src="docs/screenshots/story-6-reading.png" alt="Check the reading: A first agent only reads your handwriting into LaTeX. It is told not to solve, correct or grade."><br><b>6. Check the reading.</b> A first agent only reads your handwriting into LaTeX. It is told not to solve, correct or grade.</td>
   </tr>
   <tr>
     <td width="33%" valign="top"><img src="docs/screenshots/story-7-grade.png" alt="Get it graded: A second agent critiques the confirmed reading and suggests a rating. You set the final one."><br><b>7. Get it graded.</b> A second agent critiques the confirmed reading and suggests a rating. You set the final one.</td>
@@ -43,7 +43,7 @@ The screenshots are one real run: the pages in [docs/demo](docs/demo/demo-pages.
 
 **Solving and grading**
 
-- **Photo answers.** Submit a photo of a handwritten solution. It is transcribed to LaTeX by an agent that never sees the problem.
+- **Photo answers.** Submit a photo of a handwritten solution. It is transcribed to LaTeX by an agent that only reads: it is told not to solve, correct or grade, and gets the problem text solely as a reading aid.
 - **Transcription editor.** A LaTeX editor with live preview, to correct the transcription or re-transcribe.
 - **Grading.** A second agent critiques the confirmed transcription and suggests a rating; you set the final rating. A grading chat lets you discuss the critique.
 - **Skip and snooze** for problems you do not want right now.

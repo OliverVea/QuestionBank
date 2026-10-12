@@ -66,3 +66,6 @@ export function shouldPause(mode: SessionMode, opts: ShouldPauseOpts = {}): bool
 export function reset(mode: SessionMode): void {
   sessions[mode] = { count: 0, lastChapter: null };
 }
+
+/** sessionStorage key holding the id of the book Learn is working through. */
+export const LEARN_BOOK_KEY = 'qb.learn.book';

@@ -1,0 +1,22 @@
+[
+  {
+    "tag": "transcription",
+    "key": "17abf3b3fac30e22e8370090a3cff5e2577b5d3b9ee126cab7610a053bc94890",
+    "result": {
+      "transcription": "4.2)\n\n[sketch: a rectangle (car) with an arrow pointing right]\n$v = 25\\ \\text{m/s}$\n\n$m = 1200\\ \\text{kg}$\n$v = 25\\ \\text{m/s}$\n$t = 5\\ \\text{s}$\n\n$F = m \\cdot a$\n\n$a = \\frac{v}{t}$\n\n$a = 5\\ \\text{m/s}^2$\n\n$F = 1200 \\cdot 5$\n$= 6000\\ \\text{N}$ (underlined)"
+    }
+  },
+  {
+    "tag": "grading",
+    "key": "a9811efec0b3016397dff1cb37b31c9e356bdbe35b7ef64331f7763dbdb1f53e",
+    "result": {
+      "working_check": "The student uses $F = ma$ with $a = v/t = 25/5 = 5\\ \\text{m/s}^2$. This is the correct magnitude of the deceleration, since the car goes from 25 m/s to 0 in 5.0 s. Then $F = 1200 \\cdot 5 = 6000\\ \\text{N}$, which is correct. The question asks only for the magnitude, so the sign and direction are not needed. The final answer of 6000 N (6.0 kN) is correct. The only gap is that the formula $a = v/t$ is not written as a change in velocity, and the student did not say that the force points opposite to the motion.",
+      "issues": [
+        {
+          "severity": "minor",
+          "description": "The student writes $a = v/t$ without noting that $v$ is the change in velocity ($25 \\to 0$ m/s). They also do not say the acceleration and force point opposite to the motion. The magnitude is still correct."
+        }
+      ]
+    }
+  }
+]

@@ -8,7 +8,9 @@ import type { Store } from '../storage/store.js';
 export function learnRouter(store: Store): Router {
   const router = Router();
   router.get('/next', async (req, res) => {
-    const next = await suggestNext(store, requireCustomerId(req), nowIso());
+    // ?bookId= keeps Learn inside the book whose button the learner pressed.
+    const bookId = typeof req.query.bookId === 'string' && req.query.bookId !== '' ? req.query.bookId : undefined;
+    const next = await suggestNext(store, requireCustomerId(req), nowIso(), bookId);
     res.json(next ?? { question: null });
   });
   return router;

@@ -78,3 +78,9 @@
 @media (hover: hover) {
   .type-link:hover { color: var(--learn-dark); }
 }
+
+/* Public demo: the sample answer is the one thing that can be graded, so it stands out. */
+.sample-link {
+  color: var(--learn-dark);
+  text-decoration: underline;
+}

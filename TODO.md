@@ -91,9 +91,13 @@ Olve.Diagrams flowchart tool to render it as a Mermaid graph. Each task must be 
 
 23. Defects found running the demo pages on 2026-10-12
   a. (done) Grading refused by Sonnet 5.5 as reasoning extraction because the prompt asked for a reasoning scratchpad
-  b. Show a problem's attached figures on the Learn Practice Grade and book pages they are stored but only the scan wizard displays them
+  b. (done) Show a problem's attached figures on the Learn Practice Grade and attempt history pages
+  h. Show figures on the compact problem rows of the book page [23b]
   c. Run the figure matcher whenever figures are detected today it is skipped unless an extracted problem carries a figure reference
   d. Stabilise extracted labels across runs the same two pages gave 4.1.1 once and 4.4.1.1 or a wrong section number on other runs
   e. Transcription should drop a stray heading for the next problem when it is in the photo such as a trailing 4.2
   f. On a model refusal retry once on a fallback model and tell the user what happened instead of a bare grading failed [23a]
   g. Fix the stale Getting started steps in the README the server will not start without an OIDC authority
+
+24. Bring your own key
+  a. Let a customer set their own Anthropic API key in Settings stored per customer and used for their model calls

@@ -105,7 +105,7 @@ export function RevisitPage(): HTMLElement {
   function renderQuestion(item: DueItem) {
     currentQuestion = item.question;
     eyebrow.querySelector('span')!.textContent = `${item.book.title} · ${item.question.label}`;
-    const card = QuestionCard({ canonicalText: item.question.canonicalText });
+    const card = QuestionCard({ canonicalText: item.question.canonicalText, questionId: item.question.id });
     card.classList.add('animate-in');
     card.style.setProperty('--i', '0');
     qscroll.replaceChildren(card);

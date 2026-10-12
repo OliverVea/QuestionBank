@@ -1,6 +1,7 @@
 import { html } from '@/lib/html';
 import { authFetch } from '@/lib/auth';
 import { renderLatex } from '@/lib/latex';
+import { appendFigures } from '@/components/QuestionFigures';
 import { TopBar } from '@/components/TopBar';
 import { ChatContainer } from '@/components/ChatContainer';
 import { ChatBubble } from '@/components/ChatBubble';
@@ -324,6 +325,7 @@ export function GradePage(): HTMLElement {
       const question = await qRes.json() as { canonicalText: string; label: string; bookId: string };
       completedChapter = splitLabel(question.label)?.chapter ?? null;
       renderLatex(qBody, question.canonicalText);
+      void appendFigures(qBody, questionId);
       try {
         const bRes = await authFetch(`/api/books/${question.bookId}`);
         qEyebrow.textContent = bRes.ok ? `${(await bRes.json() as { title: string }).title} · ${question.label}` : question.label;

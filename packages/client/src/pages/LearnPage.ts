@@ -108,7 +108,7 @@ export function LearnPage(): HTMLElement {
   function renderQuestion(question: Question, book: Book) {
     currentQuestion = question;
     eyebrow.querySelector('span')!.textContent = `${book.title} · ${question.label}`;
-    const card = QuestionCard({ canonicalText: question.canonicalText });
+    const card = QuestionCard({ canonicalText: question.canonicalText, questionId: question.id });
     card.classList.add('animate-in');
     card.style.setProperty('--i', '0');
     qscroll.replaceChildren(card);

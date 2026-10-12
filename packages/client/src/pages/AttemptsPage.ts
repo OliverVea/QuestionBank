@@ -4,6 +4,7 @@ import { TopBar } from '@/components/TopBar';
 import { Spinner } from '@/components/Spinner';
 import { CiStrip } from '@/components/CiStrip';
 import { renderLatex } from '@/lib/latex';
+import { appendFigures } from '@/components/QuestionFigures';
 import type { Attempt, GradingIssue, Grade } from '@/lib/types';
 import './AttemptsPage.css';
 
@@ -90,6 +91,7 @@ export function AttemptsPage(): HTMLElement {
       const label = question.label ? `Problem ${question.label}` : 'Problem';
       eyebrow.textContent = label;
       renderLatex(qBody, question.canonicalText ?? '', '');
+      void appendFigures(qBody, questionId);
     } catch {
       attempts = [];
     }

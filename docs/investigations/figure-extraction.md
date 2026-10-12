@@ -23,7 +23,7 @@ EditBookPage.
 
 ### Assumptions this builds on
 
-See the app-wide **Assumptions** in the [README](../../README.md). In short: the
+See the app-wide [Assumptions](../design/assumptions.md). In short: the
 user supplies **page images** (never PDF internals) + an Anthropic API key; the
 operator can run **normal, non-heavy infrastructure incl. small ML models, but
 not billion-parameter models**.

@@ -16,6 +16,49 @@ A self-study question bank for working through physics and math textbooks. It so
 - **History is immutable.** Review outcomes are an append-only log; scheduling is derived from it, so the algorithm can evolve without data migrations.
 - **Framework-free.** Express on the server, vanilla TypeScript on the client. Reachable from PC and mobile.
 
+## Features
+
+<p>
+  <img src="docs/screenshots/scan-photo.png" width="190" alt="Step 1 of a scan: a phone photo of a textbook page">
+  <img src="docs/screenshots/scan-problems.png" width="190" alt="Step 3 of a scan: the problems read off the page as LaTeX">
+  <img src="docs/screenshots/grading.png" width="190" alt="Grading: a submitted solution, the grader's critique and the suggested rating">
+  <img src="docs/screenshots/book.png" width="190" alt="A book's problems with mastery and next review date">
+</p>
+
+Screenshots are from a demo library: a real photo of a calculus page, scanned and graded by the app.
+
+<!-- Still to add: the figure-extraction review step, and a handwritten (photo) answer. -->
+
+**Building a book**
+
+- **Books and problems.** A book is a flat, ordered list of problems with editable labels such as `1.A.3`.
+- **Scan to add problems.** Photograph one or several pages, or paste text, and the model extracts the problems. The result is proposed as a delta against the existing list, which you can refine in a conversation before accepting or rejecting it.
+- **Figure extraction.** The page photo is flattened, figures are detected, and a matcher attaches each figure to the problem that references it. A review wizard lets you add, edit or remove figure boxes. See [the design notes](docs/design/figure-extraction-hld.md).
+- **Maths rendering.** Problem text is LaTeX, rendered with KaTeX and edited as raw source.
+
+**Solving and grading**
+
+- **Photo answers.** Submit a photo of a handwritten solution. It is transcribed to LaTeX by an agent that never sees the problem.
+- **Transcription editor.** A LaTeX editor with live preview, to correct the transcription or re-transcribe.
+- **Grading.** A second agent critiques the confirmed transcription and suggests a rating; you set the final rating. A grading chat lets you discuss the critique.
+- **Skip and snooze** for problems you do not want right now.
+- **Attempt history.** Past attempts per problem, with a small pass/fail strip on each row.
+
+**Retention and motivation**
+
+- **Spaced repetition.** A problem comes back after one week, then one month, and only a full mark advances it.
+- **Learn and Practice modes.** Learn walks new problems in order; Practice serves what is due across books.
+- **Sessions.** A running count with a pause screen, at chapter boundaries in Learn and every N reviews in Practice.
+- **Progress and goals.** Per-book mastery progress, a day streak, and weekly cadence and volume goals.
+
+**Platform**
+
+- **Per-customer data separation.** Every book, problem, attempt and review is scoped to a customer.
+- **OIDC login.**
+- **Answer photos are not stored.** They are sent to the model transiently and never written to disk. Figure crops are the deliberate exception.
+- **Phone and desktop.** A single-screen layout that installs as a web app.
+- **Deployment.** Docker, a Helm chart and a GitOps pipeline, including the separate figure service.
+
 ## Assumptions
 
 These are the foundational assumptions of the app as a whole — every feature is designed within them.

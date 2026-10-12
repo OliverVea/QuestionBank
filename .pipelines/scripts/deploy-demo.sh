@@ -28,7 +28,16 @@ echo "Deploying $RELEASE:$VERSION to $NS (public demo profile)"
 # able to run on its own.
 olve_image_import "$INPUT_DIR/image.tar" "$HOST"
 
-olve_helm_deploy "$HOST" "$RELEASE" "$NS" "$INPUT_DIR/helm" "$VERSION" -f values-demo.yaml
+# Not olve_helm_deploy: it sets the image repository to the RELEASE name, and the demo runs
+# the prod image (questionbank) under another release name (questionbank-demo).
+REMOTE_CHART="/tmp/$RELEASE-helm-$NS"
+ssh -o StrictHostKeyChecking=no "$HOST" "rm -rf $REMOTE_CHART"
+scp -o StrictHostKeyChecking=no -r "$INPUT_DIR/helm" "$HOST:$REMOTE_CHART"
+ssh -o StrictHostKeyChecking=no "$HOST" \
+  "cd $REMOTE_CHART && helm upgrade --install $RELEASE . -n $NS -f values-demo.yaml \
+     --set image.repository=docker.io/library/questionbank \
+     --set image.tag=$VERSION --set image.pullPolicy=Never \
+   && cd / && rm -rf $REMOTE_CHART"
 
 echo "Waiting for demo rollout..."
 ssh -o StrictHostKeyChecking=no "$HOST" \

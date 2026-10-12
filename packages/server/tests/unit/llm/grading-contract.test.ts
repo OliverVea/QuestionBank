@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { deriveGrade, validateGradingTurn, type GradingIssue } from '@/llm/grading-contract.js';
+import {
+  buildGradingPrompt,
+  deriveGrade,
+  gradingTurnSchema,
+  validateGradingTurn,
+  type GradingIssue,
+} from '@/llm/grading-contract.js';
 import { LlmError } from '@/llm/provider.js';
 
 function issue(severity: GradingIssue['severity']): GradingIssue {
@@ -68,5 +74,22 @@ describe('validateGradingTurn', () => {
   it('rejects an issue missing its description', () => {
     const raw = { reasoning: 'x', issues: [{ severity: 'minor' }] };
     expect(() => validateGradingTurn(raw)).toThrow(LlmError);
+  });
+});
+
+// Sonnet 5.5 declines a request that asks for the model's own reasoning (stop_reason
+// "refusal", category reasoning_extraction), which failed the grade with a 502.
+describe('grading request does not ask for the model\'s reasoning', () => {
+  it('the schema has no reasoning field, and its check field validates', () => {
+    expect(Object.keys(gradingTurnSchema.properties)).toEqual(['working_check', 'issues']);
+    expect(validateGradingTurn({ working_check: 'each line holds', issues: [] })).toEqual({
+      reasoning: 'each line holds',
+      issues: [],
+    });
+  });
+
+  it('the prompt does not ask the model to think aloud', () => {
+    const prompt = buildGradingPrompt({ canonicalText: 'Evaluate $1 + 1$.' });
+    expect(prompt).not.toMatch(/reasoning|scratchpad|step by step|think through/i);
   });
 });

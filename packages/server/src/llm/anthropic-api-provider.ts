@@ -131,7 +131,14 @@ async function toApiMessages(
  *  call site's `maxTokens` (the output_tokens here is the ceiling that was hit). */
 function assertUsableStop(message: Anthropic.Message): void {
   if (message.stop_reason === 'refusal') {
-    log.warn('llm response refused', { model: message.model, stop: message.stop_reason });
+    // The category says which safeguard declined (e.g. `reasoning_extraction`), which is
+    // what tells a prompt problem from a content one.
+    log.warn('llm response refused', {
+      model: message.model,
+      stop: message.stop_reason,
+      category: message.stop_details?.category,
+      explanation: message.stop_details?.explanation,
+    });
     throw new LlmError('request refused');
   }
   if (message.stop_reason === 'max_tokens') {

@@ -18,14 +18,23 @@ export interface GradingIssue {
 }
 
 /**
- * What the model returns each turn. `reasoning` is a private scratchpad — the model
- * works through the answer there so its chain-of-thought does NOT leak into the issue
- * list. Only confirmed defects belong in `issues`; an empty list means correct.
+ * What the model returns each turn. `reasoning` is its line-by-line check of the student's
+ * working, kept apart from the issue list so the list holds only confirmed defects; an
+ * empty list means correct. The model writes it under {@link CHECK_FIELD}.
  */
 export interface GradingTurnResult {
   reasoning: string;
   issues: GradingIssue[];
 }
+
+/**
+ * The schema field the model writes its check of the student's working into. It is
+ * deliberately not called "reasoning", and the prompt never asks the model to think aloud
+ * or keep a scratchpad: Sonnet 5.5 declines such requests (`stop_reason: "refusal"`,
+ * category `reasoning_extraction`), which failed every grade of some problems. The model
+ * thinks on its own; this field is an assessment of the student's work.
+ */
+const CHECK_FIELD = 'working_check';
 
 const VALID_SEVERITIES = new Set<IssueSeverity>(['critical', 'medium', 'minor']);
 
@@ -41,7 +50,9 @@ export function validateGradingTurn(raw: unknown): GradingTurnResult {
   if (typeof raw !== 'object' || raw === null) {
     throw new LlmError('grading result is not an object');
   }
-  const { reasoning, issues } = raw as { reasoning?: unknown; issues?: unknown };
+  const { issues } = raw as { issues?: unknown };
+  const fields = raw as Record<string, unknown>;
+  const reasoning = fields[CHECK_FIELD] ?? fields.reasoning;
   if (typeof reasoning !== 'string') {
     throw new LlmError('grading result missing reasoning');
   }
@@ -79,7 +90,7 @@ export function deriveGrade(issues: GradingIssue[]): Grade {
 
 /**
  * System-framing prompt for a grading conversation. Sent as the first `user` message
- * ahead of the live transcript. The model reasons in a private scratchpad, then reports
+ * ahead of the live transcript. The model checks the student's working, then reports
  * only CONFIRMED defects as ISSUES (with severities). We derive the grade in code via
  * deriveGrade — the model never picks a grade. There is no free-form critique field;
  * each issue's description IS the critique.
@@ -91,11 +102,11 @@ export function buildGradingPrompt(ctx: GradingContext): string {
     'exercises, or introduce material beyond what is needed to judge THIS answer.',
     'React to the student\'s answer. Do not independently produce a full worked solution.',
     '',
-    'Work in two steps:',
-    '1. In "reasoning", think through the answer step by step: check each line of the',
-    '   student\'s working, verify the final result, and decide what (if anything) is',
-    '   actually wrong. This is your private scratchpad — the student never sees it.',
-    '2. In "issues", list ONLY the confirmed defects you found in step 1.',
+    'Return two things:',
+    `1. In "${CHECK_FIELD}", a check of the student's working: go through it line by line,`,
+    '   say whether each line is right, verify the final result, and note what (if',
+    '   anything) is actually wrong.',
+    '2. In "issues", list ONLY the confirmed defects found in that check.',
     '',
     'Rules for the issues list — follow them exactly:',
     '- Do NOT assign a grade; we derive it from your issues.',
@@ -103,11 +114,11 @@ export function buildGradingPrompt(ctx: GradingContext): string {
     '  it is NOT an issue. Never add an issue whose description concludes the work is',
     '  fine, correct, or "not wrong" — if it is correct, simply omit it.',
     '- Each issue\'s description must state, in one or two sentences, the concrete thing',
-    '  that is wrong and why. Do not narrate your reasoning or hedge.',
-    '- If, after reasoning, the answer is fully correct, return an EMPTY issues list.',
+    '  that is wrong and why. Do not hedge.',
+    '- If the check finds the answer fully correct, return an EMPTY issues list.',
     '- Do not inflate severity. Match the level to the actual defect.',
     '',
-    `Formatting (applies to "reasoning" and every issue "description"): ${LATEX_DELIMITER_INSTRUCTION}`,
+    `Formatting (applies to "${CHECK_FIELD}" and every issue "description"): ${LATEX_DELIMITER_INSTRUCTION}`,
     '',
     'Severity levels:',
     '- "critical": the answer is clearly wrong — wrong final result, broken logic, or a',
@@ -129,14 +140,14 @@ export function buildGradingPrompt(ctx: GradingContext): string {
 }
 
 /**
- * Structured-output schema: a private reasoning scratchpad followed by a list of
- * severity-tagged issues (empty = correct). `reasoning` is first so the model thinks
- * before it commits to defects; the route strips it before responding to the client.
+ * Structured-output schema: a check of the student's working followed by a list of
+ * severity-tagged issues (empty = correct). The check comes first so the defects are
+ * drawn from it.
  */
 export const gradingTurnSchema = {
   type: 'object',
   properties: {
-    reasoning: { type: 'string' },
+    [CHECK_FIELD]: { type: 'string' },
     issues: {
       type: 'array',
       items: {
@@ -150,6 +161,6 @@ export const gradingTurnSchema = {
       },
     },
   },
-  required: ['reasoning', 'issues'],
+  required: [CHECK_FIELD, 'issues'],
   additionalProperties: false,
 } as const;

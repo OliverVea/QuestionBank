@@ -25,9 +25,17 @@ A self-study question bank for working through physics and math textbooks. It so
   <img src="docs/screenshots/book.png" width="190" alt="A book's problems with mastery and next review date">
 </p>
 
-Screenshots are from a demo library: a real photo of a calculus page, scanned and graded by the app.
+A handwritten answer goes through the same flow: the photo is read into LaTeX by an agent that never sees the problem, you check the reading, and only then is it graded.
 
-<!-- Still to add: the figure-extraction review step, and a handwritten (photo) answer. -->
+<p>
+  <img src="docs/screenshots/answer-photo.png" width="190" alt="A photo of a handwritten gas-law calculation, ready to submit">
+  <img src="docs/screenshots/answer-reading.png" width="190" alt="Step 1 of 2: the handwriting read into LaTeX, for the user to check">
+  <img src="docs/screenshots/answer-graded.png" width="190" alt="Step 2 of 2: the graded answer, with Correct suggested">
+</p>
+
+Screenshots are from a demo library: real photos, scanned and graded by the app. The handwritten calculation is by [Felix Wong](https://felixwong.com/2015/01/very-plausible-scientific-explanations-for-deflategate/), used under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+
+<!-- Still to add: the figure-extraction review step. -->
 
 **Building a book**
 

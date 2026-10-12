@@ -18,23 +18,27 @@ A self-study question bank for working through physics and math textbooks. It so
 
 ## Features
 
-<p>
-  <img src="docs/screenshots/scan-photo.png" width="190" alt="Step 1 of a scan: two phone photos of printed problem pages">
-  <img src="docs/screenshots/scan-figures.png" width="190" alt="The flattened page with the detected figures outlined, one selected for editing">
-  <img src="docs/screenshots/scan-problems.png" width="190" alt="Step 3 of a scan: the problems read off the page, each with its figure attached">
-  <img src="docs/screenshots/scan-maths.png" width="190" alt="A page of integrals read off a photo as LaTeX">
-</p>
+From a printed page to a scheduled review, in nine steps:
 
-A handwritten answer goes through the same flow: the photo is read into LaTeX by an agent that never sees the problem, you check the reading, and only then is it graded.
+<table>
+  <tr>
+    <td width="33%" valign="top"><img src="docs/screenshots/story-1-photograph.png" alt="Photograph the pages: Two pages of a problem set, shot with a phone at an angle."><br><b>1. Photograph the pages.</b> Two pages of a problem set, shot with a phone at an angle.</td>
+    <td width="33%" valign="top"><img src="docs/screenshots/story-2-figures.png" alt="Figures are found: Each page is flattened and its figures are outlined. You can fix a box by hand."><br><b>2. Figures are found.</b> Each page is flattened and its figures are outlined. You can fix a box by hand.</td>
+    <td width="33%" valign="top"><img src="docs/screenshots/story-3-problems.png" alt="Problems are read off: Text and maths come out as LaTeX, and each figure lands on the problem that cites it."><br><b>3. Problems are read off.</b> Text and maths come out as LaTeX, and each figure lands on the problem that cites it.</td>
+  </tr>
+  <tr>
+    <td width="33%" valign="top"><img src="docs/screenshots/story-4-maths.png" alt="Maths-heavy pages too: A page of integrals, read from a photo of the sheet held in the air."><br><b>4. Maths-heavy pages too.</b> A page of integrals, read from a photo of the sheet held in the air.</td>
+    <td width="33%" valign="top"><img src="docs/screenshots/story-5-answer-photo.png" alt="Answer on paper: Solve the next problem by hand and photograph your working."><br><b>5. Answer on paper.</b> Solve the next problem by hand and photograph your working.</td>
+    <td width="33%" valign="top"><img src="docs/screenshots/story-6-reading.png" alt="Check the reading: A first agent, which never sees the problem, reads your handwriting into LaTeX."><br><b>6. Check the reading.</b> A first agent, which never sees the problem, reads your handwriting into LaTeX.</td>
+  </tr>
+  <tr>
+    <td width="33%" valign="top"><img src="docs/screenshots/story-7-grade.png" alt="Get it graded: A second agent critiques the confirmed reading and suggests a rating. You set the final one."><br><b>7. Get it graded.</b> A second agent critiques the confirmed reading and suggests a rating. You set the final one.</td>
+    <td width="33%" valign="top"><img src="docs/screenshots/story-8-scheduled.png" alt="It comes back: A full mark schedules the problem for review in a week, then a month."><br><b>8. It comes back.</b> A full mark schedules the problem for review in a week, then a month.</td>
+    <td width="33%" valign="top"><img src="docs/screenshots/story-9-library.png" alt="Keep going: The library tracks progress per book, your day streak and weekly goals."><br><b>9. Keep going.</b> The library tracks progress per book, your day streak and weekly goals.</td>
+  </tr>
+</table>
 
-<p>
-  <img src="docs/screenshots/answer-photo.png" width="190" alt="A photo of a handwritten answer, ready to submit">
-  <img src="docs/screenshots/answer-reading.png" width="190" alt="Step 1 of 2: the handwriting read into LaTeX, for the user to check">
-  <img src="docs/screenshots/answer-graded.png" width="190" alt="Step 2 of 2: the graded answer, with Correct suggested and one minor remark">
-  <img src="docs/screenshots/book.png" width="190" alt="A book's problems with mastery and next review date">
-</p>
-
-Screenshots are from a demo library built from the pages in [docs/demo](docs/demo/demo-pages.pdf): printed, photographed with a phone, then scanned, answered by hand and graded by the app.
+The screenshots are one real run: the pages in [docs/demo](docs/demo/demo-pages.pdf) were printed, photographed with a phone, scanned by the app, answered by hand and graded.
 
 **Building a book**
 

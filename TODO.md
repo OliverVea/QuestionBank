@@ -88,3 +88,12 @@ Olve.Diagrams flowchart tool to render it as a Mermaid graph. Each task must be 
   c. Degrade gracefully to self-grading when LLM is unreachable showing question then self-rate [2h]
   d. Queue photographed solutions locally for batch grading when connectivity returns [22c]
   e. Optionally pre-fetch LLM solution sketches for due questions to enable offline answer reveals [22b]
+
+23. Defects found running the demo pages on 2026-10-12
+  a. (done) Grading refused by Sonnet 5.5 as reasoning extraction because the prompt asked for a reasoning scratchpad
+  b. Show a problem's attached figures on the Learn Practice Grade and book pages they are stored but only the scan wizard displays them
+  c. Run the figure matcher whenever figures are detected today it is skipped unless an extracted problem carries a figure reference
+  d. Stabilise extracted labels across runs the same two pages gave 4.1.1 once and 4.4.1.1 or a wrong section number on other runs
+  e. Transcription should drop a stray heading for the next problem when it is in the photo such as a trailing 4.2
+  f. On a model refusal retry once on a fallback model and tell the user what happened instead of a bare grading failed [23a]
+  g. Fix the stale Getting started steps in the README the server will not start without an OIDC authority

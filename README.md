@@ -19,23 +19,22 @@ A self-study question bank for working through physics and math textbooks. It so
 ## Features
 
 <p>
-  <img src="docs/screenshots/scan-photo.png" width="190" alt="Step 1 of a scan: a phone photo of a textbook page">
-  <img src="docs/screenshots/scan-problems.png" width="190" alt="Step 3 of a scan: the problems read off the page as LaTeX">
-  <img src="docs/screenshots/grading.png" width="190" alt="Grading: a submitted solution, the grader's critique and the suggested rating">
-  <img src="docs/screenshots/book.png" width="190" alt="A book's problems with mastery and next review date">
+  <img src="docs/screenshots/scan-photo.png" width="190" alt="Step 1 of a scan: two phone photos of printed problem pages">
+  <img src="docs/screenshots/scan-figures.png" width="190" alt="The flattened page with the detected figures outlined, one selected for editing">
+  <img src="docs/screenshots/scan-problems.png" width="190" alt="Step 3 of a scan: the problems read off the page, each with its figure attached">
+  <img src="docs/screenshots/scan-maths.png" width="190" alt="A page of integrals read off a photo as LaTeX">
 </p>
 
 A handwritten answer goes through the same flow: the photo is read into LaTeX by an agent that never sees the problem, you check the reading, and only then is it graded.
 
 <p>
-  <img src="docs/screenshots/answer-photo.png" width="190" alt="A photo of a handwritten gas-law calculation, ready to submit">
+  <img src="docs/screenshots/answer-photo.png" width="190" alt="A photo of a handwritten answer, ready to submit">
   <img src="docs/screenshots/answer-reading.png" width="190" alt="Step 1 of 2: the handwriting read into LaTeX, for the user to check">
-  <img src="docs/screenshots/answer-graded.png" width="190" alt="Step 2 of 2: the graded answer, with Correct suggested">
+  <img src="docs/screenshots/answer-graded.png" width="190" alt="Step 2 of 2: the graded answer, with Correct suggested and one minor remark">
+  <img src="docs/screenshots/book.png" width="190" alt="A book's problems with mastery and next review date">
 </p>
 
-Screenshots are from a demo library: real photos, scanned and graded by the app. The handwritten calculation is by [Felix Wong](https://felixwong.com/2015/01/very-plausible-scientific-explanations-for-deflategate/), used under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
-
-<!-- Still to add: the figure-extraction review step. -->
+Screenshots are from a demo library built from the pages in [docs/demo](docs/demo/demo-pages.pdf): printed, photographed with a phone, then scanned, answered by hand and graded by the app.
 
 **Building a book**
 

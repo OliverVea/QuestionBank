@@ -1,0 +1,37 @@
+# PUBLIC DEMO profile for QuestionBank (release `questionbank-demo`, namespace apps).
+#
+# The same image as prod, started with QB_DEMO=1: no login, every visitor is a guest
+# tenant seeded with the sample library, and there is no model backend at all. It is
+# public (questionbank-demo.ovea.pro, routed by Olve.Homelab without forward-auth), so
+# this profile mounts NO secrets: with no Anthropic key and no figure-service key in the
+# pod, nothing a visitor does can bill or reach the figure service.
+
+# No ingress in this profile — Olve.Homelab owns routing.
+ingress:
+  enabled: false
+
+# Guests are throwaway. Data lives in the container filesystem and resets on restart.
+persistence:
+  enabled: false
+
+resources:
+  requests:
+    cpu: 20m
+    memory: 96Mi
+  limits:
+    cpu: 300m
+    memory: 384Mi
+
+# Values merge over values.yaml, so the keys it sets for prod are blanked here (an empty
+# value is dropped at render time).
+config:
+  NODE_ENV: "production"
+  PORT: "3001"
+  QB_DATA_DIR: "/data"
+  QB_DEMO: "1"
+  QB_CUSTOMER_HEADER: ""
+  QB_ALLOW_DEFAULT_CUSTOMER: ""
+  FIGURE_SERVICE_URL: ""
+
+# Deliberately empty: see the header.
+secrets: []

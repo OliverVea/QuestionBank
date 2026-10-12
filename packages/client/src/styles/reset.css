@@ -29,3 +29,25 @@ body {
     to { opacity: 1; transform: none; }
   }
 }
+
+/* Public demo notice. Fixed over the page so the full-height app shells keep their
+   layout; a tap removes it. */
+.demo-banner {
+  position: fixed;
+  top: 0.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  width: min(34rem, calc(100% - 1rem));
+  padding: 0.6rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--fg);
+  color: var(--bg);
+  font: inherit;
+  font-size: 0.85rem;
+  line-height: 1.3;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+}

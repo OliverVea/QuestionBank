@@ -29,6 +29,8 @@ import { log } from './logging/logger.js';
 import { requireAuth, verifierFromEnv } from './auth/index.js';
 import type { VerifyBearer } from './auth/index.js';
 import { Store } from './storage/store.js';
+import { DemoProvider } from './demo/demo-provider.js';
+import { createDemoVerifier } from './demo/guest.js';
 
 const PORT = Number(process.env.PORT ?? 3001);
 // Data lives in the user's home dir, not the repo, so it survives `git clean`, is never at
@@ -41,6 +43,7 @@ export function createApp(
   provider: LlmProvider,
   figureService: FigureServiceClient | null = figureServiceFromEnv(),
   verify: VerifyBearer = verifierFromEnv(),
+  mode: 'app' | 'demo' = 'app',
 ): Express {
   const app = express();
   app.use(requestLogger);
@@ -49,8 +52,9 @@ export function createApp(
   // Health is unauthenticated so a proxy/uptime check needs no identity. This is the
   // liveness check: the process is up and serving. It says nothing about whether the
   // LLM backend is reachable — see /api/health/connectivity for that.
+  // In the public demo it also says so, which is how the client knows to skip the login.
   app.get('/api/health', (_req, res) => {
-    res.json({ status: 'ok' });
+    res.json(mode === 'demo' ? { status: 'ok', mode } : { status: 'ok' });
   });
 
   // Deep health: does this pod actually reach the LLM backend right now? Probes via the
@@ -100,17 +104,26 @@ export function createApp(
   return app;
 }
 
+/**
+ * The public demo: no login, no model key, no figure service. Each visitor is a guest
+ * tenant seeded with the sample library (see demo/guest.ts). Opt-in by env only.
+ */
+function createDemoApp(store: Store): Express {
+  return createApp(store, new DemoProvider(), null, createDemoVerifier(store), 'demo');
+}
+
 async function main(): Promise<void> {
-  if (!process.env.QB_OIDC_AUTHORITY) {
+  const demo = process.env.QB_DEMO === '1';
+  if (!demo && !process.env.QB_OIDC_AUTHORITY) {
     throw new Error('QB_OIDC_AUTHORITY is required (OIDC authority, e.g. https://auth.ovea.pro/application/o/questionbank/)');
   }
   const store = await Store.open(DATA_DIR);
-  const provider = new AnthropicApiProvider();
-  const app = createApp(store, provider);
+  const app = demo ? createDemoApp(store) : createApp(store, new AnthropicApiProvider());
   const HOST = process.env.HOST ?? '0.0.0.0';
   app.listen(PORT, HOST, () => {
     log.info(`listening on http://${HOST}:${PORT}`);
     log.info(`data dir: ${DATA_DIR}`);
+    if (demo) log.info('demo mode: guest tenants, no login, no model calls');
   });
 }
 

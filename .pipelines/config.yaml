@@ -18,6 +18,7 @@
 #     0. deploy-beta        deploy figure-service THEN QB to apps-beta, rollout + health-gate
 #     1. test-after-beta    HTTP smoke vs the LIVE beta Service (LLM-free, isolated tenant)
 #     2. deploy             deploy figure-service THEN QB to prod (apps) in the MINIMAL profile
+#     3. deploy-demo        deploy the public demo (apps, QB_DEMO=1, no secrets) after prod
 #
 #   Each env's deploy step brings up the figure-service (and its figure-service-auth
 #   secret) FIRST, before the QB deploy that mounts the secret / points at the Service —
@@ -118,3 +119,9 @@ processingSteps:
     configuration:
       image: alpine:latest
       scriptFile: scripts/deploy.sh
+  # The public demo (questionbank-demo.ovea.pro): same image, QB_DEMO=1, no secrets.
+  # Last on purpose, so a demo failure cannot block prod.
+  - name: deploy-demo
+    configuration:
+      image: alpine:latest
+      scriptFile: scripts/deploy-demo.sh

@@ -1,4 +1,5 @@
 import { authConfig } from './config.js';
+import { demoToken } from './demo.js';
 import { discover } from './discovery.js';
 import { challengeFromVerifier, generateState, generateVerifier } from './pkce.js';
 import {
@@ -138,6 +139,8 @@ export async function getAccessToken(
   authority: string = authConfig().authority,
   clientId: string = authConfig().clientId,
 ): Promise<string | null> {
+  const guest = demoToken();
+  if (guest !== null) return guest;
   const tokens = loadTokens();
   if (!tokens) return null;
   if (Date.now() < tokens.expiresAt - EXPIRY_SKEW_MS) return tokens.accessToken;

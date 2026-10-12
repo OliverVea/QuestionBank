@@ -1,0 +1,338 @@
+[
+  {
+    "id": "5214905f-41be-4df3-b592-371ea9b647fb",
+    "customerId": "demo",
+    "bookId": "ffea0d85-67e6-49cd-8205-c4aa28a51514",
+    "label": "7.1.1",
+    "canonicalText": "Evaluate the integral. $$\\int 2x\\cos(x^2)\\,dx$$",
+    "source": {
+      "kind": "text",
+      "rawText": "Evaluate the integral. $$\\int 2x\\cos(x^2)\\,dx$$"
+    },
+    "createdAt": "2026-10-12T08:10:33.557Z"
+  },
+  {
+    "id": "f9f77e12-050b-4983-8dd5-b3bf330137fb",
+    "customerId": "demo",
+    "bookId": "ffea0d85-67e6-49cd-8205-c4aa28a51514",
+    "label": "7.1.2",
+    "canonicalText": "Evaluate the integral. $$\\int_0^1 x\\sqrt{1-x^2}\\,dx$$",
+    "source": {
+      "kind": "text",
+      "rawText": "Evaluate the integral. $$\\int_0^1 x\\sqrt{1-x^2}\\,dx$$"
+    },
+    "createdAt": "2026-10-12T08:10:33.557Z"
+  },
+  {
+    "id": "7e0939e2-8ea4-4b6a-9d8e-0a9a70dfdd26",
+    "customerId": "demo",
+    "bookId": "ffea0d85-67e6-49cd-8205-c4aa28a51514",
+    "label": "7.1.3",
+    "canonicalText": "Evaluate the integral. $$\\int \\frac{e^x}{1+e^x}\\,dx$$",
+    "source": {
+      "kind": "text",
+      "rawText": "Evaluate the integral. $$\\int \\frac{e^x}{1+e^x}\\,dx$$"
+    },
+    "createdAt": "2026-10-12T08:10:33.557Z"
+  },
+  {
+    "id": "1de60601-3396-4cfc-b439-a4a7eced6c5c",
+    "customerId": "demo",
+    "bookId": "ffea0d85-67e6-49cd-8205-c4aa28a51514",
+    "label": "7.1.4",
+    "canonicalText": "Evaluate the integral. $$\\int_0^{\\pi/2} \\sin^3 x\\cos x\\,dx$$",
+    "source": {
+      "kind": "text",
+      "rawText": "Evaluate the integral. $$\\int_0^{\\pi/2} \\sin^3 x\\cos x\\,dx$$"
+    },
+    "createdAt": "2026-10-12T08:10:33.557Z"
+  },
+  {
+    "id": "a7332099-3b5a-4ac2-85d2-fea5ecf87a24",
+    "customerId": "demo",
+    "bookId": "ffea0d85-67e6-49cd-8205-c4aa28a51514",
+    "label": "7.2.5",
+    "canonicalText": "Evaluate the integral. $$\\int xe^{2x}\\,dx$$",
+    "source": {
+      "kind": "text",
+      "rawText": "Evaluate the integral. $$\\int xe^{2x}\\,dx$$"
+    },
+    "createdAt": "2026-10-12T08:10:33.557Z"
+  },
+  {
+    "id": "b57c3303-40d4-408a-bdd9-787f668e9cdb",
+    "customerId": "demo",
+    "bookId": "ffea0d85-67e6-49cd-8205-c4aa28a51514",
+    "label": "7.2.6",
+    "canonicalText": "Evaluate the integral. $$\\int_1^e x^2\\ln x\\,dx$$",
+    "source": {
+      "kind": "text",
+      "rawText": "Evaluate the integral. $$\\int_1^e x^2\\ln x\\,dx$$"
+    },
+    "createdAt": "2026-10-12T08:10:33.557Z"
+  },
+  {
+    "id": "19207192-f7b5-4f63-a624-a23c780fae5d",
+    "customerId": "demo",
+    "bookId": "ffea0d85-67e6-49cd-8205-c4aa28a51514",
+    "label": "7.2.7",
+    "canonicalText": "Evaluate the integral. $$\\int e^x\\sin x\\,dx$$",
+    "source": {
+      "kind": "text",
+      "rawText": "Evaluate the integral. $$\\int e^x\\sin x\\,dx$$"
+    },
+    "createdAt": "2026-10-12T08:10:33.557Z"
+  },
+  {
+    "id": "48f7f5be-d715-4157-9837-bf9af8f36331",
+    "customerId": "demo",
+    "bookId": "ffea0d85-67e6-49cd-8205-c4aa28a51514",
+    "label": "7.2.8",
+    "canonicalText": "(a) Show that for every positive integer $n$, $$\\int x^n e^x\\,dx = x^n e^x - n\\int x^{n-1}e^x\\,dx.$$ (b) Use part (a) to evaluate $\\int_0^1 x^3e^x\\,dx$.",
+    "source": {
+      "kind": "text",
+      "rawText": "(a) Show that for every positive integer $n$, $$\\int x^n e^x\\,dx = x^n e^x - n\\int x^{n-1}e^x\\,dx.$$ (b) Use part (a) to evaluate $\\int_0^1 x^3e^x\\,dx$."
+    },
+    "createdAt": "2026-10-12T08:10:33.557Z"
+  },
+  {
+    "id": "d61b3a35-f788-4364-92b3-88a8f5599eca",
+    "customerId": "demo",
+    "bookId": "ffea0d85-67e6-49cd-8205-c4aa28a51514",
+    "label": "7.3.9",
+    "canonicalText": "Evaluate the integral. $$\\int \\frac{dx}{x^2-1}$$",
+    "source": {
+      "kind": "text",
+      "rawText": "Evaluate the integral. $$\\int \\frac{dx}{x^2-1}$$"
+    },
+    "createdAt": "2026-10-12T08:10:33.557Z"
+  },
+  {
+    "id": "eec8e650-d341-4d20-b0ed-a33c45f180ca",
+    "customerId": "demo",
+    "bookId": "ffea0d85-67e6-49cd-8205-c4aa28a51514",
+    "label": "7.3.10",
+    "canonicalText": "Evaluate the integral. $$\\int \\frac{3x+5}{(x+1)(x+2)}\\,dx$$",
+    "source": {
+      "kind": "text",
+      "rawText": "Evaluate the integral. $$\\int \\frac{3x+5}{(x+1)(x+2)}\\,dx$$"
+    },
+    "createdAt": "2026-10-12T08:10:33.557Z"
+  },
+  {
+    "id": "275e494b-c96d-4bcc-9ee7-9722b6f71565",
+    "customerId": "demo",
+    "bookId": "ffea0d85-67e6-49cd-8205-c4aa28a51514",
+    "label": "7.3.11",
+    "canonicalText": "Evaluate the integral. $$\\int_0^1 \\frac{dx}{(x+1)(x+2)}$$",
+    "source": {
+      "kind": "text",
+      "rawText": "Evaluate the integral. $$\\int_0^1 \\frac{dx}{(x+1)(x+2)}$$"
+    },
+    "createdAt": "2026-10-12T08:10:33.557Z"
+  },
+  {
+    "id": "0d59c15c-6a2e-4a9f-ac89-7e251358d4e7",
+    "customerId": "demo",
+    "bookId": "ffea0d85-67e6-49cd-8205-c4aa28a51514",
+    "label": "7.4.12",
+    "canonicalText": "For which values of $p$ does the integral $$\\int_1^\\infty \\frac{dx}{x^p}$$ converge? Find its value when it does.",
+    "source": {
+      "kind": "text",
+      "rawText": "For which values of $p$ does the integral $$\\int_1^\\infty \\frac{dx}{x^p}$$ converge? Find its value when it does."
+    },
+    "createdAt": "2026-10-12T08:10:33.557Z"
+  },
+  {
+    "id": "eb4b15f4-9c95-4f6c-8fcf-6ccd3bdcc8a4",
+    "customerId": "demo",
+    "bookId": "ffea0d85-67e6-49cd-8205-c4aa28a51514",
+    "label": "7.4.13",
+    "canonicalText": "Evaluate $$\\int_0^\\infty xe^{-x}\\,dx.$$",
+    "source": {
+      "kind": "text",
+      "rawText": "Evaluate $$\\int_0^\\infty xe^{-x}\\,dx.$$"
+    },
+    "createdAt": "2026-10-12T08:10:33.557Z"
+  },
+  {
+    "id": "7ed877dc-5105-4770-a8e5-38d81880dab6",
+    "customerId": "demo",
+    "bookId": "ffea0d85-67e6-49cd-8205-c4aa28a51514",
+    "label": "7.4.14",
+    "canonicalText": "The region under the curve $y=1/x$ for $x\\ge 1$ is rotated about the $x$-axis. Show that the resulting solid has finite volume although the region itself has infinite area.",
+    "source": {
+      "kind": "text",
+      "rawText": "The region under the curve $y=1/x$ for $x\\ge 1$ is rotated about the $x$-axis. Show that the resulting solid has finite volume although the region itself has infinite area."
+    },
+    "createdAt": "2026-10-12T08:10:33.557Z"
+  },
+  {
+    "id": "53adf55d-2664-4abc-a303-c0ebcec70cec",
+    "customerId": "demo",
+    "bookId": "9791e5e4-b86e-41a8-b797-83cc49c0ac42",
+    "label": "4.1.1",
+    "canonicalText": "Two forces act on a hockey puck resting on frictionless ice, as shown in FIGURE P4.1. Force $F_1$ has magnitude 3.0 N and points east; force $F_2$ has magnitude 4.0 N and points north. Find the magnitude and direction of the net force on the puck.",
+    "source": {
+      "kind": "text",
+      "rawText": "Two forces act on a hockey puck resting on frictionless ice, as shown in FIGURE P4.1. Force $F_1$ has magnitude 3.0 N and points east; force $F_2$ has magnitude 4.0 N and points north. Find the magnitude and direction of the net force on the puck."
+    },
+    "createdAt": "2026-10-12T08:19:05.706Z"
+  },
+  {
+    "id": "4b113f73-80b4-4c15-b3e6-2daf07035b43",
+    "customerId": "demo",
+    "bookId": "9791e5e4-b86e-41a8-b797-83cc49c0ac42",
+    "label": "4.1.2",
+    "canonicalText": "A 1200 kg car travelling at 25 m/s brakes to a stop in 5.0 s with constant acceleration. What is the magnitude of the net force on the car while it is braking?",
+    "source": {
+      "kind": "text",
+      "rawText": "A 1200 kg car travelling at 25 m/s brakes to a stop in 5.0 s with constant acceleration. What is the magnitude of the net force on the car while it is braking?"
+    },
+    "createdAt": "2026-10-12T08:19:05.706Z"
+  },
+  {
+    "id": "db6553ec-d57a-4cb3-9370-e866411f4e73",
+    "customerId": "demo",
+    "bookId": "9791e5e4-b86e-41a8-b797-83cc49c0ac42",
+    "label": "4.1.3",
+    "canonicalText": "A 200 N sign hangs at rest from two cables, as shown in FIGURE P4.3. The left cable makes an angle of $30^\\circ$ with the ceiling and the right cable makes an angle of $45^\\circ$. Find the tension in each cable.",
+    "source": {
+      "kind": "text",
+      "rawText": "A 200 N sign hangs at rest from two cables, as shown in FIGURE P4.3. The left cable makes an angle of $30^\\circ$ with the ceiling and the right cable makes an angle of $45^\\circ$. Find the tension in each cable."
+    },
+    "createdAt": "2026-10-12T08:19:05.706Z"
+  },
+  {
+    "id": "b30db2ee-78e0-4967-9206-96691386a103",
+    "customerId": "demo",
+    "bookId": "9791e5e4-b86e-41a8-b797-83cc49c0ac42",
+    "label": "4.2.4",
+    "canonicalText": "A 2.0 kg block is released from rest on a frictionless incline that makes an angle of $30^\\circ$ with the horizontal, as shown in FIGURE P4.4. (a) What is the acceleration of the block? (b) How fast is it moving after sliding 1.5 m along the incline?",
+    "source": {
+      "kind": "text",
+      "rawText": "A 2.0 kg block is released from rest on a frictionless incline that makes an angle of $30^\\circ$ with the horizontal, as shown in FIGURE P4.4. (a) What is the acceleration of the block? (b) How fast is it moving after sliding 1.5 m along the incline?"
+    },
+    "createdAt": "2026-10-12T08:19:05.706Z"
+  },
+  {
+    "id": "639a5611-6cce-40c6-8a4d-6dc42c7584d9",
+    "customerId": "demo",
+    "bookId": "9791e5e4-b86e-41a8-b797-83cc49c0ac42",
+    "label": "4.2.5",
+    "canonicalText": "An elevator of mass 850 kg accelerates upward at 1.2 m/s$^2$. What is the tension in the cable that supports it?",
+    "source": {
+      "kind": "text",
+      "rawText": "An elevator of mass 850 kg accelerates upward at 1.2 m/s$^2$. What is the tension in the cable that supports it?"
+    },
+    "createdAt": "2026-10-12T08:19:05.706Z"
+  },
+  {
+    "id": "39c90778-8ced-4d07-beb5-ff32840bea54",
+    "customerId": "demo",
+    "bookId": "9791e5e4-b86e-41a8-b797-83cc49c0ac42",
+    "label": "4.2.6",
+    "canonicalText": "Two blocks of mass 3.0 kg and 5.0 kg are connected by a light string that passes over a frictionless, massless pulley, as shown in FIGURE P4.6. The blocks are released from rest. Find (a) the acceleration of the blocks and (b) the tension in the string.",
+    "source": {
+      "kind": "text",
+      "rawText": "Two blocks of mass 3.0 kg and 5.0 kg are connected by a light string that passes over a frictionless, massless pulley, as shown in FIGURE P4.6. The blocks are released from rest. Find (a) the acceleration of the blocks and (b) the tension in the string."
+    },
+    "createdAt": "2026-10-12T08:19:05.706Z"
+  },
+  {
+    "id": "640539db-ed41-43f2-87a7-d06d8066a888",
+    "customerId": "demo",
+    "bookId": "9791e5e4-b86e-41a8-b797-83cc49c0ac42",
+    "label": "4.3.7",
+    "canonicalText": "FIGURE P4.7 shows the velocity-versus-time graph of a cyclist moving along a straight road. (a) What is the cyclist's acceleration between $t=0$ s and $t=2$ s? (b) How far does the cyclist travel between $t=0$ s and $t=6$ s?",
+    "source": {
+      "kind": "text",
+      "rawText": "FIGURE P4.7 shows the velocity-versus-time graph of a cyclist moving along a straight road. (a) What is the cyclist's acceleration between $t=0$ s and $t=2$ s? (b) How far does the cyclist travel between $t=0$ s and $t=6$ s?"
+    },
+    "createdAt": "2026-10-12T08:19:05.706Z"
+  },
+  {
+    "id": "d5acc991-4e99-4147-868d-5b62fe15727b",
+    "customerId": "demo",
+    "bookId": "9791e5e4-b86e-41a8-b797-83cc49c0ac42",
+    "label": "4.3.8",
+    "canonicalText": "A ball is thrown horizontally at 12 m/s from the top of a 20 m tall building. Ignoring air resistance, how far from the base of the building does it land?",
+    "source": {
+      "kind": "text",
+      "rawText": "A ball is thrown horizontally at 12 m/s from the top of a 20 m tall building. Ignoring air resistance, how far from the base of the building does it land?"
+    },
+    "createdAt": "2026-10-12T08:19:05.706Z"
+  },
+  {
+    "id": "987ad467-3d52-4d36-a368-f23267c7819c",
+    "customerId": "demo",
+    "bookId": "9791e5e4-b86e-41a8-b797-83cc49c0ac42",
+    "label": "4.4.9",
+    "canonicalText": "A 15 kg crate rests on a horizontal floor. The coefficient of static friction between the crate and the floor is 0.40. What is the smallest horizontal force that will start the crate moving?",
+    "source": {
+      "kind": "text",
+      "rawText": "A 15 kg crate rests on a horizontal floor. The coefficient of static friction between the crate and the floor is 0.40. What is the smallest horizontal force that will start the crate moving?"
+    },
+    "createdAt": "2026-10-12T08:19:05.706Z"
+  },
+  {
+    "id": "94560d48-6117-4f3d-bd9c-19d212a96817",
+    "customerId": "demo",
+    "bookId": "9791e5e4-b86e-41a8-b797-83cc49c0ac42",
+    "label": "4.4.10",
+    "canonicalText": "A 10 kg sled is pulled across level snow by a rope that makes an angle of $25^\\circ$ with the horizontal, as shown in FIGURE P4.10. The tension in the rope is 40 N and the coefficient of kinetic friction is 0.10. Find the acceleration of the sled.",
+    "source": {
+      "kind": "text",
+      "rawText": "A 10 kg sled is pulled across level snow by a rope that makes an angle of $25^\\circ$ with the horizontal, as shown in FIGURE P4.10. The tension in the rope is 40 N and the coefficient of kinetic friction is 0.10. Find the acceleration of the sled."
+    },
+    "createdAt": "2026-10-12T08:19:05.706Z"
+  },
+  {
+    "id": "61b8ad38-6dd1-4ff9-b2d4-9bde98b4f472",
+    "customerId": "demo",
+    "bookId": "9791e5e4-b86e-41a8-b797-83cc49c0ac42",
+    "label": "4.4.11",
+    "canonicalText": "A car travelling at 20 m/s on a level road locks its brakes and skids to a stop. If the coefficient of kinetic friction between the tyres and the road is 0.70, how far does the car skid?",
+    "source": {
+      "kind": "text",
+      "rawText": "A car travelling at 20 m/s on a level road locks its brakes and skids to a stop. If the coefficient of kinetic friction between the tyres and the road is 0.70, how far does the car skid?"
+    },
+    "createdAt": "2026-10-12T08:19:05.706Z"
+  },
+  {
+    "id": "860db3a8-1353-4cd0-aaf7-9b096698eb6f",
+    "customerId": "demo",
+    "bookId": "9791e5e4-b86e-41a8-b797-83cc49c0ac42",
+    "label": "4.5.12",
+    "canonicalText": "A 0.20 kg ball on the end of a 0.80 m string is whirled in a horizontal circle at a constant speed of 4.0 m/s. What is the tension in the string? Ignore gravity.",
+    "source": {
+      "kind": "text",
+      "rawText": "A 0.20 kg ball on the end of a 0.80 m string is whirled in a horizontal circle at a constant speed of 4.0 m/s. What is the tension in the string? Ignore gravity."
+    },
+    "createdAt": "2026-10-12T08:19:05.706Z"
+  },
+  {
+    "id": "67b02211-95ee-4b19-b88c-212b8f641441",
+    "customerId": "demo",
+    "bookId": "9791e5e4-b86e-41a8-b797-83cc49c0ac42",
+    "label": "4.5.13",
+    "canonicalText": "A small bob of mass $m$ hangs from a string of length 1.2 m and moves in a horizontal circle, so that the string makes a constant angle of $20^\\circ$ with the vertical, as shown in FIGURE P4.13. Find the speed of the bob.",
+    "source": {
+      "kind": "text",
+      "rawText": "A small bob of mass $m$ hangs from a string of length 1.2 m and moves in a horizontal circle, so that the string makes a constant angle of $20^\\circ$ with the vertical, as shown in FIGURE P4.13. Find the speed of the bob."
+    },
+    "createdAt": "2026-10-12T08:19:05.706Z"
+  },
+  {
+    "id": "dc8be699-5ba1-48ea-a0e7-e43577bee2d9",
+    "customerId": "demo",
+    "bookId": "9791e5e4-b86e-41a8-b797-83cc49c0ac42",
+    "label": "4.5.14",
+    "canonicalText": "A 1000 kg car rounds a flat curve of radius 50 m. If the coefficient of static friction between the tyres and the road is 0.80, what is the greatest speed at which the car can take the curve without sliding?",
+    "source": {
+      "kind": "text",
+      "rawText": "A 1000 kg car rounds a flat curve of radius 50 m. If the coefficient of static friction between the tyres and the road is 0.80, what is the greatest speed at which the car can take the curve without sliding?"
+    },
+    "createdAt": "2026-10-12T08:19:05.706Z"
+  }
+]

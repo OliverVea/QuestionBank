@@ -1,0 +1,58 @@
+[
+  {
+    "id": "4bcdeaa2-420d-43c8-aa36-715370df63ad",
+    "customerId": "demo",
+    "questionId": "53adf55d-2664-4abc-a303-c0ebcec70cec",
+    "printedLabel": "FIGURE P4.1",
+    "confidence": "high",
+    "createdAt": "2026-10-12T08:19:05.729Z"
+  },
+  {
+    "id": "f344a2e0-1949-4124-9110-6f7036ddc439",
+    "customerId": "demo",
+    "questionId": "db6553ec-d57a-4cb3-9370-e866411f4e73",
+    "printedLabel": "FIGURE P4.3",
+    "confidence": "high",
+    "createdAt": "2026-10-12T08:19:05.745Z"
+  },
+  {
+    "id": "84239366-dad4-454c-bc4e-06dcf805e3b1",
+    "customerId": "demo",
+    "questionId": "b30db2ee-78e0-4967-9206-96691386a103",
+    "printedLabel": "FIGURE P4.4",
+    "confidence": "high",
+    "createdAt": "2026-10-12T08:19:05.759Z"
+  },
+  {
+    "id": "132fd249-ee50-4a94-b4a8-fd1147fb14e7",
+    "customerId": "demo",
+    "questionId": "39c90778-8ced-4d07-beb5-ff32840bea54",
+    "printedLabel": "FIGURE P4.6",
+    "confidence": "high",
+    "createdAt": "2026-10-12T08:19:05.771Z"
+  },
+  {
+    "id": "72633e1d-13d3-4efa-a458-c3b31734bf18",
+    "customerId": "demo",
+    "questionId": "640539db-ed41-43f2-87a7-d06d8066a888",
+    "printedLabel": "FIGURE P4.7",
+    "confidence": "high",
+    "createdAt": "2026-10-12T08:19:05.788Z"
+  },
+  {
+    "id": "d48bcb49-949b-4377-bf4e-d90237d0c949",
+    "customerId": "demo",
+    "questionId": "94560d48-6117-4f3d-bd9c-19d212a96817",
+    "printedLabel": "FIGURE P4.10",
+    "confidence": "high",
+    "createdAt": "2026-10-12T08:19:05.805Z"
+  },
+  {
+    "id": "7f305bc9-198b-4cc0-8d41-810a71f0d213",
+    "customerId": "demo",
+    "questionId": "67b02211-95ee-4b19-b88c-212b8f641441",
+    "printedLabel": "FIGURE P4.13",
+    "confidence": "high",
+    "createdAt": "2026-10-12T08:19:05.820Z"
+  }
+]

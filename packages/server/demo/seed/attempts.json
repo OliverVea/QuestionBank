@@ -1,0 +1,17 @@
+[
+  {
+    "id": "417a0fcf-ff55-4ce4-ac08-d76c7b338b23",
+    "customerId": "demo",
+    "questionId": "53adf55d-2664-4abc-a303-c0ebcec70cec",
+    "answer": "4.1)\n\n[Diagram: right triangle with horizontal side labeled 3N, vertical side labeled 4N, hypotenuse labeled F, angle $\\alpha$ at the lower left between the 3N side and F]\n\n$$F = \\sqrt{3^2+4^2} = \\sqrt{25} = \\underline{\\underline{5}}\\,N$$\n\n$$\\alpha = \\text{acos}\\left(\\frac{3N}{5N}\\right) \\approx \\underline{53.13^\\circ}$$\n\n4.2)",
+    "recommendedGrade": "correct",
+    "rating": "correct",
+    "issues": [
+      {
+        "severity": "minor",
+        "description": "The direction is given only as $53.13^\\circ$ without saying it is measured from east toward north (i.e. $53.13^\\circ$ north of east); the reference is only implied by the diagram."
+      }
+    ],
+    "createdAt": "2026-10-12T08:21:54.337Z"
+  }
+]

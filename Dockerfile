@@ -28,6 +28,8 @@ RUN npm ci --omit=dev
 COPY --from=build /app/packages/auth-config/dist packages/auth-config/dist
 COPY --from=build /app/packages/server/dist packages/server/dist
 COPY --from=build /app/packages/client/dist packages/client/dist
+# The sample library the public demo seeds each guest with (QB_DEMO=1); unused otherwise.
+COPY packages/server/demo packages/server/demo
 
 EXPOSE 3001
 VOLUME /data

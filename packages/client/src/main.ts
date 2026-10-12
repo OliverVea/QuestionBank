@@ -18,7 +18,7 @@ import { LearnPage } from '@/pages/LearnPage';
 import { RevisitPage } from '@/pages/RevisitPage';
 import { GradePage } from '@/pages/GradePage';
 import { SettingsPage } from '@/pages/SettingsPage';
-import { getAccessToken, handleCallback, login } from '@/lib/auth';
+import { detectDemo, getAccessToken, handleCallback, login } from '@/lib/auth';
 import { AuthCallbackPage } from '@/pages/AuthCallbackPage';
 
 const app = document.getElementById('app')!;
@@ -45,7 +45,28 @@ function setupRouter(): void {
     .resolve();
 }
 
+/** A notice over the app saying this is the demo and what it cannot do. Tap to dismiss. */
+function showDemoBanner(): void {
+  if (sessionStorage.getItem('qb.demo.dismissed') !== null) return;
+  const banner = document.createElement('button');
+  banner.type = 'button';
+  banner.className = 'demo-banner';
+  banner.textContent = 'Demo with a sample library. Scanning and grading are switched off here. Tap to hide.';
+  banner.addEventListener('click', () => {
+    sessionStorage.setItem('qb.demo.dismissed', '1');
+    banner.remove();
+  });
+  document.body.append(banner);
+}
+
 async function bootstrap(): Promise<void> {
+  // 0. Public demo: no login. The visitor is a guest with their own sample library.
+  if (await detectDemo()) {
+    showDemoBanner();
+    setupRouter();
+    return;
+  }
+
   // 1. OIDC redirect landing: exchange the code, then resume at a clean URL.
   if (window.location.pathname === '/auth/callback') {
     mount(AuthCallbackPage);

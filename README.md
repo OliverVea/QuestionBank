@@ -10,12 +10,6 @@ A self-study question bank for working through physics and math textbooks. It so
 
 **2. Retaining understanding.** A spaced-repetition system resurfaces questions over time (1 week, then 1 month) so the material sticks, prioritizing weaker results.
 
-### Principles
-
-- **Server-side LLM.** The server runs 24/7 and shells out to the local Claude Code CLI, so no per-client auth is needed. The LLM layer is modular — swappable for the Anthropic API, Bedrock, or a self-hosted model.
-- **History is immutable.** Review outcomes are an append-only log; scheduling is derived from it, so the algorithm can evolve without data migrations.
-- **Framework-free.** Express on the server, vanilla TypeScript on the client. Reachable from PC and mobile.
-
 ## Features
 
 From a printed page to a scheduled review, in nine steps:

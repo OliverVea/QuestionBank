@@ -1,18 +1,19 @@
 # Question Bank
 
-A question bank for books. Client-side app backed by a small server.
+**Work through a textbook's problems on paper, and get them checked and brought back until they stick.**
 
-**[Try the demo](https://questionbank-demo.ovea.pro)**: no login, a sample library, and one handwritten answer you can submit to see the reading and the grade. It replays recorded model results, so nothing else can be graded there.
+**[Try the demo](https://questionbank-demo.ovea.pro)**: no sign-up. It has a small sample library and one handwritten answer you can submit to see it read and graded.
 
-## What this is
+## Why it exists
 
-A self-study question bank for working through physics and math textbooks. It solves two problems:
+Working through the exercises is the best way to learn from a physics or maths textbook. It has two problems:
 
-**1. Grading handwritten solutions.** Capture questions from a textbook (photo or text), then submit a handwritten solution and get LLM-assisted feedback. The flow separates concerns deliberately: one agent faithfully transcribes your answer to LaTeX (told only to read it: no solving, no hints), a second agent critiques the transcribed answer and suggests a rating, and you set the final rating (DNM / partial / full).
+- **Nobody checks your work.** The answers at the back give a number, not feedback on your reasoning, and many books have no answers at all.
+- **You forget.** A problem you solved in March is gone by June unless you see it again.
 
-**2. Retaining understanding.** A spaced-repetition system resurfaces questions over time (1 week, then 1 month) so the material sticks, prioritizing weaker results.
+Question Bank turns the problems in a book into a personal question bank. You keep solving on paper. An AI model checks your working, and the app decides when each problem should come back.
 
-## Features
+## How it works
 
 From a printed page to a scheduled review, in nine steps:
 
@@ -34,116 +35,53 @@ From a printed page to a scheduled review, in nine steps:
   </tr>
 </table>
 
-The screenshots are one real run: the pages in [docs/demo](docs/demo/demo-pages.pdf) were printed, photographed with a phone, scanned by the app, answered by hand and graded.
+The screenshots are from one real run. The pages in [docs/demo](docs/demo/demo-pages.pdf) were printed, photographed with a phone, scanned by the app, answered by hand and graded.
 
-**Building a book**
+## Grading you can trust
 
-- **Books and problems.** A book is a flat, ordered list of problems with editable labels such as `1.A.3`.
-- **Scan to add problems.** Photograph one or several pages, or paste text, and the model extracts the problems. The result is proposed as a delta against the existing list, which you can refine in a conversation before accepting or rejecting it.
-- **Figure extraction.** The page photo is flattened, figures are detected, and a matcher attaches each figure to the problem that references it. A review wizard lets you add, edit or remove figure boxes. See [the design notes](docs/design/figure-extraction-hld.md).
-- **Maths rendering.** Problem text is LaTeX, rendered with KaTeX and edited as raw source.
+An AI model that solves a problem while it reads your handwriting tends to "see" the answer it expected. Question Bank keeps these jobs apart:
 
-**Solving and grading**
+1. **Reading.** One model only copies your handwriting into typed maths. It is told not to solve, correct or grade, and you check its reading before anything else happens.
+2. **Critique.** A second model reviews the reading you confirmed, explains what is right and wrong, and suggests a mark. You can question the critique in a chat.
+3. **Your call.** You set the final mark: not yet, partly, or fully solved. The model advises, you decide.
 
-- **Photo answers.** Submit a photo of a handwritten solution. It is transcribed to LaTeX by an agent that only reads: it is told not to solve, correct or grade, and gets the problem text solely as a reading aid.
-- **Transcription editor.** A LaTeX editor with live preview, to correct the transcription or re-transcribe.
-- **Grading.** A second agent critiques the confirmed transcription and suggests a rating; you set the final rating. A grading chat lets you discuss the critique.
-- **Skip and snooze** for problems you do not want right now.
-- **Attempt history.** Past attempts per problem, with a small pass/fail strip on each row.
+## What you can do
 
-**Retention and motivation**
+**Build a book**
+- Photograph one or several pages, or paste text, and the problems are pulled out with their maths and diagrams.
+- Review what was found before it is added, and ask for changes in a chat.
+- Fix diagram outlines by hand when the automatic cut-out misses.
 
-- **Spaced repetition.** A problem comes back after one week, then one month, and only a full mark advances it.
-- **Learn and Practice modes.** Learn walks new problems in order; Practice serves what is due across books.
-- **Sessions.** A running count with a pause screen, at chapter boundaries in Learn and every N reviews in Practice.
-- **Progress and goals.** Per-book mastery progress, a day streak, and weekly cadence and volume goals.
+**Solve and get feedback**
+- Answer on paper and send a photo. Correct the reading in an editor that shows the maths as you type.
+- Read the critique, discuss it, and set your mark.
+- Skip or snooze problems you don't want right now. Every past attempt is kept.
 
-**Platform**
+**Keep it**
+- A problem you solve fully comes back after a week, then after a month. A partial or wrong answer doesn't move it up; you see it again at the same interval.
+- **Learn** takes you through new problems in book order. **Practice** gathers what is due across all your books.
+- Progress per book, a day streak, and weekly goals.
 
-- **Per-customer data separation.** Every book, problem, attempt and review is scoped to a customer.
-- **OIDC login.**
-- **Answer photos are not stored.** They are sent to the model transiently and never written to disk. Figure crops are the deliberate exception.
-- **Phone and desktop.** A single-screen layout that installs as a web app.
-- **Deployment.** Docker, a Helm chart and a GitOps pipeline, including the separate figure service.
+**Privacy**
+- Photos of your answers are sent to the model to be read and then discarded. They are never stored.
+- Each account's books and answers are kept separate from everyone else's.
+- Works on phone and desktop, and can be installed like an app.
 
-## Stack
+## Current limitations
 
-- **Server:** Node + Express (TypeScript, ESM)
-- **Client:** Vanilla TypeScript + Vite
-- **Storage:** JSON files on disk (under `~/.question-bank/`, override with `QB_DATA_DIR`)
-- **Tests:** Vitest
-- **Layout:** npm workspaces — `packages/server`, `packages/client`
+This is an active personal project. Known rough edges:
 
-The goal is to stay close to framework-free. Express is the one concession on the server; the client is plain TypeScript against the DOM.
+- Scanning the same pages twice can number the problems differently. Check the labels when you review a scan.
+- Diagrams are sometimes not attached to their problem automatically. You can attach them from the book's edit page.
+- If the model declines to grade an answer, the app just reports that grading failed and doesn't retry.
+- The demo replays recorded results. Only the provided sample answer can be graded there.
 
-## Requirements
+The full list of planned work is in [TODO.md](TODO.md).
 
-- Node.js >= 20
-- npm >= 10
+## Running it yourself
 
-## Getting started
+See [docs/setup.md](docs/setup.md) to run it locally, configure it, or deploy it. Without any accounts or keys, `QB_DEMO=1 npm run dev` runs the demo on your machine.
 
-```bash
-QB_ALLOW_DEFAULT_CUSTOMER=1 npm run dev
-```
+## License
 
-This starts:
-
-- Server on http://localhost:3001 (health check at `/api/health`)
-- Client on http://localhost:5173 (proxies `/api/*` to the server)
-
-`QB_ALLOW_DEFAULT_CUSTOMER=1` is required for local use: by default the API rejects any
-request that carries no customer identity (see [Customer segmentation](#customer-segmentation)).
-With it set, unattributed requests resolve to the `local` customer.
-
-Open http://localhost:5173 — you'll see the three-tab shell (Learn / Practice / Manage) with the Manage tab active for adding books, chapters, and questions.
-
-## Customer segmentation
-
-Every data entity is scoped to a **customer** (an opaque string id) so multiple customers'
-data coexist without leaking. The API performs **no token validation by design** — it is meant
-to sit behind a forward-auth proxy (e.g. Traefik + Authentik) that authenticates the request
-and forwards an identity header. The API trusts that header.
-
-A single middleware resolves the owning customer for each `/api` request (the order matters):
-
-1. **Proxy-secret gate** (only if `QB_TRUSTED_PROXY_SECRET` is set): the request must carry a
-   matching secret header, compared in constant time. Absent/mismatch → `401`.
-2. **Identity header**: if `QB_CUSTOMER_HEADER` is present, its value is the customer id.
-3. **Default fallback**: if the identity header is absent and `QB_ALLOW_DEFAULT_CUSTOMER` is
-   truthy, the customer is `local`.
-4. Otherwise → `401`.
-
-| Env var | Default | Effect |
-| --- | --- | --- |
-| `QB_CUSTOMER_HEADER` | `X-Customer-Id` | Trusted identity header. Behind Authentik, set to e.g. `X-authentik-uid`. |
-| `QB_ALLOW_DEFAULT_CUSTOMER` | off | When truthy, unattributed requests fall back to customer `local`. For local/dev/tests. |
-| `QB_TRUSTED_PROXY_SECRET` | unset | When set, requires a matching proxy-secret header (proof-of-proxy, not identity). |
-| `QB_PROXY_SECRET_HEADER` | `X-Proxy-Secret` | Name of the proxy-secret header checked when the secret is set. |
-
-**Deployment requirements** (the design is only safe when these hold — enforced by the proxy,
-not the API): the API must not be directly reachable (the proxy is the sole ingress); the proxy
-must strip/overwrite any client-supplied identity and proxy-secret headers so only its own values
-survive. `QB_ALLOW_DEFAULT_CUSTOMER` and `QB_TRUSTED_PROXY_SECRET` are the only sanctioned ways
-to run outside this topology.
-
-## Scripts
-
-| Command            | What it does                                  |
-| ------------------ | --------------------------------------------- |
-| `npm run dev`      | Run server and client together in watch mode  |
-| `npm run build`    | Type-check and build both packages            |
-| `npm run typecheck`| Type-check the whole project                  |
-| `npm test`         | Run tests with Vitest                         |
-
-## Layout
-
-```
-packages/
-  server/   Express API
-  client/   Vite + vanilla TS frontend
-```
-
-Data lives outside the repo at `~/.question-bank/` (JSON files, plus `images/` and
-`.backups/` later). Override the location with the `QB_DATA_DIR` environment variable.
-The directory is created on first write.
+[PolyForm Noncommercial 1.0.0](LICENSE): free for personal and other non-commercial use.

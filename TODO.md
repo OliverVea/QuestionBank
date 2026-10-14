@@ -99,7 +99,7 @@ Olve.Diagrams flowchart tool to render it as a Mermaid graph. Each task must be 
   d. Stabilise extracted labels across runs the same two pages gave 4.1.1 once and 4.4.1.1 or a wrong section number on other runs
   e. Transcription should drop a stray heading for the next problem when it is in the photo such as a trailing 4.2
   f. On a model refusal retry once on a fallback model and tell the user what happened instead of a bare grading failed [23a]
-  g. Fix the stale Getting started steps in the README the server will not start without an OIDC authority
+  g. (done) Fix the stale Getting started steps in the README the server will not start without an OIDC authority
 
 24. Bring your own key
   a. Let a customer set their own Anthropic API key in Settings stored per customer and used for their model calls

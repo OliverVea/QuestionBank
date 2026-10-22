@@ -42,3 +42,7 @@ coverage/
 
 # Misc
 *.local
+
+# Olve.Pipelines local work directory (pl dev, olve-build)
+.pipelines/.olve/
+.pipelines/node_modules/

@@ -135,9 +135,13 @@ The storage layer is kept thin so it can move to SQLite later.
 - **Kubernetes.** The [Helm chart](../helm) has values for production
   (`values-minimal.yaml`), beta (`values-beta.yaml`) and the public demo
   (`values-demo.yaml`). The demo profile mounts no secrets.
-- **Pipeline.** [`.pipelines/config.yaml`](../.pipelines/config.yaml) builds and tests
-  every push to `master`, deploys to beta, smoke-tests it, then deploys production and
-  the demo.
+- **Pipeline.** [`.pipelines/pipeline.ts`](../.pipelines/pipeline.ts), run by
+  Olve.Pipelines v2, takes every push to `master` through: build the app and figure
+  service images and run `npm run typecheck` and `npm test`; deploy both to `apps-beta`
+  and run `npm run test:beta` against it; then deploy to `apps`, smoke-test production
+  read-only and deploy the demo. The figure service image goes through
+  `registry.ovea.pro` and is rebuilt only when `services/figure-service` changes.
+  `config.yaml` is the paused v1 pipeline, kept as the rollback path.
 
 ## Further reading
 

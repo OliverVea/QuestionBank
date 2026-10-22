@@ -1,4 +1,4 @@
-import { implement } from "@olve/pipelines";
+import { implement } from "@olivervea/pipelines";
 import { betaTest } from "../pipeline";
 import { check, checkSpa, health, serviceUrl } from "./lib/checks";
 

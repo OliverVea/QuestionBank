@@ -1,4 +1,4 @@
-import { model, z } from "@olve/pipelines";
+import { model, z } from "@olivervea/pipelines";
 
 export const DeployRequest = model("DeployRequest", z.object({
   repo: z.string().default("OliverVea/QuestionBank"),
@@ -6,8 +6,3 @@ export const DeployRequest = model("DeployRequest", z.object({
   deployTo: z.enum(["beta", "prod"]).default("prod"),
 }));
 
-/** An image in registry.ovea.pro, tagged by the content of its build context. */
-export const PushedImage = model("PushedImage", z.object({
-  repository: z.string(),
-  tag: z.string(),
-}));

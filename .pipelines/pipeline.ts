@@ -1,5 +1,5 @@
 // Every push goes beta, then prod and the public demo. config.yaml beside it is the paused v1 deployer's rollback path.
-import { pipeline, secret, step, steps, HelmRelease, Source } from "@olve/pipelines";
+import { pipeline, secret, step, steps, HelmRelease, Source } from "@olivervea/pipelines";
 import * as M from "./models";
 
 export const GITHUB_TOKEN = secret("GITHUB_TOKEN", "GitHub read token used to fetch the repo tarball.");
@@ -9,7 +9,6 @@ export const FIGURE_SERVICE_API_KEY = secret("FIGURE_SERVICE_API_KEY", "Shared X
 export const QB_BETA_OIDC_CLIENT_SECRET = secret("QB_BETA_OIDC_CLIENT_SECRET", "Client secret of beta Authentik's questionbank-smoke machine client.");
 
 export const HOST = "oliver@bulwark-m2";
-export const FIGURES_REPOSITORY = "registry.ovea.pro/questionbank/figure-service";
 
 export const source = steps.gitHubSource({
   name: "source",
@@ -21,20 +20,21 @@ export const build = steps.imageBuild({
   name: "build",
   description: "Builds the app image (API + SPA) with kaniko.",
   repository: "questionbank",
-  registryMap: { "mcr.microsoft.com": "mcr-cache.ovea.pro", "index.docker.io": "hub-cache.ovea.pro" },
   timeoutSeconds: 1200,
 });
 
 // The figure image is ~3.5 GB: too big to travel as a tarball, so it goes through the registry,
 // and is rebuilt only when services/figure-service changes.
-export const buildFigures = step({
+export const buildFigures = steps.imageBuild({
   name: "build-figures",
   description: "Builds the figure service image with kaniko and pushes it to registry.ovea.pro, unless an image of this exact services/figure-service is already there.",
-  image: "gcr.io/kaniko-project/executor:debug",
-  input: { source: Source },
-  output: M.PushedImage,
+  repository: "registry.ovea.pro/questionbank/figure-service",
+  context: "services/figure-service",
+  push: true,
+  contentTag: true,
+  // Installing torch and baking the model weights can go quiet for minutes.
+  stallTimeoutSeconds: 1200,
   timeoutSeconds: 3600,
-  retries: 2,
 });
 
 export const test = step({
@@ -53,14 +53,22 @@ export const betaSecrets = step({
   timeoutSeconds: 300,
 });
 
-export const deployFiguresBeta = step({
+const figuresTo = (namespace: string) => ({
+  host: HOST,
+  sshKey: SSH_PRIVATE_KEY,
+  release: "questionbank-figures",
+  namespace,
+  chart: "services/figure-service/helm",
+  fromRegistry: true,
+  rolloutTimeoutSeconds: 300,
+  healthUrl: { url: `http://questionbank-figures.${namespace}.svc.cluster.local/health`, attempts: 6 },
+  timeoutSeconds: 1800,
+}) as const;
+
+export const deployFiguresBeta = steps.helmDeployOverSsh({
   name: "deploy-figures-beta",
   description: "Deploys the figure service to apps-beta with Helm and checks its health.",
-  image: "alpine:3.22",
-  input: { source: Source, image: M.PushedImage },
-  output: HelmRelease,
-  secrets: [SSH_PRIVATE_KEY],
-  timeoutSeconds: 1800,
+  ...figuresTo("apps-beta"),
 });
 
 export const deployBeta = steps.helmDeployOverSsh({
@@ -93,14 +101,10 @@ export const prodSecrets = step({
   timeoutSeconds: 300,
 });
 
-export const deployFiguresProd = step({
+export const deployFiguresProd = steps.helmDeployOverSsh({
   name: "deploy-figures-prod",
   description: "Deploys the figure service to apps with Helm and checks its health.",
-  image: "alpine:3.22",
-  input: { source: Source, image: M.PushedImage },
-  output: HelmRelease,
-  secrets: [SSH_PRIVATE_KEY],
-  timeoutSeconds: 1800,
+  ...figuresTo("apps"),
 });
 
 export const deployProd = steps.helmDeployOverSsh({

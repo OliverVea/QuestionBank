@@ -5,7 +5,7 @@
     "": {
       "name": "questionbank-pipeline",
       "dependencies": {
-        "@olve/pipelines": "npm:@olivervea/pipelines@2.0.0-beta.1",
+        "@olivervea/pipelines": "2.0.0-beta.3",
       },
       "devDependencies": {
         "@types/bun": "1.4.3",
@@ -14,7 +14,7 @@
     },
   },
   "packages": {
-    "@olve/pipelines": ["@olivervea/pipelines@2.0.0-beta.1", "", { "dependencies": { "zod": "4.6.7" }, "bin": { "olve-dev": "src/dev/cli.ts", "olve-build": "src/build/cli.ts" } }, "sha512-iUfl3bPqwTATNf6xeCy5+OMojSjmgcQRcmzl4keAoVDHhKsmgFCVXX3P3Y4R7yqRIER/YbY5JFPJryYb+RtBzw=="],
+    "@olivervea/pipelines": ["@olivervea/pipelines@2.0.0-beta.3", "", { "dependencies": { "zod": "4.6.7" }, "bin": { "olve-dev": "src/dev/cli.ts", "olve-build": "src/build/cli.ts" } }, "sha512-BokWIRprNJvPb/y5OclMmuU/eanXOlzecL8z44BV5nv/2MJ9WqTbAfRMiEYrf/PqHlfFg3Kk0qMEDki+S4GH3w=="],
 
     "@types/bun": ["@types/bun@1.4.3", "", { "dependencies": { "bun-types": "1.4.3" } }, "sha512-N67Pqy8JXbAY/j0tNraS3V5mubGvc6rrrNDmDCtZLlFzccbUJPDb0tvgUBC5q4m8ybkP93Jcn1QB+RYQ6PvBhw=="],
 

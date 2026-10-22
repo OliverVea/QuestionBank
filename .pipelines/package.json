@@ -8,7 +8,7 @@
     "build": "olve-build . --out .olve/out"
   },
   "dependencies": {
-    "@olve/pipelines": "npm:@olivervea/pipelines@2.0.0-beta.1"
+    "@olivervea/pipelines": "2.0.0-beta.3"
   },
   "devDependencies": {
     "@types/bun": "1.4.3",

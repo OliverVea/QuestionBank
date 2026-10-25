@@ -1,5 +1,3 @@
-# Pipeline scripts run in Linux containers via #!/bin/sh — they MUST stay LF or the
+# Shell scripts run in Linux containers via #!/bin/sh — they MUST stay LF or the
 # shebang breaks (`/bin/sh^M: bad interpreter`). Pin LF regardless of host autocrlf.
-.pipelines/scripts/*.sh text eol=lf
 *.sh text eol=lf
-.pipelines/config.yaml text eol=lf

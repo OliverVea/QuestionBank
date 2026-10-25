@@ -86,15 +86,16 @@ The image bakes both models in at build time so the first request is fast.
 
 ## Deploy
 
-Deployed via the QuestionBank Olve.Pipelines pipeline (`.pipelines/config.yaml`),
+Deployed via the QuestionBank Olve.Pipelines pipeline (`.pipelines/pipeline.ts`),
 not separately:
 
-- production step **`package-figures`** Kaniko-builds the image (writes
-  `figures-version.txt` so it doesn't collide with the QB build's bundle selector).
-- processing steps **`deploy-figures-beta`** / **`deploy-figures`** import the image,
-  create the `figure-service-auth` secret (from the `FIGURE_SERVICE_API_KEY` pipeline
-  secret) in `apps-beta` / `apps`, and `helm upgrade` the chart in `helm/`. They run
-  *before* the QB deploy in each env, so the secret + Service exist first.
+- **`build-figures`** Kaniko-builds the image and pushes it to `registry.ovea.pro`,
+  tagged by the content of `services/figure-service` (skipped when that image exists).
+- **`beta-secrets`** / **`prod-secrets`** write the `figure-service-auth` secret (from
+  the `FIGURE_SERVICE_API_KEY` pipeline secret) in `apps-beta` / `apps`, a stage
+  before the deploys.
+- **`deploy-figures-beta`** / **`deploy-figures-prod`** `helm upgrade` the chart in
+  `helm/`, beside the QB deploy in each env, and check `/health`.
 
 The chart (`helm/`) is in-cluster only (ClusterIP, no ingress). The QuestionBank
 server reaches it at `FIGURE_SERVICE_URL` (`http://questionbank-figures.<ns>.svc.cluster.local`)

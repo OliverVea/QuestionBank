@@ -3,7 +3,7 @@
 # Same self-sufficient shape as values-minimal.yaml — NO public Ingress and NO
 # Authentik forward-auth: routing and the auth SYSTEM are owned by the separate
 # Olve.Homelab pipeline, not by this app's deploy. Beta is reachable in-cluster via
-# the ClusterIP Service (.pipelines/scripts/deploy-beta.sh passes `-f values-beta.yaml`).
+# the ClusterIP Service (the pipeline's deploy-beta step passes `-f values-beta.yaml`).
 #
 # Beta differs from minimal in ONE way: it wires its OWN Anthropic key so the LLM
 # routes (extract/transcribe/grade) are exercisable on beta. The minimal/prod profile

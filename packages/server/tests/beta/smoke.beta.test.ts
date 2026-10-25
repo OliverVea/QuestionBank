@@ -1,6 +1,6 @@
 /**
- * After-beta HTTP smoke suite — runs ONLY in the pipeline's `test-after-beta` step,
- * against the actually-deployed beta instance, after `deploy-beta` and before `deploy` (prod).
+ * After-beta HTTP smoke suite — runs ONLY in the pipeline's `beta-test` step,
+ * against the actually-deployed beta instance, after `deploy-beta` and before `deploy-prod`.
  *
  * ===========================================================================
  * WHAT THIS FILE IS

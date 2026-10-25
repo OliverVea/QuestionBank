@@ -141,7 +141,6 @@ The storage layer is kept thin so it can move to SQLite later.
   and run `npm run test:beta` against it; then deploy to `apps`, smoke-test production
   read-only and deploy the demo. The figure service image goes through
   `registry.ovea.pro` and is rebuilt only when `services/figure-service` changes.
-  `config.yaml` is the paused v1 pipeline, kept as the rollback path.
 
 ## Further reading
 

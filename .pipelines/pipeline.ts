@@ -1,4 +1,4 @@
-// Every push goes beta, then prod and the public demo. config.yaml beside it is the paused v1 deployer's rollback path.
+// Every push goes beta, then prod and the public demo.
 import { pipeline, secret, step, steps, HelmRelease, Source } from "@olivervea/pipelines";
 import * as M from "./models";
 

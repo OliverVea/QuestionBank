@@ -2,7 +2,7 @@
 #
 # This profile deploys the app + its own deps ONLY: no public Ingress, no Authentik
 # forward-auth, reachable in-cluster via the ClusterIP Service. It is what the
-# QuestionBank self-deploy pipeline's prod stage uses (.pipelines/scripts/deploy.sh
+# QuestionBank self-deploy pipeline's deploy-prod step uses (it
 # passes `-f values-minimal.yaml`), and what a cold `pl install`-style bring-up
 # would use.
 #
@@ -27,15 +27,14 @@ config:
   QB_DATA_DIR: "/data"
   QB_OIDC_AUTHORITY: "https://auth.ovea.pro/application/o/questionbank/"
   QB_OIDC_AUDIENCE: "questionbank"
-  # In-cluster figure-service (deployed to apps first within the deploy step).
+  # In-cluster figure-service (the deploy-figures-prod step, beside deploy-prod).
   FIGURE_SERVICE_URL: "http://questionbank-figures.apps.svc.cluster.local"
 
-# Prod LLM key. deploy.sh materializes questionbank-secrets in `apps` from the
-# ANTHROPIC_API_KEY pipeline secret before the helm upgrade; mounted here (mirrors beta).
+# Prod LLM key. The prod-secrets step writes questionbank-secrets in `apps` from the
+# ANTHROPIC_API_KEY pipeline secret before the deploy; mounted here (mirrors beta).
 #
-# figure-service-auth (key api-key) is created in apps by deploy.sh (figures deploy
-# first, in the same step); mounted here as FIGURE_SERVICE_API_KEY so the server
-# authenticates to the figure-service.
+# figure-service-auth (key api-key) is written in apps by the same step; mounted here
+# as FIGURE_SERVICE_API_KEY so the server authenticates to the figure-service.
 secrets:
   - name: questionbank-secrets
     envMap:

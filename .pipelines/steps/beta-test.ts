@@ -1,9 +1,16 @@
-import { implement } from "@olivervea/pipelines";
-import { betaTest } from "../pipeline";
-import { check, checkSpa, health, serviceUrl } from "./lib/checks";
+import { implement, step, HelmRelease, Source } from "@olivervea/pipelines";
+import { QB_BETA_OIDC_CLIENT_SECRET } from "../shared";
+import { check, checkSpa, health, serviceUrl } from "../lib/checks";
 
 // The suite writes (and deletes) books in the smoke client's own tenant, so it runs against beta only.
-export default implement(betaTest, async ({ source, release }, ctx) => {
+export const betaTest = implement(step({
+  name: "beta-test",
+  description: "Runs the beta test suite (`npm run test:beta`) against beta in-cluster with a token from beta Authentik, and checks the SPA is served.",
+  image: "node:22",
+  input: { source: Source, release: HelmRelease },
+  secrets: [QB_BETA_OIDC_CLIENT_SECRET],
+  timeoutSeconds: 900,
+}), async ({ source, release }, ctx) => {
   const url = serviceUrl(release);
   const cwd = await ctx.files.fetch(source.tree);
   await ctx.exec(["npm", "ci", "--no-audit", "--no-fund"], { cwd });

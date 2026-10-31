@@ -1,9 +1,14 @@
-import { implement } from "@olivervea/pipelines";
-import { prodTest } from "../pipeline";
-import { check, checkSpa, health, serviceUrl } from "./lib/checks";
+import { implement, step, HelmRelease } from "@olivervea/pipelines";
+import { check, checkSpa, health, serviceUrl } from "../lib/checks";
 
 // Read-only, so it is safe against prod.
-export default implement(prodTest, async ({ release }, ctx) => {
+export const prodTest = implement(step({
+  name: "prod-test",
+  description: "Read-only smoke test of prod: health, that the API needs a token, and the SPA.",
+  image: "alpine:3.22",
+  input: { release: HelmRelease },
+  timeoutSeconds: 180,
+}), async ({ release }, ctx) => {
   const url = serviceUrl(release);
   const h = await health(ctx, url);
   check(h.status === "ok" && h.mode === undefined, `/api/health answered ${JSON.stringify(h)}`);

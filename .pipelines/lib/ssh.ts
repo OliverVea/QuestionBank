@@ -1,5 +1,5 @@
 import { sshSession, type Ctx, type SshSession } from "@olivervea/pipelines";
-import { HOST } from "../../pipeline";
+import { HOST } from "../shared";
 
 export const connect = (ctx: Ctx, privateKey: string) => sshSession(ctx, { host: HOST, key: privateKey });
 
